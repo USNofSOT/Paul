@@ -1,1 +1,26 @@
+#ADDCOIN
+
+@bot.slash_command(name="addcoin", description="Check information of a user or all users in a role")
+# @discord.default_permissions(mute_members=True)
+@option("target", description="Select the user to add your challenge coin to")
+@option("type", description="Choose view", autocomplete=get_coin)
+async def addcoin(ctx, target: discord.Member, type):
+    if not check_permissions(ctx.author,
+                             ["Senior Officer", "Junior Officer"]) and not ctx.author.id == 713484585874227220:
+        await ctx.respond("You don't have permissions to give challenge coins!", ephemeral=True)
+        return
+
+    if type == "Regular Challenge Coin":
+        display_name = ctx.author.display_name.split()[-1]
+        log_coin(target.id, "Regular Challenge Coin", ctx.author.id, display_name)
+        await ctx.respond(f"Added a challenge coin to <@{target.id}>", ephemeral=True)
+    elif type == "Commanders Challenge Coin":
+        if not check_permissions(ctx.author, ["Senior Officer"]):
+            await ctx.respond("You don't have permissions to give a commanders challenge coin!", ephemeral=True)
+        else:
+            display_name = ctx.author.display_name.split()[-1]
+            log_coin(target.id, "Commanders Challenge Coin", ctx.author.id, display_name)
+            await ctx.respond(f"Added a commanders challenge coin to <@{target.id}>", ephemeral=True)
+    else:
+        await ctx.respond("Invalid type of coin, please use the autocomplete to add them", ephemeral=True)
 
