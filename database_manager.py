@@ -184,11 +184,10 @@ class DatabaseManager:
 			return None #allow bot to exit
 			
 
-    def delete_coin(self, line_number):
+    def remove_coin(self, line_number):
 		try:
-			# Assuming you have a unique ID column in your Coins table (e.g., 'id')
-			self.cursor.execute('DELETE FROM Coins WHERE id = ?', (line_number,))
-			self.conn.commit()
+			self.cursor.execute('DELETE FROM Coins WHERE id = ?', (coin_id,))
+            self.conn.commit()
 		except sqlite3.Error as e:
 			print(f"Error deleting coin: {e}") #error log for debugging
 
