@@ -206,7 +206,7 @@ db_manager = DatabaseManager()
 @option("target", description="Select the user to add your challenge coin to")
 @option("type", description="Choose coin type", autocomplete=get_coin)
 async def addcoin(ctx, target: discord.Member, type: str):
-    if not check_permissions(ctx.author, ["Senior Officer", "Junior Officer"]) and ctx.author.id != 713484585874227220:
+    if not check_permissions(ctx.author, ["Senior Officer", "Junior Officer"]):
         await ctx.respond("You don't have permissions to give challenge coins!", ephemeral=True)
         return
 
@@ -257,7 +257,7 @@ async def addnote(ctx, target: discord.Member, note: str):
     required_roles = {"Senior Officer", "Junior Officer", "Senior Non Commissioned Officer"}
     executor_roles = {role.name for role in ctx.author.roles}
 
-    if not any(role in required_roles for role in executor_roles) and ctx.author.id != 713484585874227220:
+    if not any(role in required_roles for role in executor_roles):
         await ctx.respond("You do not have the necessary permissions to use this command.", ephemeral=True)
         return
 
@@ -269,7 +269,7 @@ async def addnote(ctx, target: discord.Member, note: str):
 @bot.slash_command(name="deletecoin", description="Delete a challenge coin from a user")
 @option("target", description="Select the user to delete from")
 async def deletecoin(ctx, target: discord.Member):
-    if not check_permissions(ctx.author, ["Board of Admiralty"]) and ctx.author.id != 713484585874227220:
+    if not check_permissions(ctx.author, ["Board of Admiralty"]):
         await ctx.respond("This command is restricted to BOA members only.", ephemeral=True)
         return
 
@@ -619,7 +619,7 @@ async def member(ctx, target: discord.Member | discord.Role = None, level: str =
 
             elif level.lower() == "moderation":
                 # Check permissions for moderation info
-                if not check_permissions(ctx.author, ["Senior Officer", "Junior Officer", "Senior Non Commissioned Officer", "Non Commissioned Officer"]) and not ctx.author.id == 713484585874227220:
+                if not check_permissions(ctx.author, ["Senior Officer", "Junior Officer", "Senior Non Commissioned Officer", "Non Commissioned Officer"]):
                     embedVar.add_field(name="Error", value="You don't have permission to view moderation details.")
                     embed_messages.append(embedVar)
                     return
@@ -692,7 +692,7 @@ async def toggle_award_ping(ctx):
 @bot.slash_command(name="removenote", description="Remove a moderation note from a user (SO+)")
 @option("noteid", description="Write the number of the note to be removed")
 async def removenote(ctx, noteid: int):
-    if not check_permissions(ctx.author, ["Senior Officer"]) and ctx.author.id != 713484585874227220:
+    if not check_permissions(ctx.author, ["Senior Officer"]):
         await ctx.defer(ephemeral=True)
         await ctx.followup.send("This command is only available for Senior Officers or higher.")
         return
@@ -738,7 +738,7 @@ async def sailorfile(ctx, option: str):
 # ADD COIN (Option 1)
 async def add_coin(ctx):
     # Check permission first
-    if not check_permissions(ctx.author, ["Senior Officer", "Junior Officer"]) and ctx.author.id != 713484585874227220:
+    if not check_permissions(ctx.author, ["Senior Officer", "Junior Officer"]):
         await ctx.respond("You don't have permissions to give challenge coins!", ephemeral=True)
         return
     
@@ -772,7 +772,7 @@ async def add_info(ctx):
     # Ensure permission
     allowed_roles = ["Senior Officer", "Junior Officer", "Senior Non Commissioned Officer", "NRC Department"]
     author_roles = [role.name for role in ctx.author.roles]
-    if not any(role in allowed_roles for role in author_roles) and ctx.author != target and ctx.author.id != 713484585874227220:
+    if not any(role in allowed_roles for role in author_roles) and ctx.author != target:
         await ctx.respond("You don't have permission to edit this user's information.", ephemeral=True)
         return
     
@@ -806,7 +806,7 @@ async def add_note(ctx):
     required_roles = {"Senior Officer", "Junior Officer", "Senior Non Commissioned Officer"}
     executor_roles = {role.name for role in ctx.author.roles}
     
-    if not any(role in required_roles for role in executor_roles) and ctx.author.id != 713484585874227220:
+    if not any(role in required_roles for role in executor_roles):
         await ctx.respond("You do not have the necessary permissions to add a note.", ephemeral=True)
         return
     
@@ -815,7 +815,7 @@ async def add_note(ctx):
 
 # DELETE COIN (Option 4)
 async def delete_coin(ctx):
-    if not check_permissions(ctx.author, ["Board of Admiralty"]) and ctx.author.id != 713484585874227220:
+    if not check_permissions(ctx.author, ["Board of Admiralty"]):
         await ctx.respond("This command is restricted to BOA members only.", ephemeral=True)
         return
     
@@ -870,7 +870,7 @@ async def force_add(ctx):
 
 # REMOVE NOTE (Option 6)
 async def remove_note_command(ctx):
-    if not check_permissions(ctx.author, ["Senior Officer"]) and ctx.author.id != 713484585874227220:
+    if not check_permissions(ctx.author, ["Senior Officer"]):
         await ctx.respond("This command is only available to Senior Officers or higher.", ephemeral=True)
         return
     
@@ -1188,7 +1188,7 @@ async def moderation_report(ctx):
         return
 
     # Permission check for moderation-level reports
-    if not check_permissions(ctx.author, ["Senior Officer", "Junior Officer", "Senior Non Commissioned Officer", "Non Commissioned Officer"]) and ctx.author.id != 713484585874227220:
+    if not check_permissions(ctx.author, ["Senior Officer", "Junior Officer", "Senior Non Commissioned Officer", "Non Commissioned Officer"]):
         await ctx.respond("You don't have permission to view moderation details.", ephemeral=True)
         return
 
