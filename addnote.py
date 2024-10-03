@@ -9,7 +9,7 @@ async def addnote(ctx, sailor: discord.Member, note: str):
 
     if any(role in required_roles for role in executor_roles):
         Try:
-			db_manager.add_note_to_file(sailor.id, ctx.author.id, note)
+			db_manager.add_note_to_file(sailor.id, ctx.author.id, note, datetime.utcnow())
 			await ctx.respond(f"Note added for {sailor.mention}: {note}", ephemeral=True)
 		except sqlite.Error as e:
 			print(f"Error writing note: {e}")
