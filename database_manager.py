@@ -1,10 +1,23 @@
-import sqlite3
+import mysql-connector-python
+from dotenv import load_dotenv
 
 class DatabaseManager:
-    def __init__(self, db_name="your_database.db"):  # Replace 'your_database.db' with your actual database name
-        self.conn = sqlite3.connect(db_name)
-        self.cursor = self.conn.cursor()
-        self.create_tables()
+    
+	load_dotenv()  # Load environment variables from .env
+		DB_HOST = os.getenv('DB_HOST')
+		DB_USER = os.getenv('DB_USER')
+		DB_PASSWORD = os.getenv('DB_PASSWORD')
+		DB_NAME = os.getenv('DB_NAME')
+	
+	def __init__(self, host="your_host", user="your_user", password="your_password", database="your_database"):
+    self.conn = mysql.connector.connect(
+		host=DB_HOST,
+		user=DB_USER,
+		password=DB_PASSWORD,
+		database=DB_NAME
+    )
+    self.cursor = self.conn.cursor()
+    self.create_tables()
 
     def create_tables(self):
         self.cursor.execute('''
@@ -95,7 +108,7 @@ class DatabaseManager:
 				VALUES (?, ?, ?, ?)
 			''', (log_id, target_id, amount, log_time))
 			self.conn.commit()
-		except sqlite3.Error as e:
+		except mysql.connector.Error as e:
 			print(f"Error logging voyage data: {e}")  #Log error for debugging
 
     def get_voyage_info(self, member_id):
@@ -104,7 +117,7 @@ class DatabaseManager:
 			rows = self.cursor.fetchall()
 			# Process the fetched rows to calculate voyage info
 			
-		except sqlite3.Error as e:
+		except mysql.connector.Error as e:
 			print(f"Error fetching voyage info: {e}") #Log error for debugging
             return None  #allow the bot to exit on error
 			
@@ -115,7 +128,7 @@ class DatabaseManager:
 				VALUES (?, ?, ?, ?)
 			''', (log_id, host_id, amount, log_time))
 			self.conn.commit()
-		except sqlite3.Error as e:
+		except mysql.connector.Error as e:
 			print(f"Error logging hosted data: {e}") #log error for debugging
 			
     def get_hosted_info(self, member_id):
@@ -124,7 +137,7 @@ class DatabaseManager:
 			rows = self.cursor.fetchall()
 			# Process the fetched rows to calculate hosted voyage info (similar to your existing logic)
 			
-		except sqlite3.Error as e:
+		except mysql.connector.Error as e:
 			print(f"Error fetching hosted info: {e}") #Log for Debuggging
 			return None #allow bot to exit on error
 
@@ -135,7 +148,7 @@ class DatabaseManager:
             VALUES (?, ?, ?, ?, ?, ?)
 			''', (author_id, log_link, target_id, subclass, count, timestamp))
 			self.conn.commit()
-		except sqlite3.Error as e:
+		except mysql.connector.Error as e:
 			print(f"Error logging subclasses: {e}") #Log error for debugging
 
     def get_subclass_points(self, member_id):
@@ -148,7 +161,7 @@ class DatabaseManager:
 			''', (member_id,))
 			rows = self.cursor.fetchall()
 			# Process the fetched rows to get subclass points for each subclass
-        except sqlite3.Error as e:
+        except mysql.connector.Error as e:
 			print(f"Error fetching subclass info: {e}") #Log for Debuggging
 			return None #allow bot to exit on error
 
@@ -159,7 +172,7 @@ class DatabaseManager:
 				VALUES (?, ?, ?, ?, ?)
 			''', (target_id, type, amount, moderator_id, timestamp))
 			self.conn.commit() 
-		except sqlite3.Error as e:
+		except mysql.connector.Error as e:
 			print(f"Error logging forceadd: {e}") #Error Log for Debuggging
 		
     def log_coin(self, member_id, type, moderator, old_name, timestamp):
@@ -169,7 +182,7 @@ class DatabaseManager:
 				VALUES (?, ?, ?, ?, ?)
 			''', (member_id, type, moderator, old_name, timestamp))
 			self.conn.commit()
-		except sqlite3.Error as e:
+		except mysql.connector.Error as e:
 			print(f"Error logging Coin: {e}") #Error log for Debugging
 
     def get_coins(self, member_id):
@@ -179,7 +192,7 @@ class DatabaseManager:
 			# Process the fetched rows to get coin information.
 			# You might want to create a list of dictionaries or objects representing each coin,
 			# extracting relevant information like coin type, moderator who awarded it, etc.
-		except sqlite3.Error as e:
+		except mysql.connector.Error as e:
 			print(f"Error Retreiving coins: {e}") #logging error for debugging
 			return None #allow bot to exit
 			
@@ -188,7 +201,7 @@ class DatabaseManager:
 		try:
 			self.cursor.execute('DELETE FROM Coins WHERE id = ?', (coin_id,))
             self.conn.commit()
-		except sqlite3.Error as e:
+		except mysql.connector.Error as e:
 			print(f"Error deleting coin: {e}") #error log for debugging
 
     def add_note_to_file(self, target_id, moderator_id, note):
@@ -198,7 +211,7 @@ class DatabaseManager:
 				VALUES (?, ?, ?)
 			''', (target_id, moderator_id, note))
 			self.conn.commit()
-		except sqlite3.Error as e:
+		except mysql.connector.Error as e:
 			print(f"Error adding note: {e}") #Logging error for debugging
 
     def get_notes(self, member_id):
@@ -208,7 +221,7 @@ class DatabaseManager:
 			# Process the fetched rows to get moderation notes.
 			# You could create a list of dictionaries or objects representing each note,
 			# including the note text, moderator who added it, and timestamp.
-		except sqlite3.Error as e:
+		except mysql.connector.Error as e:
 			print(f"Error getting notes: {e}") #logging error for debugging
 			return None #allow bot to exit
 
@@ -216,7 +229,7 @@ class DatabaseManager:
 		try:
 			self.cursor.execute('DELETE FROM ModNotes WHERE id = ?', (note_id,))
 			self.conn.commit()
-		except sqlite3.Error as e:
+		except mysql.connector.Error as e:
 			print(f"Error removing note: {e}") #logging error for debugging
 			
 
@@ -227,7 +240,7 @@ class DatabaseManager:
             VALUES (?)
 			''', (event,))
 			self.conn.commit()
-		except sqlite3.Error as e:
+		except mysql.connector.Error as e:
 			print(f"Error logging Event: {e}") #Logging error for debugging
 			
     def get_audit_logs(self, member_id, action_types=None):
@@ -252,7 +265,7 @@ class DatabaseManager:
 			rows = self.cursor.fetchall()
 			# Process the fetched rows to get audit logs
 			
-		except sqlite3.Error as e:
+		except mysql.connector.Error as e:
 			print(f"Error fetching audit logs: {e}") #log error for debugging
 			return [] #return empty list in case of error
     def toggle_award_ping(self, user_id, new_choice):
@@ -262,7 +275,7 @@ class DatabaseManager:
 				VALUES (?, ?)
 			''', (user_id, new_choice))
 			self.conn.commit()
-		except sqlite3.Error as e:
+		except mysql.connector.Error as e:
 			print(f"Error changing award ping setting: {e}") #error log for debugging
 
     def get_award_ping_setting(self, user_id):
@@ -270,7 +283,7 @@ class DatabaseManager:
 			self.cursor.execute('SELECT award_ping_enabled FROM Settings WHERE user_id = ?', (user_id,))
 			row = self.cursor.fetchone()
 			return row[0] if row else None  # Return None if no setting found
-		except sqlite3.Error as e:
+		except mysql.connector.Error as e:
 			print(f"Error retreiving ping setting: {e}") #error log for debugging
 			return None #allow bot to exit
 			
@@ -280,7 +293,7 @@ class DatabaseManager:
 				INSERT OR REPLACE INTO Gamertags (user_id, gamertag)
 				VALUES (?, ?)
 			''', (user_id, gamertag))
-		except sqlite3.Error as e:
+		except mysql.connector.Error as e:
 			print(f"Error writing Gamertag: {e}") #error log for debugging
 		
 	def get_gamertag(self, user_id):
@@ -288,7 +301,7 @@ class DatabaseManager:
 			self.cursor.execute('SELECT gamertag FROM Gamertags WHERE user_id = ?', (user_id,))
 			row = self.cursor.fetchone()
 			return row[0] if row else None
-		except sqlite3.Error as e:
+		except mysql.connector.Error as e:
 			print(f"Error retreiving gamertag: {e}") #Error log for debugging
 			return None #Exit so bot doesn't lock
 
@@ -297,6 +310,6 @@ class DatabaseManager:
 			self.cursor.execute('SELECT timezone FROM Timezones WHERE user_id = ?', (user_id,))
 			row = self.cursor.fetchone()
 			return row[0] if row else None
-		except sqlite3.Error as e:
+		except mysql.connector.Error as e:
 			print(f"Error retreiving timezone: {e}") #Error log for debugging
 			return None #Exit so bot doesn't lock
