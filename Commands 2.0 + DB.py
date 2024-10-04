@@ -1,16 +1,28 @@
-import sqlite3
+import mysql-connector-python
 import discord
 from discord.ext import commands
 from discord import option
 import asyncio
+from dotenv import load_dotenv
 from datetime import datetime
 
 # Database Manager Class
 class DatabaseManager:
-    def __init__(self, db_name="your_database.db"):
-        self.conn = sqlite3.connect(db_name)
-        self.cursor = self.conn.cursor()
-        self.create_tables()
+    load_dotenv()  # Load environment variables from .env
+		DB_HOST = os.getenv('DB_HOST')
+		DB_USER = os.getenv('DB_USER')
+		DB_PASSWORD = os.getenv('DB_PASSWORD')
+		DB_NAME = os.getenv('DB_NAME')
+	
+	def __init__(self, host="your_host", user="your_user", password="your_password", database="your_database"):
+    self.conn = mysql.connector.connect(
+		host=DB_HOST,
+		user=DB_USER,
+		password=DB_PASSWORD,
+		database=DB_NAME
+    )
+    self.cursor = self.conn.cursor()
+    self.create_tables()
 
     def create_tables(self):
         self.cursor.execute('''
@@ -69,14 +81,14 @@ class DatabaseManager:
                 VALUES (?, ?, ?, ?, ?)
             ''', (member_id, type, moderator, old_name, timestamp))
             self.conn.commit()
-        except sqlite3.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error logging coin: {e}")
 
     def get_coins(self, member_id):
         try:
             self.cursor.execute('SELECT * FROM Coins WHERE member_id = ?', (member_id,))
             return self.cursor.fetchall()
-        except sqlite3.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error retrieving coins: {e}")
             return []
 
@@ -84,7 +96,7 @@ class DatabaseManager:
         try:
             self.cursor.execute('DELETE FROM Coins WHERE id = ?', (coin_id,))
             self.conn.commit()
-        except sqlite3.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error deleting coin: {e}")
 
     # Moderation Note Methods
@@ -95,14 +107,14 @@ class DatabaseManager:
                 VALUES (?, ?, ?)
             ''', (target_id, moderator_id, note))
             self.conn.commit()
-        except sqlite3.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error adding note: {e}")
 
     def get_notes(self, member_id):
         try:
             self.cursor.execute('SELECT * FROM ModNotes WHERE target_id = ?', (member_id,))
             return self.cursor.fetchall()
-        except sqlite3.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error retrieving notes: {e}")
             return []
 
@@ -110,7 +122,7 @@ class DatabaseManager:
         try:
             self.cursor.execute('DELETE FROM ModNotes WHERE id = ?', (note_id,))
             self.conn.commit()
-        except sqlite3.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error removing note: {e}")
 
     # Subclass Methods
@@ -121,7 +133,7 @@ class DatabaseManager:
                 VALUES (?, ?, ?, ?, ?, ?)
             ''', (author_id, log_link, target_id, subclass, count, timestamp))
             self.conn.commit()
-        except sqlite3.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error logging subclasses: {e}")
 
     def get_subclass_points(self, member_id):
@@ -133,7 +145,7 @@ class DatabaseManager:
                 GROUP BY subclass
             ''', (member_id,))
             return self.cursor.fetchall()
-        except sqlite3.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error fetching subclass points: {e}")
             return []
 
@@ -145,7 +157,7 @@ class DatabaseManager:
                 VALUES (?, ?)
             ''', (user_id, new_choice))
             self.conn.commit()
-        except sqlite3.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error toggling award ping: {e}")
 
     def get_award_ping_setting(self, user_id):
@@ -153,7 +165,7 @@ class DatabaseManager:
             self.cursor.execute('SELECT award_ping_enabled FROM Settings WHERE user_id = ?', (user_id,))
             row = self.cursor.fetchone()
             return row[0] if row else None
-        except sqlite3.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error retrieving award ping setting: {e}")
             return None
 
@@ -165,7 +177,7 @@ class DatabaseManager:
                 VALUES (?, ?)
             ''', (user_id, gamertag))
             self.conn.commit()
-        except sqlite3.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error adding gamertag: {e}")
 
     def get_gamertag(self, user_id):
@@ -173,7 +185,7 @@ class DatabaseManager:
             self.cursor.execute('SELECT gamertag FROM Gamertags WHERE user_id = ?', (user_id,))
             row = self.cursor.fetchone()
             return row[0] if row else None
-        except sqlite3.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error retrieving gamertag: {e}")
             return None
 
@@ -184,7 +196,7 @@ class DatabaseManager:
                 VALUES (?, ?)
             ''', (user_id, timezone))
             self.conn.commit()
-        except sqlite3.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error adding timezone: {e}")
 
     def get_timezone(self, user_id):
@@ -192,7 +204,7 @@ class DatabaseManager:
             self.cursor.execute('SELECT timezone FROM Timezones WHERE user_id = ?', (user_id,))
             row = self.cursor.fetchone()
             return row[0] if row else None
-        except sqlite3.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error retrieving timezone: {e}")
             return None
 
@@ -700,7 +712,7 @@ async def removenote(ctx, noteid: int):
     try:
         db_manager.remove_note(noteid)
         await ctx.respond(f"Note with ID {noteid} has been removed.", ephemeral=True)
-    except sqlite3.Error as e:
+    except mysql.connector.Error as e:
         await ctx.respond(f"Error removing note: {e}", ephemeral=True)
 
 
