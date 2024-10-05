@@ -45,7 +45,7 @@ db_manager = DatabaseManager()
 
 
 
-# Main Entry point
+# Main Entry point  This function starts the bot.
 def main() -> None:
 	bot.run(token=TOKEN)
 
