@@ -22,11 +22,29 @@ class DatabaseManager:
     def create_tables(self):
         try:
             self.cursor.execute('''
-                CREATE TABLE IF NOT EXISTS Voyages (
-                    log_id INTEGER PRIMARY KEY,
+                CREATE TABLE IF NOT EXISTS Auditlogs (
+                    id INTEGER PRIMARY KEY AUTO_INCREMENT,
+                    event TEXT
+                )
+            ''')
+            self.cursor.execute('''
+                CREATE TABLE IF NOT EXISTS Coins (
+                    coin_id INTEGER PRIMARY KEY AUTO_INCREMENT,
                     target_id INTEGER,
+                    coin_type TINYTEXT,
+                    moderator_id INTEGER,
+                    old_name TINYTEXT,
+                    coin_time TIMESTAMP
+                )
+            ''')
+            self.cursor.execute('''
+                CREATE TABLE IF NOT EXISTS Forceadd (
+                    id INTEGER PRIMARY KEY AUTO_INCREMENT,
+                    target_id INTEGER,
+                    add_type TINYTEXT,
                     amount INTEGER,
-                    log_time TIMESTAMP
+                    moderator_id INTEGER,
+                    add_time TIMESTAMP
                 )
             ''')
             self.cursor.execute('''
@@ -38,72 +56,83 @@ class DatabaseManager:
                 )
             ''')
             self.cursor.execute('''
-                CREATE TABLE IF NOT EXISTS Subclasses (
-                    id INTEGER PRIMARY KEY AUTO_INCREMENT,
-                    author_id INTEGER,
-                    log_link TEXT,
-                    target_id INTEGER,
-                    subclass TEXT,
-                    count INTEGER,
-                    log_time TIMESTAMP
-                )
-            ''')
-            self.cursor.execute('''
-                CREATE TABLE IF NOT EXISTS Forceadd (
-                    id INTEGER PRIMARY KEY AUTO_INCREMENT,
-                    target_id INTEGER,
-                    type TEXT,
-                    amount INTEGER,
-                    moderator_id INTEGER,
-                    timestamp TIMESTAMP
-                )
-            ''')
-            self.cursor.execute('''
-                CREATE TABLE IF NOT EXISTS Coins (
-                    coin_id INTEGER PRIMARY KEY AUTO_INCREMENT,
-                    member_id INTEGER,
-                    type TEXT,
-                    moderator INTEGER,
-                    old_name TEXT,
-                    timestamp TIMESTAMP
-                )
-            ''')
-            self.cursor.execute('''
                 CREATE TABLE IF NOT EXISTS ModNotes (
                     id INTEGER PRIMARY KEY AUTO_INCREMENT,
                     target_id INTEGER,
                     moderator_id INTEGER,
-                    note TEXT
+                    note TEXT,
+                    note_time TIMESTAMP,
+                    hidden BOOLEAN DEFAULT FALSE,
+                    who_hid TINYTEXT,
+                    hide_time TIMESTAMP
                 )
             ''')
             self.cursor.execute('''
-                CREATE TABLE IF NOT EXISTS Auditlogs (
+                CREATE TABLE IF NOT EXISTS Sailorinfo (
+                    user_id INTEGER PRIMARY KEY,
+                    gamertag TINYTEXT,
+                    timezone TINYTEXT,
+                    award_ping_enabled BOOLEAN DEFAULT TRUE
+                )
+            ''')
+            self.cursor.execute('''
+                CREATE TABLE IF NOT EXISTS Subclasses (
                     id INTEGER PRIMARY KEY AUTO_INCREMENT,
-                    event TEXT
+                    author_id INTEGER,
+                    log_link TINYTEXT,
+                    target_id INTEGER,
+                    subclass TINYTEXT,
+                    subclass_count INTEGER,
+                    log_time TIMESTAMP
                 )
             ''')
             self.cursor.execute('''
-                CREATE TABLE IF NOT EXISTS Settings (
-                    user_id INTEGER PRIMARY KEY,
-                    award_ping_enabled INTEGER
-                )
-            ''')
-            self.cursor.execute('''
-                CREATE TABLE IF NOT EXISTS Gamertags (
-                    user_id INTEGER PRIMARY KEY,
-                    gamertag TEXT
-                )
-            ''')
-            self.cursor.execute('''
-                CREATE TABLE IF NOT EXISTS Timezones (
-                    user_id INTEGER PRIMARY KEY,
-                    timezone TEXT
+                CREATE TABLE IF NOT EXISTS Voyages (
+                    log_id INTEGER,
+                    target_id INTEGER,
+                    amount INTEGER,
+                    log_time TIMESTAMP,
+                    PRIMARY KEY (log_id, target_id)
                 )
             ''')
             self.conn.commit()
         except mariadb.Error as e:
             print(f"Error creating tables: {e}")
 
+    # Database Queries
+    def get_audit_logs(self, member_id, action_types=None):
+        raise NotImplemented
+
+    def get_award_ping_setting(self, user_id):
+        try:
+            self.cursor.execute('SELECT award_ping_enabled FROM sailorinfo WHERE user_id = %s', (user_id,))
+            row = self.cursor.fetchone()
+            return row[0] if row else None  # Return None if no setting is found
+        except mariadb.Error as e:
+            print(f"Error retrieving ping setting: {e}")
+            return None
+
+    def get_coins(self, member_id):
+        try:
+            self.cursor.execute('SELECT * FROM Coins WHERE member_id = %s', (member_id,))
+            rows = self.cursor.fetchall()
+            # Process the fetched rows to get coin information.
+            # You might want to create a list of dictionaries or objects representing each coin,
+            # extracting relevant information like coin type, moderator who awarded it, etc.
+            return rows  # Return fetched rows or processed data
+        except mariadb.Error as e:
+            print(f"Error retrieving coins: {e}")
+            return None
+
+    def get_gamertag(self, user_id):
+        try:
+            self.cursor.execute('SELECT gamertag FROM Gamertags WHERE user_id = %s', (user_id,))
+            row = self.cursor.fetchone()
+            return row[0] if row else None
+        except mariadb.Error as e:
+            print(f"Error retrieving gamertag: {e}")
+            return None
+
     def get_hosted_info(self, member_id):
         try:
             self.cursor.execute('SELECT * FROM Hosted WHERE host_id = %s', (member_id,))
@@ -113,53 +142,17 @@ class DatabaseManager:
             print(f"Error fetching hosted info: {e}")
             return None
 
-    def log_voyage_data(self, log_id, target_id, amount, log_time):
+    def get_notes(self, member_id):
         try:
-            self.cursor.execute('''
-                INSERT INTO Voyages (log_id, target_id, amount, log_time)
-                VALUES (%s, %s, %s, %s)
-            ''', (log_id, target_id, amount, log_time))
-            self.conn.commit()
-        except mariadb.Error as e:
-            print(f"Error logging voyage data: {e}")
-
-    def get_voyage_info(self, member_id):
-        try:
-            self.cursor.execute('SELECT * FROM Voyages WHERE target_id = %s', (member_id,))
+            self.cursor.execute('SELECT * FROM ModNotes WHERE target_id = %s', (member_id,))
             rows = self.cursor.fetchall()
-            # Process the fetched rows to calculate voyage info
+            # Process the fetched rows to get moderation notes.
+            # You could create a list of dictionaries or objects representing each note,
+            # including the note text, moderator who added it, and timestamp.
+            return rows  # Return fetched rows or processed data
         except mariadb.Error as e:
-            print(f"Error fetching voyage info: {e}")
+            print(f"Error getting notes: {e}")
             return None
-
-    def log_hosted_data(self, log_id, host_id, amount, log_time):
-        try:
-            self.cursor.execute('''
-                INSERT INTO Hosted (log_id, host_id, amount, log_time)
-                VALUES (%s, %s, %s, %s)
-            ''', (log_id, host_id, amount, log_time))
-            self.conn.commit()
-        except mariadb.Error as e:
-            print(f"Error logging hosted data: {e}")
-
-    def get_hosted_info(self, member_id):
-        try:
-            self.cursor.execute('SELECT * FROM Hosted WHERE host_id = %s', (member_id,))
-            rows = self.cursor.fetchall()
-            # Process the fetched rows to calculate hosted voyage info (similar to your existing logic)
-        except mariadb.Error as e:
-            print(f"Error fetching hosted info: {e}")
-            return None
-
-    def log_subclasses(self, author_id, log_link, target_id, subclass, count, timestamp):
-        try:
-            self.cursor.execute('''
-                INSERT INTO Subclasses (author_id, log_link, target_id, subclass, count, log_time)
-                VALUES (%s, %s, %s, %s, %s, %s)
-            ''', (author_id, log_link, target_id, subclass, count, timestamp))
-            self.conn.commit()
-        except mariadb.Error as e:
-            print(f"Error logging subclasses: {e}")
 
     def get_subclass_points(self, member_id):
         try:
@@ -175,75 +168,102 @@ class DatabaseManager:
             print(f"Error fetching subclass info: {e}")
             return None
 
-    def log_forceadd(self, target_id, type, amount, moderator_id, timestamp):
+    def get_timezone(self, user_id):
         try:
-            self.cursor.execute('''
-                INSERT INTO Forceadd (target_id, type, amount, moderator_id, timestamp)
-                VALUES (%s, %s, %s, %s, %s)
-            ''', (target_id, type, amount, moderator_id, timestamp))
-            self.conn.commit()
+            self.cursor.execute('SELECT timezone FROM Timezones WHERE user_id = %s', (user_id,))
+            row = self.cursor.fetchone()
+            return row[0] if row else None
         except mariadb.Error as e:
-            print(f"Error logging forceadd: {e}")
-
-    def log_coin(self, member_id, type, moderator, old_name, timestamp):
-        try:
-            self.cursor.execute('''
-                INSERT INTO Coins (member_id, type, moderator, old_name, timestamp)
-                VALUES (%s, %s, %s, %s, %s)
-            ''', (member_id, type, moderator, old_name, timestamp))
-            self.conn.commit()
-        except mariadb.Error as e:
-            print(f"Error logging Coin: {e}")
-
-    def get_coins(self, member_id):
-        try:
-            self.cursor.execute('SELECT * FROM Coins WHERE member_id = %s', (member_id,))
-            rows = self.cursor.fetchall()
-            # Process the fetched rows to get coin information.
-            # You might want to create a list of dictionaries or objects representing each coin,
-            # extracting relevant information like coin type, moderator who awarded it, etc.
-            return rows  # Return fetched rows or processed data
-        except mariadb.Error as e:
-            print(f"Error retrieving coins: {e}")
+            print(f"Error retrieving timezone: {e}")
             return None
 
-    def remove_coin(self, coin_id):
+    def get_voyage_info(self, member_id):
         try:
-            self.cursor.execute('DELETE FROM Coins WHERE coin_id = %s', (coin_id,))
-            self.conn.commit()
+            self.cursor.execute('SELECT * FROM Voyages WHERE target_id = %s', (member_id,))
+            rows = self.cursor.fetchall()
+            # Process the fetched rows to calculate voyage info
         except mariadb.Error as e:
-            print(f"Error deleting coin: {e}")
+            print(f"Error fetching voyage info: {e}")
+            return None
 
-    def add_note_to_file(self, target_id, moderator_id, note):
+    # Database Writes
+    def add_gamertag(self, user_id, gamertag):
+        """adds a gamertag to a members sailor info
+        Args:
+            user_id (int): The DiscordID of the Sailor
+            gamertag(TINYTEXT): The gamertag to add
+        """
         try:
             self.cursor.execute('''
-                INSERT INTO ModNotes (target_id, moderator_id, note)
-                VALUES (%s, %s, %s)
+                INSERT INTO Sailorinfo (discord_id, gamertag)
+                VALUES (%s, %s)
+                ON DUPLICATE KEY UPDATE gamertag = VALUES(gamertag)
+            ''', (user_id, gamertag))
+            self.conn.commit()
+        except mariadb.Error as e:
+            print(f"Error writing Gamertag: {e}")
+
+    def add_note_to_file(self, target_id, moderator_id, note, note_time):
+        """adds a modnote to notes table
+               Args:
+                   target_id (int): The DiscordID of the Sailor getting the note
+                   moderator_id(int): The DiscordID of the moderator
+                   note(text): The note to add
+                   note_time(TIMESTAMP): Time of the note being added
+                   Remaining fields are set by default in this table
+               """
+
+        try:
+            self.cursor.execute('''
+                INSERT INTO ModNotes (target_id, moderator_id, note, note_time, hidden, who_hid, hide_time)
+                VALUES (%s, %s, %s, %s, FALSE, NULL, NULL)
             ''', (target_id, moderator_id, note))
             self.conn.commit()
         except mariadb.Error as e:
             print(f"Error adding note: {e}")
 
-    def get_notes(self, member_id):
-        try:
-            self.cursor.execute('SELECT * FROM ModNotes WHERE target_id = %s', (member_id,))
-            rows = self.cursor.fetchall()
-            # Process the fetched rows to get moderation notes.
-            # You could create a list of dictionaries or objects representing each note,
-            # including the note text, moderator who added it, and timestamp.
-            return rows  # Return fetched rows or processed data
-        except mariadb.Error as e:
-            print(f"Error getting notes: {e}")
-            return None
+    def hide_note(self, note_id, who_hid, hide_time):
+        """Hides a note by setting its hidden value to 1 and updating who_hid and hide_time.
 
-    def remove_note(self, note_id):
+        Args:
+            note_id (int): The ID of the note to hide.
+            who_hid (int): The user ID of the person who hid the note.
+            hide_time (datetime): The timestamp when the note was hidden.
+        """
         try:
-            self.cursor.execute('DELETE FROM ModNotes WHERE id = %s', (note_id,))
+            self.cursor.execute('''
+                UPDATE ModNotes 
+                SET hidden = 1, who_hid = ?, hide_time = ? 
+                WHERE id = ?
+            ''', (who_hid, hide_time, note_id))
             self.conn.commit()
         except mariadb.Error as e:
-            print(f"Error removing note: {e}")
+            print(f"Error hiding note in database: {e}")
+
+    def log_coin(self, target_id, coin_type, moderator_id, old_name, coin_time):
+        """adds a coin to the coins table
+               Args:
+                   target_id (int): The DiscordID of the Sailor getting the coin
+                   coin_type (TINYTEXT): the type of coin
+                   moderator_id(int): The DiscordID of the moderator giving the coin
+                   old_name (TINYTEXT):
+                   coin_time(TIMESTAMP): Time of the coin being added
+
+               """
+
+        try:
+            self.cursor.execute('''
+                INSERT INTO Coins (target_id, coin_type, moderator_id, old_name, coin_time)
+                VALUES (%s, %s, %s, %s, %s)
+            ''', (target_id, coin_type, moderator_id, old_name, coin_time))
+            self.conn.commit()
+        except mariadb.Error as e:
+            print(f"Error logging Coin: {e}")
 
     def log_event(self, event):
+        raise NotImplemented
+        """
+        
         try:
             self.cursor.execute('''
                 INSERT INTO Auditlogs (event)
@@ -253,76 +273,139 @@ class DatabaseManager:
         except mariadb.Error as e:
             print(f"Error logging Event: {e}")
 
-    def get_audit_logs(self, member_id, action_types=None):
-        try:
-            if action_types:
-                placeholders = ', '.join(['?'] * len(action_types))
-                query = f'''
-                    SELECT * FROM Auditlogs
-                    WHERE event LIKE CONCAT('%', ?, '%') 
-                    AND event LIKE ANY(VALUES({placeholders}))
-                    ORDER BY id DESC
-                '''
-                self.cursor.execute(query, [member_id] + action_types)
-            else:
-                query = '''
-                    SELECT * FROM Auditlogs
-                    WHERE event LIKE CONCAT('%', ?, '%')
-                    ORDER BY id DESC
-                '''
-                self.cursor.execute(query, (member_id,))
-            rows = self.cursor.fetchall()
-            # Process the fetched rows to get audit logs
-            return rows  # Return fetched rows or processed data
-        except mariadb.Error as e:
-            print(f"Error fetching audit logs: {e}")
-            return []
-
-    def toggle_award_ping(self, user_id, new_choice):
+    def log_forceadd(self, target_id, type, amount, moderator_id, timestamp):
         try:
             self.cursor.execute('''
-                INSERT INTO Settings (user_id, award_ping_enabled)
+                INSERT INTO Forceadd (target_id, type, amount, moderator_id, timestamp)
+                VALUES (%s, %s, %s, %s, %s)
+            ''', (target_id, type, amount, moderator_id, timestamp))
+            self.conn.commit()
+        except mariadb.Error as e:
+            print(f"Error logging forceadd: {e}")
+        """
+
+    def log_hosted_data(self, log_id, host_id, amount, log_time):
+        """
+        Adds a hosting record for a new voyage. If a record with the same log_id exists,
+        it updates the host_id, amount, and log_time.
+
+        Args:
+            log_id (int): voyage post id
+            host_id (int): DiscordID of the host
+            amount (int): current count for hosted voyages for the host
+            log_time (timestamp): time of the log posting
+        """
+        try:
+            # Check if a record with the given log_id already exists
+            self.cursor.execute("SELECT COUNT(*) FROM Hosted WHERE log_id = %s", (log_id,))
+            record_exists = self.cursor.fetchone()[0] > 0
+
+            if record_exists:
+                # Update the existing record
+                self.cursor.execute('''
+                    UPDATE Hosted 
+                    SET host_id = %s, amount = %s, log_time = %s 
+                    WHERE log_id = %s
+                ''', (host_id, amount, log_time, log_id))
+            else:
+                # Insert a new record
+                self.cursor.execute('''
+                    INSERT INTO Hosted (log_id, host_id, amount, log_time)
+                    VALUES (%s, %s, %s, %s)
+                ''', (log_id, host_id, amount, log_time))
+
+            self.conn.commit()
+
+        except mariadb.Error as e:
+            print(f"Error logging hosted data: {e}")
+
+    def log_subclasses(self, author_id, log_link, target_id, subclass, count, timestamp):
+        """
+        Adds a subclass record for a member. If a record with the same target_id,
+        subclass, and log_link exists, the write action is ignored to prevent duplicates.
+
+        Args:
+            author_id (int): Discord ID of the person adding the subclass record.
+            log_link (str): Link to the Discord message (log) for the subclass entry.
+            target_id (int): Discord ID of the member receiving the subclass entry.
+            subclass (str): Name of the subclass (e.g., "Carpenter", "Flex").
+            count (int): Number of subclass points earned.
+            timestamp (datetime): Time of the subclass entry.
+        """
+        try:
+            # Check if a record with the same target_id, subclass, and log_link already exists
+            self.cursor.execute('''
+                SELECT COUNT(*) FROM Subclasses 
+                WHERE target_id = %s AND subclass = %s AND log_link = %s
+            ''', (target_id, subclass, log_link))
+            record_exists = self.cursor.fetchone()[0] > 0
+
+            if not record_exists:
+                # Insert a new record if no duplicates are found
+                self.cursor.execute('''
+                    INSERT INTO Subclasses (author_id, log_link, target_id, subclass, count, log_time)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                ''', (author_id, log_link, target_id, subclass, count, timestamp))
+                self.conn.commit()
+
+        except mariadb.Error as e:
+            print(f"Error logging subclasses: {e}")
+
+    def log_voyage_data(self, log_id, target_id, amount, log_time):
+        """
+        Adds a voyage record for a member. If a record with the same log_id and
+        target_id exists, the write action is ignored to prevent duplicates.
+
+        Args:
+            log_id (int): voyage post id
+            target_id (int): DiscordID of the member who participated in the voyage
+            amount (int): number of voyages credited for this entry (usually 1)
+            log_time (timestamp): time of the voyage log
+        """
+        try:
+            # Check if a record with the same log_id and target_id already exists
+            self.cursor.execute('''
+                SELECT COUNT(*) FROM Voyages 
+                WHERE log_id = %s AND target_id = %s
+            ''', (log_id, target_id))
+            record_exists = self.cursor.fetchone()[0] > 0
+
+            if not record_exists:
+                # Insert a new record if no duplicates are found
+                self.cursor.execute('''
+                    INSERT INTO Voyages (log_id, target_id, amount, log_time)
+                    VALUES (%s, %s, %s, %s)
+                ''', (log_id, target_id, amount, log_time))
+                self.conn.commit()
+
+        except mariadb.Error as e:
+            print(f"Error logging voyage data: {e}")
+
+    def remove_coin(self, coin_id):
+        """Removes a challenge coin from the Coins table in the database.
+
+        Args:
+            coin_id (int): The ID of the coin to remove.
+        """
+        try:
+            self.cursor.execute('DELETE FROM Coins WHERE coin_id = %s', (coin_id,))
+            self.conn.commit()
+        except mariadb.Error as e:
+            print(f"Error deleting coin: {e}")
+
+    def toggle_award_ping(self, discord_id, new_choice):
+        """Toggles the award ping notification setting for a user.
+
+        Args:
+            discord_id (int): The Discord ID of the user.
+            new_choice (bool): The new setting for award ping notifications (True/False).
+        """
+        try:
+            self.cursor.execute('''
+                INSERT INTO Sailorinfo (discord_id, award_ping_enabled)
                 VALUES (%s, %s)
                 ON DUPLICATE KEY UPDATE award_ping_enabled = VALUES(award_ping_enabled)
             ''', (user_id, new_choice))
             self.conn.commit()
         except mariadb.Error as e:
             print(f"Error changing award ping setting: {e}")
-
-    def get_award_ping_setting(self, user_id):
-        try:
-            self.cursor.execute('SELECT award_ping_enabled FROM Settings WHERE user_id = %s', (user_id,))
-            row = self.cursor.fetchone()
-            return row[0] if row else None  # Return None if no setting is found
-        except mariadb.Error as e:
-            print(f"Error retrieving ping setting: {e}")
-            return None
-
-    def add_gamertag(self, user_id, gamertag):
-        try:
-            self.cursor.execute('''
-                INSERT INTO Gamertags (user_id, gamertag)
-                VALUES (%s, %s)
-                ON DUPLICATE KEY UPDATE gamertag = VALUES(gamertag)
-            ''', (user_id, gamertag))
-            self.conn.commit()
-        except mariadb.Error as e:
-            print(f"Error writing Gamertag: {e}")
-
-    def get_gamertag(self, user_id):
-        try:
-            self.cursor.execute('SELECT gamertag FROM Gamertags WHERE user_id = %s', (user_id,))
-            row = self.cursor.fetchone()
-            return row[0] if row else None
-        except mariadb.Error as e:
-            print(f"Error retrieving gamertag: {e}")
-            return None
-
-    def get_timezone(self, user_id):
-        try:
-            self.cursor.execute('SELECT timezone FROM Timezones WHERE user_id = %s', (user_id,))
-            row = self.cursor.fetchone()
-            return row[0] if row else None
-        except mariadb.Error as e:
-            print(f"Error retrieving timezone: {e}")
-            return None

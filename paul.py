@@ -6,7 +6,7 @@ from discord import Intents, Client, Message
 from typing import Final
 import os
 from dotenv import load_dotenv
-from database_manager_mysql import DatabaseManager
+from database_manager import DatabaseManager
 
 
 #Load token
