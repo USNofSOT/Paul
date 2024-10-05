@@ -1,12 +1,17 @@
 #Paul Bot Made for USNofSOT
 
 #Imports
+
+import datetime
 import discord
-from discord import Intents, Client, Message
-from typing import Final
 import os
-from dotenv import load_dotenv
+
 from database_manager import DatabaseManager
+from datetime import datetime, timezone
+from discord import Intents, Client, Message
+from discord.ext.commands import Bot
+from dotenv import load_dotenv
+from typing import Final
 
 
 #Load token
@@ -17,13 +22,18 @@ TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
 #bot setup
 intents: Intents = Intents.default()
 intents.message_content = True
-client: Client = Client(intents=intents)
+intents.messages = True
+intents.members = True
+
+current_time = datetime.now(timezone.utc)
+
+bot = Bot(command_prefix=['/', '!'], intents=intents)
 
 # startup
 
-@client.event
+@bot.event
 async def on_ready() -> None:
-	print(f'{client.user} is now running!')
+	print(f'{bot.user} is now running!')
 
 #initiate db manager and commands class
 
@@ -37,7 +47,7 @@ db_manager = DatabaseManager()
 
 # Main Entry point
 def main() -> None:
-	client.run(token=TOKEN)
+	bot.run(token=TOKEN)
 
 if __name__ == '__main__':
 	main()
