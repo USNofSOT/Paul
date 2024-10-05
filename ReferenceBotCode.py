@@ -1,7 +1,3 @@
-# !/home/Angryhamdog/.virtualenvs/myvenv/bin/python
-
-# https://discord.com/oauth2/authorize?client_id=1145532919666987149&permissions=8&scope=bot+applications.commands
-# THIS IS THE PRIVATE LINK TO ADD THE BOT TO A NEW SERVER. ADDING IT TO ANOTHER SERVER MAY CAUSE ISSUES DUE TO THE BOTS PROGRAMMING.
 
 import discord
 import asyncio
@@ -22,7 +18,7 @@ intents.members = True
 bot = discord.Bot(intents=intents)
 
 import os
-
+"""   This code has been converted to the new DB System
 # SHould be the proper directory
 os.chdir("/home/container/")
 
@@ -52,8 +48,8 @@ if missing_files:
     raise FileNotFoundError(f"Required files missing: {missing_files_str}")
 
 
-# ^To make sure the files are found before moving on in regards to the subclass2.txt error
-
+^To make sure the files are found before moving on in regards to the subclass2.txt error
+"""
 @bot.event
 async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
