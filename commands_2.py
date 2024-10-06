@@ -6,8 +6,9 @@ import discord
 import os
 
 from datetime import datetime, timezone
-from discord import Intents, Client, Message
-from discord.ext.commands import Bot
+from discord import Intents, Message
+from discord import app_commands
+from discord.ext import commands, tasks
 from dotenv import load_dotenv
 from typing import Final
 from paul import bot
@@ -16,13 +17,16 @@ from paul import bot
 
 class Commands2:
     def __init__(self):
-
+        self.bot = bot
+        self.db_manager = db_manager  # Store an instance of DatabaseManager
         #variable definitions for multiple functions
         load_dotenv()
         logbook_channel_id: Final[str] = os.getenv('VOYAGE_LOGS') # Retrieve from .env
         print(logbook_channel_id)
 
     # Bot Commands
+
+
 
     """
     #ADDCOIN
