@@ -38,9 +38,15 @@ async def on_ready():
         print("An error with syncing application commands has occurred: ", e)
 
     try:
-        channel = bot.get_channel(int(os.getenv('VOYAGE_LOG')))  # Get the channel
-        async for message in channel.history(limit=100):  # Fetch the last 100 messages
+        voyage_log_channel_id = os.getenv('VOYAGE_LOGS')
+
+        if voyage_log_channel_id is not None:
+         channel = bot.get_channel(int(voyage_log_channel_id))
+         async for message in channel.history(limit=100):  # Fetch the last 100 messages
             await process_voyage_log(message)
+        else:
+            print("Error: VOYAGE_LOG environment variable is not set.")
+
     except Exception as e:
         print("An error with processing existing voyage logs has occurred: ", e)
 
@@ -52,19 +58,21 @@ async def on_ready():
 @bot.event
 async def on_message(message):
     # Voyage Channel Work
-    if message.channel.id == str(os.getenv('VOYAGE_LOG')):
+    if message.channel.id == str(os.getenv('VOYAGE_LOGS')):
         log_id = message.id
         host_id = message.author.id
+        log_time = message.created_at
+        print(f"I see log: {log_id}, by {host_id} at {log_time}")
+
         # --- Get Participant IDs ---
         participant_ids = []
         for user in message.mentions:  #participants are mentioned in the message
             participant_ids.append(user.id)
-        log_time = message.created_at  # Get the message creation time in UTC
-
+        print(f"Participants: {participant_ids}")
         # Hosted Count
         if not db_manager.log_id_exists(log_id, "Hosted"):
             db_manager.log_hosted_data(log_id, host_id, log_time)
-            print(f"Hosting logged for: {host_id}")
+            #print(f"Hosting logged for: {host_id}")
 
             # Voyage Log Count
             for participant_id in participant_ids:
@@ -288,15 +296,23 @@ def calculate_utc_offset(local_time_str: str):
 async def process_voyage_log(message):
     log_id = message.id
     host_id = message.author.id
+    log_time = message.created_at
+    participant_ids = []
+    for user in message.mentions:
+        participant_ids.append(user.id)
+
+    #print(f" logid: {log_id} hostid: {host_id} time: {log_time}") # Used to view data on console as it is processed.
 
     # 1. Check if the log_id already exists in the database
     if db_manager.log_id_exists(log_id):
         return  # Skip if the log has already been processed
 
     # 2. If not, process the log as you did in on_message
-    db_manager.increment_count(host_id, "hosted_count")
-    db_manager.log_hosted_data(log_id, host_id, 1)
-
+    db_manager.log_hosted_data(log_id, host_id, log_time)
+    # 3.Log Voyage Count
+    for participant_id in participant_ids:
+        if not db_manager.voyage_log_entry_exists(log_id, participant_id):
+            db_manager.log_voyage_data(log_id, participant_id, log_time)
 
 # Main Entry point  This function starts the bot.
 def main() -> None:

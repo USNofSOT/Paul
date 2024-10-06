@@ -43,9 +43,9 @@ class DatabaseManager:
             self.cursor.execute('''
                 CREATE TABLE IF NOT EXISTS Coins (
                     coin_id INTEGER PRIMARY KEY AUTO_INCREMENT,
-                    target_id INTEGER,
+                    target_id BIGINT,
                     coin_type TINYTEXT,
-                    moderator_id INTEGER,
+                    moderator_id BIGINT,
                     old_name TINYTEXT,
                     coin_time TIMESTAMP
                 )
@@ -53,25 +53,25 @@ class DatabaseManager:
             self.cursor.execute('''
                 CREATE TABLE IF NOT EXISTS Forceadd (
                     id INTEGER PRIMARY KEY AUTO_INCREMENT,
-                    target_id INTEGER,
+                    target_id BIGINT,
                     add_type TINYTEXT,
                     amount INTEGER,
-                    moderator_id INTEGER,
+                    moderator_id BIGINT,
                     add_time TIMESTAMP
                 )
             ''')
             self.cursor.execute('''
                 CREATE TABLE IF NOT EXISTS Hosted (
-                    log_id INTEGER PRIMARY KEY,
-                    host_id INTEGER,
+                    log_id BIGINT PRIMARY KEY,
+                    host_id BIGINT,
                     log_time TIMESTAMP
                 )
             ''')
             self.cursor.execute('''
                 CREATE TABLE IF NOT EXISTS ModNotes (
                     id INTEGER PRIMARY KEY AUTO_INCREMENT,
-                    target_id INTEGER,
-                    moderator_id INTEGER,
+                    target_id BIGINT,
+                    moderator_id BIGINT,
                     note TEXT,
                     note_time TIMESTAMP,
                     hidden BOOLEAN DEFAULT FALSE,
@@ -81,7 +81,7 @@ class DatabaseManager:
             ''')
             self.cursor.execute('''
                 CREATE TABLE IF NOT EXISTS Sailorinfo (
-                    discord_id INTEGER PRIMARY KEY,
+                    discord_id BIGINT PRIMARY KEY,
                     gamertag TINYTEXT,
                     timezone TINYTEXT,
                     award_ping_enabled BOOLEAN,
@@ -98,17 +98,17 @@ class DatabaseManager:
             self.cursor.execute('''
                 CREATE TABLE IF NOT EXISTS Subclasses (
                     id INTEGER PRIMARY KEY AUTO_INCREMENT,
-                    author_id INTEGER,
+                    author_id BIGINT,
                     log_link TINYTEXT,
-                    target_id INTEGER,
+                    target_id BIGINT,
                     subclass TINYTEXT,
                     log_time TIMESTAMP
                 )
             ''')
             self.cursor.execute('''
                 CREATE TABLE IF NOT EXISTS Voyages (
-                    log_id INTEGER,
-                    target_id INTEGER,
+                    log_id BIGINT,
+                    target_id BIGINT,
                     log_time TIMESTAMP,
                     PRIMARY KEY (log_id, target_id)
                 )
@@ -324,10 +324,24 @@ class DatabaseManager:
                     VALUES (%s, %s, %s)
                 ''', (log_id, host_id, log_time))
 
-                # Increment hosted_count only when a new record is added
-                self.increment_count(host_id, "hosted_count")
+                # Check if the discord_id exists in Sailorinfo
+                self.cursor.execute("SELECT COUNT(*) FROM Sailorinfo WHERE discord_id = %s", (host_id,))
+                host_exists = self.cursor.fetchone()[0] > 0
 
-            self.conn.commit()
+                if not host_exists:
+                    # Insert a new record in Sailorinfo with hosted_count = 1
+                    self.cursor.execute('''
+                                    INSERT INTO Sailorinfo (discord_id, hosted_count) 
+                                    VALUES (%s, 1)
+                                ''', (host_id,))
+                else:
+                    # Increment hosted_count in Sailorinfo
+                    self.cursor.execute('''
+                                    UPDATE Sailorinfo 
+                                    SET hosted_count = hosted_count + 1 
+                                    WHERE discord_id = %s
+                                ''', (host_id,))
+                self.conn.commit()
 
         except mariadb.Error as e:
             print(f"Error logging hosted data: {e}")
@@ -336,6 +350,7 @@ class DatabaseManager:
         try:
             self.cursor.execute(f"SELECT COUNT(*) FROM {table_name} WHERE log_id = %s", (log_id,))
             count = self.cursor.fetchone()[0]
+            print(f"log_id exists in {table_name}: {count}")
             return count > 0
         except mariadb.Error as e:
             print(f"Error checking log_id existence in {table_name}: {e}")
@@ -348,12 +363,37 @@ class DatabaseManager:
                 VALUES (%s, %s, %s)
             ''', (log_id, participant_id, log_time))
 
-            # Increment voyage_count for the participant
-            self.increment_count(participant_id, "voyage_count")
+            # Check if the participant_id exists in Sailorinfo
+            self.cursor.execute("SELECT COUNT(*) FROM Sailorinfo WHERE discord_id = %s", (participant_id,))
+            participant_exists = self.cursor.fetchone()[0] > 0
+
+            if not participant_exists:
+                # Insert a new record in Sailorinfo with voyage_count = 1
+                self.cursor.execute('''
+                                               INSERT INTO Sailorinfo (discord_id, voyage_count) 
+                                               VALUES (%s, 1)
+                                           ''', (participant_id,))
+            else:
+                # Increment voyage_count in Sailorinfo
+                self.cursor.execute('''
+                                               UPDATE Sailorinfo 
+                                               SET voyage_count = voyage_count + 1 
+                                               WHERE discord_id = %s
+                                           ''', (participant_id,))
             self.conn.commit()
 
         except mariadb.Error as e:
             print(f"Error logging voyage data: {e}")
+
+    def voyage_log_entry_exists(self, log_id, participant_id):
+        try:
+            self.cursor.execute("SELECT COUNT(*) FROM VoyageLog WHERE log_id = %s AND participant_id = %s",
+                                (log_id, participant_id))
+            count = self.cursor.fetchone()[0]
+            return count > 0
+        except mariadb.Error as e:
+            print(f"Error checking VoyageLog entry existence: {e}")
+            return False
 
     def log_id_exists(self, log_id):
         try:
@@ -453,16 +493,3 @@ class DatabaseManager:
             self.conn.commit()
         except mariadb.Error as e:
             print(f"Error changing award ping setting: {e}")
-
-    #Tools
-
-    def increment_count(self, user_id, count_type):
-        try:
-            self.cursor.execute(f'''
-                UPDATE Sailorinfo 
-                SET {count_type} = {count_type} + 1 
-                WHERE discord_id = %s
-            ''', (user_id,))
-            self.conn.commit()
-        except mariadb.Error as e:
-            print(f"Error incrementing {count_type}: {e}")
