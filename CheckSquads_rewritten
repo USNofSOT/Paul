@@ -1,0 +1,41 @@
+#CheckSquads
+
+@bot.slash_command(name="check_squads", description="Check squads to ensure all JE are in a squad")
+@option("target", description="Select the role to check for members missing a squad", required=False)
+async def check_squads(ctx, target: discord.Role = None):
+    await ctx.defer(ephemeral=True)
+
+    squad_keyword = "Squad"
+    junior_enlisted_role_name = "Junior Enlisted"
+
+    # Helper function to check if a member has a squad role
+    def has_squad_role(member):
+        return any(squad_keyword.lower() in role.name.lower() for role in member.roles)
+
+    # Fetch the Junior Enlisted role
+    junior_enlisted_role = discord.utils.get(ctx.guild.roles, name=junior_enlisted_role_name)
+    if not junior_enlisted_role:
+        await ctx.respond(f"Role '{junior_enlisted_role_name}' not found.", ephemeral=True)
+        return
+
+    # Fetch members to check: either in the provided target role or the whole guild
+    if target:
+        members_to_check = [member for member in target.members if junior_enlisted_role in member.roles]
+        if not members_to_check:
+            await ctx.respond(f"No Junior Enlisted members found in the '{target.name}' role.", ephemeral=True)
+            return
+    else:
+        members_to_check = [member for member in ctx.guild.members if junior_enlisted_role in member.roles]
+        if not members_to_check:
+            await ctx.respond("No Junior Enlisted members found in the server.", ephemeral=True)
+            return
+
+    # Collect members missing a squad role
+    no_squad_members = [member.mention for member in members_to_check if not has_squad_role(member)]
+
+    # Respond with the list of members missing a squad role
+    if no_squad_members:
+        message_prefix = f"JE without a 'Squad' role in {target.name}:" if target else "JE without a 'Squad' role in the server:"
+        await ctx.respond(message_prefix + "\n" + "\n".join(no_squad_members), ephemeral=True)
+    else:
+        await ctx.respond("All Junior Enlisted members have a 'Squad' role.", ephemeral=True)
