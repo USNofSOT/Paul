@@ -1,6 +1,6 @@
 #Paul Bot Made for USNofSOT
 
-#Imports
+""" Imports - 0 """
 import datetime
 import discord
 import os
@@ -12,7 +12,7 @@ from discord.ext import commands, tasks
 from dotenv import load_dotenv
 from typing import Final
 
-
+""" Bot Setup - 1"""
 #Load token
 
 load_dotenv()
@@ -22,6 +22,9 @@ TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
 current_time = datetime.now(timezone.utc)
 
 bot = discord.ext.commands.Bot(command_prefix="!", intents=discord.Intents.all())
+
+# Initialize DatabaseManager
+db_manager = DatabaseManager()
 
 # startup
 
@@ -34,41 +37,47 @@ async def on_ready():
     except Exception as e:
         print("An error with syncing application commands has occurred: ", e)
 
+    try:
+        channel = bot.get_channel(int(os.getenv('VOYAGE_LOG')))  # Get the channel
+        async for message in channel.history(limit=100):  # Fetch the last 100 messages
+            await process_voyage_log(message)
+    except Exception as e:
+        print("An error with processing existing voyage logs has occurred: ", e)
 
-# Initialize DatabaseManager
-db_manager = DatabaseManager()
 
 
+""" Passive Handlers - 2 """
 # On Message Events  --- These happen passively as events happen on the server
-"""
+
 @bot.event
 async def on_message(message):
-
-#Voyage Channel Work
+    # Voyage Channel Work
     if message.channel.id == str(os.getenv('VOYAGE_LOG')):
-        #Data to Variables
+        log_id = message.id
+        host_id = message.author.id
+        # --- Get Participant IDs ---
+        participant_ids = []
+        for user in message.mentions:  #participants are mentioned in the message
+            participant_ids.append(user.id)
+        log_time = message.created_at  # Get the message creation time in UTC
 
-        host_id = message.author.id #Log Poster get voyage host credit
-        log_id = message.id  # The message ID is the voyage log ID
+        # Hosted Count
+        if not db_manager.log_id_exists(log_id, "Hosted"):
+            db_manager.log_hosted_data(log_id, host_id, log_time)
+            print(f"Hosting logged for: {host_id}")
 
-        #Add Hosted count
-        db_manager.increment_count(host_id, "hosted_count")  # Increment hosted count in Sailorinfo
-
-        # Add a record to the Hosted table
-        db_manager.log_hosted_data(log_id, host_id, 1, datetime.now(timezone.utc))  # Log the hosting record
-        print(f"Voyage for: {message.author} logged. ")
-        # Process mentioned users
-        mentioned_users = set(message.mentions)  # Use a set to automatically deduplicate mentions
-        for user in mentioned_users:
-            db_manager.increment_count(user.id, "voyage_count")  # Increment voyage count in Sailorinfo
-            # Log voyage record (without voyage_count)
-            db_manager.log_voyage_data(message.id, user.id, 1, datetime.now(timezone.utc))
-            print(f"Voyage for: {user} logged. ")
+            # Voyage Log Count
+            for participant_id in participant_ids:
+                if not db_manager.log_id_exists(log_id, "VoyageLog"):
+                    db_manager.log_voyage_data(log_id, participant_id, log_time)
+                    print(f"Voyage logged for: {participant_id}")
+        else:
+            print(f"Voyage not logged for: {host_id} , already logged")
     else:
-        return None
-    """
+        # allows bot to process commands in messages
+        await bot.process_commands(message)
 
-# Slash Commands
+""" Slash Commands - 3 """
 
 # ADDSUBCLASS
 @bot.tree.command(name="addsubclass", description="Add subclass points for your log")
@@ -233,10 +242,13 @@ async def addinfo(ctx, target: discord.Member = None, gamertag: str = None, time
     else:
         await ctx.respond("You didn't add any information.")
 
+""" Commands - 4"""
 
 
 
-# Utilities
+
+""" Utilities - 5 """
+
 @bot.command()
 async def ping(ctx):
     ping_embed = discord.Embed(title="Ping", description="Pong!", color=discord.Color.blue())
@@ -272,6 +284,18 @@ def calculate_utc_offset(local_time_str: str):
 
     return formatted_offset, None
 
+#subrutine to check if a voyage log already exists, and processes it if it does not.
+async def process_voyage_log(message):
+    log_id = message.id
+    host_id = message.author.id
+
+    # 1. Check if the log_id already exists in the database
+    if db_manager.log_id_exists(log_id):
+        return  # Skip if the log has already been processed
+
+    # 2. If not, process the log as you did in on_message
+    db_manager.increment_count(host_id, "hosted_count")
+    db_manager.log_hosted_data(log_id, host_id, 1)
 
 
 # Main Entry point  This function starts the bot.

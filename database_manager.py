@@ -305,7 +305,7 @@ class DatabaseManager:
     def log_hosted_data(self, log_id, host_id, log_time):
         """
         Adds a hosting record for a new voyage. If a record with the same log_id exists,
-        it updates the host_id, amount, and log_time.
+        it updates the host_id and log_time. Also increments the host's hosted_count.
 
         Args:
             log_id (int): voyage post id
@@ -317,24 +317,53 @@ class DatabaseManager:
             self.cursor.execute("SELECT COUNT(*) FROM Hosted WHERE log_id = %s", (log_id,))
             record_exists = self.cursor.fetchone()[0] > 0
 
-            if record_exists:
-                # Update the existing record
+            if not record_exists:
+                # Insert a new record if no duplicates are found
                 self.cursor.execute('''
-                    UPDATE Hosted 
-                    SET host_id = %s, log_time = %s 
-                    WHERE log_id = %s
-                ''', (host_id, log_time, log_id))
-            else:
-                # Insert a new record
-                self.cursor.execute('''
-                    INSERT INTO Hosted (log_id, host_id, log_time)
+                    INSERT INTO Hosted (log_id, host_id, log_time) 
                     VALUES (%s, %s, %s)
                 ''', (log_id, host_id, log_time))
+
+                # Increment hosted_count only when a new record is added
+                self.increment_count(host_id, "hosted_count")
 
             self.conn.commit()
 
         except mariadb.Error as e:
             print(f"Error logging hosted data: {e}")
+
+    def log_id_exists(self, log_id, table_name):  # Add table_name argument
+        try:
+            self.cursor.execute(f"SELECT COUNT(*) FROM {table_name} WHERE log_id = %s", (log_id,))
+            count = self.cursor.fetchone()[0]
+            return count > 0
+        except mariadb.Error as e:
+            print(f"Error checking log_id existence in {table_name}: {e}")
+            return False
+
+    def log_voyage_data(self, log_id, participant_id, log_time):  # New function
+        try:
+            self.cursor.execute('''
+                INSERT INTO VoyageLog (log_id, participant_id, log_time) 
+                VALUES (%s, %s, %s)
+            ''', (log_id, participant_id, log_time))
+
+            # Increment voyage_count for the participant
+            self.increment_count(participant_id, "voyage_count")
+            self.conn.commit()
+
+        except mariadb.Error as e:
+            print(f"Error logging voyage data: {e}")
+
+    def log_id_exists(self, log_id):
+        try:
+            self.cursor.execute("SELECT COUNT(*) FROM Hosted WHERE log_id = %s", (log_id,))
+            count = self.cursor.fetchone()[0]
+            return count > 0  # Returns True if log_id exists, False otherwise
+        except mariadb.Error as e:
+            print(f"Error checking log_id existence: {e}")
+            return False  # Handle the error appropriately (e.g., return False)
+
 
     def log_subclasses(self, author_id, log_link, target_id, subclass, log_time):
         """
