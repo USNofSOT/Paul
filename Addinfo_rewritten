@@ -1,0 +1,76 @@
+#choices in here: Add gamertag, place HH:MM in 24 hr format OR Add gamertag, place UTC+X
+
+from datetime import datetime, timezone
+
+# Function to calculate UTC offset based on provided local time
+def calculate_utc_offset(local_time_str: str):
+    # Parse the provided local time (expected in HH:MM format)
+    try:
+        local_time = datetime.strptime(local_time_str, "%H:%M")
+    except ValueError:
+        return None, "Invalid time format. Please use HH:MM (24-hour format)."
+
+    # Get the current UTC time
+    utc_now = datetime.now(timezone.utc)
+    local_now = datetime.now()
+
+    # Adjust the current local time to match the user's provided local time
+    adjusted_local_time = local_now.replace(hour=local_time.hour, minute=local_time.minute, second=0, microsecond=0)
+
+    # Calculate the difference between provided local time and UTC time
+    utc_offset = adjusted_local_time - utc_now
+
+    # Calculate hours and minutes from the time delta
+    hours_offset = int(utc_offset.total_seconds() // 3600)
+    minutes_offset = int((utc_offset.total_seconds() % 3600) // 60)
+
+    # Format the offset (e.g., UTC+2 or UTC-5)
+    sign = "+" if hours_offset >= 0 else "-"
+    formatted_offset = f"UTC{sign}{abs(hours_offset):02d}:{abs(minutes_offset):02d}"
+
+    return formatted_offset, None
+
+@bot.slash_command(name="addinfo", description="Add Gamertag or Timezone to yourself or another user")
+@option("target", description="Select the user to add information to", required=False)
+@option("gamertag", description="Enter the user's in-game username", required=False)
+@option("timezone", description="Enter the user's timezone manually (e.g., UTC+2) or leave empty to calculate automatically", required=False)
+@option("local_time", description="Enter your current local time (HH:MM) to calculate your timezone automatically", required=False)
+async def addinfo(ctx, target: discord.Member = None, gamertag: str = None, timezone: str = None, local_time: str = None):
+    await ctx.defer(ephemeral=True)
+
+    # Default to the author if no target is provided
+    if target is None:
+        target = ctx.author
+
+    # Initialize response
+    response = f"Information added for {target.name}: \n"
+    data_added = False
+
+    # Process Gamertag
+    if gamertag:
+        db_manager.add_gamertag(target.id, gamertag)
+        response += f"Gamertag: {gamertag}\n"
+        data_added = True
+
+    # If the user provided a timezone manually, use that
+    if timezone:
+        db_manager.add_timezone(target.id, timezone)
+        response += f"Timezone: {timezone}\n"
+        data_added = True
+
+    # If no timezone was provided but local_time is provided, calculate the timezone automatically
+    elif local_time:
+        utc_offset, error = calculate_utc_offset(local_time)
+        if error:
+            await ctx.respond(f"Error: {error}")
+            return
+        else:
+            db_manager.add_timezone(target.id, utc_offset)
+            response += f"Timezone (calculated): {utc_offset}\n"
+            data_added = True
+
+    # Respond with the result
+    if data_added:
+        await ctx.respond(response)
+    else:
+        await ctx.respond("You didn't add any information.")
