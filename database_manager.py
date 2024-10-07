@@ -48,8 +48,9 @@ class DatabaseManager:
                     moderator_id BIGINT,
                     old_name TINYTEXT,
                     coin_time TIMESTAMP
-                )
+                    )
             ''')
+
             self.cursor.execute('''
                 CREATE TABLE IF NOT EXISTS Forceadd (
                     id INTEGER PRIMARY KEY AUTO_INCREMENT,
@@ -58,15 +59,18 @@ class DatabaseManager:
                     amount INTEGER,
                     moderator_id BIGINT,
                     add_time TIMESTAMP
-                )
-            ''')
+                    )
+                    ''')
+
+
             self.cursor.execute('''
                 CREATE TABLE IF NOT EXISTS Hosted (
                     log_id BIGINT PRIMARY KEY,
                     host_id BIGINT,
                     log_time TIMESTAMP
-                )
+                    )
             ''')
+
             self.cursor.execute('''
                 CREATE TABLE IF NOT EXISTS ModNotes (
                     id INTEGER PRIMARY KEY AUTO_INCREMENT,
@@ -79,6 +83,7 @@ class DatabaseManager:
                     hide_time TIMESTAMP
                 )
             ''')
+
             self.cursor.execute('''
                 CREATE TABLE IF NOT EXISTS Sailorinfo (
                     discord_id BIGINT PRIMARY KEY,
@@ -95,6 +100,7 @@ class DatabaseManager:
                     hosted_count INTEGER DEFAULT 0
                     )
             ''')
+
             self.cursor.execute('''
                 CREATE TABLE IF NOT EXISTS Subclasses (
                     id INTEGER PRIMARY KEY AUTO_INCREMENT,
@@ -105,14 +111,16 @@ class DatabaseManager:
                     log_time TIMESTAMP
                 )
             ''')
+
             self.cursor.execute('''
                 CREATE TABLE IF NOT EXISTS Voyages (
                     log_id BIGINT,
-                    target_id BIGINT,
+                    participant_id BIGINT,
                     log_time TIMESTAMP,
-                    PRIMARY KEY (log_id, target_id)
+                    PRIMARY KEY (log_id, participant_id)
                 )
             ''')
+
             self.conn.commit()
         except mariadb.Error as e:
             print(f"Error creating tables: {e}")
@@ -359,7 +367,7 @@ class DatabaseManager:
     def log_voyage_data(self, log_id, participant_id, log_time):  # New function
         try:
             self.cursor.execute('''
-                INSERT INTO VoyageLog (log_id, participant_id, log_time) 
+                INSERT INTO Voyages (log_id, participant_id, log_time) 
                 VALUES (%s, %s, %s)
             ''', (log_id, participant_id, log_time))
 
@@ -387,12 +395,12 @@ class DatabaseManager:
 
     def voyage_log_entry_exists(self, log_id, participant_id):
         try:
-            self.cursor.execute("SELECT COUNT(*) FROM VoyageLog WHERE log_id = %s AND participant_id = %s",
+            self.cursor.execute("SELECT COUNT(*) FROM Voyages WHERE log_id = %s AND participant_id = %s",
                                 (log_id, participant_id))
             count = self.cursor.fetchone()[0]
             return count > 0
         except mariadb.Error as e:
-            print(f"Error checking VoyageLog entry existence: {e}")
+            print(f"Error checking Voyages entry existence: {e}")
             return False
 
     def log_id_exists(self, log_id):
@@ -436,30 +444,30 @@ class DatabaseManager:
         except mariadb.Error as e:
             print(f"Error logging subclasses: {e}")
 
-    def log_voyage_data(self, log_id, target_id, log_time):
+    def log_voyage_data(self, log_id, participant_id, log_time):
         """
         Adds a voyage record for a member. If a record with the same log_id and
         target_id exists, the write action is ignored to prevent duplicates.
 
         Args:
             log_id (int): voyage post id
-            target_id (int): DiscordID of the member who participated in the voyage
+            participant_id (int): DiscordID of the member who participated in the voyage
             log_time (timestamp): time of the voyage log
         """
         try:
             # Check if a record with the same log_id and target_id already exists
             self.cursor.execute('''
                 SELECT COUNT(*) FROM Voyages 
-                WHERE log_id = %s AND target_id = %s
-            ''', (log_id, target_id))
+                WHERE log_id = %s AND participant_id = %s
+            ''', (log_id, participant_id))
             record_exists = self.cursor.fetchone()[0] > 0
 
             if not record_exists:
                 # Insert a new record if no duplicates are found
                 self.cursor.execute('''
-                    INSERT INTO Voyages (log_id, target_id, log_time)
-                    VALUES (%s, %s, %s, %s)
-                ''', (log_id, target_id, log_time))
+                    INSERT INTO Voyages (log_id, participant_id, log_time)
+                    VALUES (%s, %s, %s)
+                ''', (log_id, participant_id, log_time))
                 self.conn.commit()
 
         except mariadb.Error as e:
@@ -476,6 +484,23 @@ class DatabaseManager:
             self.conn.commit()
         except mariadb.Error as e:
             print(f"Error deleting coin: {e}")
+
+    def batch_log_voyage_data(self, voyage_data):
+        """
+        Batch inserts voyage records. Ignores duplicates based on log_id and participant_id.
+
+        Args:
+            voyage_data (list): A list of tuples, where each tuple contains (log_id, participant_id, log_time)
+        """
+        try:
+            if voyage_data:  # Only execute if there's data to insert
+                self.cursor.executemany("""
+                    INSERT IGNORE INTO Voyages (log_id, participant_id, log_time)
+                    VALUES (%s, %s, %s)
+                """, voyage_data)
+                self.conn.commit()
+        except mariadb.Error as e:
+            print(f"Error batch logging voyage data: {e}")
 
     def toggle_award_ping(self, discord_id, new_choice):
         """Toggles the award ping notification setting for a user.
