@@ -518,3 +518,20 @@ class DatabaseManager:
             self.conn.commit()
         except mariadb.Error as e:
             print(f"Error changing award ping setting: {e}")
+    #update member database work
+
+    def discord_id_exists(self, discord_id):
+        try:
+            self.cursor.execute("SELECT COUNT(*) FROM Sailorinfo WHERE discord_id = %s", (discord_id,))
+            count = self.cursor.fetchone()[0]
+            return count > 0
+        except mariadb.Error as e:
+            print(f"Error checking discord_id existence: {e}")
+            return False
+
+    def add_discord_id(self, discord_id):
+        try:
+            self.cursor.execute("INSERT IGNORE INTO Sailorinfo (discord_id) VALUES (%s)", (discord_id,))
+            self.conn.commit()
+        except mariadb.Error as e:
+            print(f"Error adding discord_id: {e}")
