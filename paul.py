@@ -3,6 +3,8 @@
 """ Imports - 0 """
 import asyncio
 import datetime
+
+import aiohttp
 import discord
 import os
 import re
@@ -62,6 +64,10 @@ async def on_ready():
 async def on_message(message):
     # Voyage Channel Work
     if message.channel.id == str(os.getenv('VOYAGE_LOGS')):
+        await process_voyage_log(message)
+        print(f"Voyage log processed: {message.id}")
+
+        '''
         log_id = message.id
         host_id = message.author.id
         log_time = message.created_at
@@ -84,9 +90,16 @@ async def on_message(message):
                     print(f"Voyage logged for: {participant_id}")
         else:
             print(f"Voyage not logged for: {host_id} , already logged")
+        '''
     else:
         # allows bot to process commands in messages
         await bot.process_commands(message)
+
+#Function that specifies Discord ID's for NSC Engineers
+def is_allowed_user(ctx):
+    allowed_user_ids = [646516242949341236, 690264788257079439]
+    return ctx.author.id in allowed_user_ids
+
 
 """ Slash Commands - 3 """
 
@@ -253,9 +266,54 @@ async def addinfo(ctx, target: discord.Member = None, gamertag: str = None, time
     else:
         await ctx.respond("You didn't add any information.")
 
+@bot.tree.command(name="updatemembers", description="Update the Sailorinfo table with current server members")
+async def updatemembers(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)  # Defer the response for potentially long operation
+
+    try:
+        guild_id = interaction.guild.id  # Get the server ID
+        guild = bot.get_guild(guild_id)  # Get the server object
+        member_count = 0
+
+        for member in guild.members:
+            await asyncio.sleep(.1)  # Introduce a .1second delay to prevent blocking
+            if not db_manager.discord_id_exists(member.id):
+                db_manager.add_discord_id(member.id)
+                member_count += 1
+
+        await interaction.followup.send(f"Updated Sailorinfo with {member_count} new members.")
+
+    except Exception as e:
+        await interaction.followup.send(f"An error occurred: {e}")
+
+
 """ Commands - 4"""
 
 
+
+
+@bot.command(name="updatevoyagedb")
+#@commands.has_any_role("Board of Admiralty")  # Check for roles
+@commands.check(is_allowed_user)  # Also check for specific users
+async def updatevoyagedb(ctx):
+    try:
+        # Syncing application commands (optional, you might not need this here)
+        synced_commands = await bot.tree.sync()
+        print(f"Synced {len(synced_commands)} commands.")
+
+        voyage_log_channel_id = os.getenv('VOYAGE_LOGS')
+
+        if voyage_log_channel_id is not None:
+            channel = bot.get_channel(int(voyage_log_channel_id))
+            async for message in channel.history(limit=None, oldest_first=True):
+                await process_voyage_log(message)
+                await asyncio.sleep(.5)  # Introduce a 1-second delay
+        else:
+            print("Error: VOYAGE_LOG environment variable is not set.")
+
+
+    except Exception as e:
+        print("An error with processing existing voyage logs has occurred: ", e)
 
 
 """ Utilities - 5 """
@@ -266,6 +324,8 @@ async def ping(ctx):
     ping_embed.add_field(name=f"{bot.user.name}'s Latancy (ms)", value=f"{round(bot.latency * 1000)}", inline=False)
     ping_embed.set_footer(text=f"Pinged by {ctx.author.name}", icon_url=ctx.author.avatar.url)
     await ctx.send(embed=ping_embed)
+
+
 
 # Function to calculate UTC offset based on provided local time
 def calculate_utc_offset(local_time_str: str):
