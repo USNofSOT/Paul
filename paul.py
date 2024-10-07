@@ -1,6 +1,7 @@
 #Paul Bot Made for USNofSOT
 
 """ Imports - 0 """
+import asyncio
 import datetime
 import discord
 import os
@@ -42,13 +43,15 @@ async def on_ready():
 
         if voyage_log_channel_id is not None:
          channel = bot.get_channel(int(voyage_log_channel_id))
-         async for message in channel.history(limit=100):  # Fetch the last 100 messages
+         async for message in channel.history(limit=50, oldest_first=False):  # Fetch the last 50
             await process_voyage_log(message)
+            await asyncio.sleep(1)  # Introduce a 100second delay to prevent blocking
         else:
             print("Error: VOYAGE_LOG environment variable is not set.")
 
     except Exception as e:
         print("An error with processing existing voyage logs has occurred: ", e)
+
 
 
 
@@ -310,9 +313,15 @@ async def process_voyage_log(message):
     # 2. If not, process the log as you did in on_message
     db_manager.log_hosted_data(log_id, host_id, log_time)
     # 3.Log Voyage Count
+
+    voyage_data = []
     for participant_id in participant_ids:
         if not db_manager.voyage_log_entry_exists(log_id, participant_id):
-            db_manager.log_voyage_data(log_id, participant_id, log_time)
+                voyage_data.append((log_id, participant_id, log_time))
+                voyage_data.append((log_id, participant_id, log_time))
+
+    # Batch insert voyage data
+    db_manager.batch_log_voyage_data(voyage_data)
 
 # Main Entry point  This function starts the bot.
 def main() -> None:
