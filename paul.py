@@ -122,6 +122,44 @@ def is_allowed_user(ctx):
     allowed_user_ids = [646516242949341236, 690264788257079439]
     return ctx.author.id in allowed_user_ids
 
+#NEW On ready function for re-reading logs when bot comes back online
+@bot.event
+async def on_ready():
+    voyage_channel_id = 1291589712544268288  # Your voyage log channel ID
+    voyage_channel = bot.get_channel(voyage_channel_id)
+
+    # Fetch recent messages (you can limit this to the last 100, 200 messages, etc.)
+    async for message in voyage_channel.history(limit=100):  # Adjust the limit as needed
+        await compare_message_with_db(message)
+
+    print(f"Checked recent messages in channel {voyage_channel_id} on startup.")
+
+#NEW Compare message with DB after reboot PAUL
+async def compare_message_with_db(message):
+    # Get the current participants from the database
+    db_participant_ids = db_manager.get_voyage_participants(message.id)
+
+    # Get the participants from the current message mentions
+    current_participant_ids = [user.id for user in message.mentions]
+
+    # Find any participants that need to be added or removed
+    removed_participants = set(db_participant_ids) - set(current_participant_ids)
+    added_participants = set(current_participant_ids) - set(db_participant_ids)
+
+    # Remove participants no longer mentioned
+    for participant_id in removed_participants:
+        db_manager.decrement_count(participant_id, "voyage_count")
+        db_manager.remove_voyage_log_entry(message.id, participant_id)
+        print(f"Voyage log removed: {message.id}, for participant: {participant_id}")
+
+    # Add new participants that are now mentioned
+    for participant_id in added_participants:
+        db_manager.increment_voyage_count(participant_id)
+        if not db_manager.voyage_log_entry_exists(message.id, participant_id):
+            db_manager.log_voyage_data(message.id, participant_id, message.created_at)
+            print(f"Voyage log added: {message.id}, for participant: {participant_id}")
+
+
 
 """ Slash Commands - 3 """
 
