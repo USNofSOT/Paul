@@ -354,15 +354,7 @@ class DatabaseManager:
         except mariadb.Error as e:
             print(f"Error logging hosted data: {e}")
 
-    def log_id_exists(self, log_id, table_name):  # Add table_name argument
-        try:
-            self.cursor.execute(f"SELECT COUNT(*) FROM {table_name} WHERE log_id = %s", (log_id,))
-            count = self.cursor.fetchone()[0]
-            print(f"log_id exists in {table_name}: {count}")
-            return count > 0
-        except mariadb.Error as e:
-            print(f"Error checking log_id existence in {table_name}: {e}")
-            return False
+
 
     def log_voyage_data(self, log_id, participant_id, log_time):  # New function
         try:
@@ -403,7 +395,7 @@ class DatabaseManager:
             print(f"Error checking Voyages entry existence: {e}")
             return False
 
-    def log_id_exists(self, log_id):
+    def hosted_log_id_exists(self, log_id):
         try:
             self.cursor.execute("SELECT COUNT(*) FROM Hosted WHERE log_id = %s", (log_id,))
             count = self.cursor.fetchone()[0]
@@ -518,6 +510,41 @@ class DatabaseManager:
             self.conn.commit()
         except mariadb.Error as e:
             print(f"Error changing award ping setting: {e}")
+
+    def increment_voyage_count(self, discord_id):
+        """
+        Increments the voyage_count for the given discord_id in the Sailorinfo table.
+
+        Args:
+            discord_id (int): The Discord ID of the user.
+        """
+        try:
+            self.cursor.execute("""
+                UPDATE Sailorinfo 
+                SET voyage_count = voyage_count + 1 
+                WHERE discord_id = %s
+            """, (discord_id,))
+            self.conn.commit()
+        except mariadb.Error as e:
+            print(f"Error incrementing voyage_count: {e}")
+
+    def remove_voyage_log_entry(self, log_id, participant_id):
+        """
+        Removes a specific entry from the VoyageLog table based on log_id and participant_id.
+        This is used for edits where not all logs need to be deleted.
+
+        Args:
+            log_id (int): The ID of the voyage log.
+            participant_id (int): The Discord ID of the participant.
+        """
+        try:
+            self.cursor.execute("DELETE FROM VoyageLog WHERE log_id = %s AND participant_id = %s",
+                                (log_id, participant_id))
+            self.conn.commit()
+        except mariadb.Error as e:
+            print(f"Error removing voyage log entry: {e}")
+
+
     #update member database work
 
     def discord_id_exists(self, discord_id):
@@ -535,3 +562,50 @@ class DatabaseManager:
             self.conn.commit()
         except mariadb.Error as e:
             print(f"Error adding discord_id: {e}")
+
+    #Removal of voyage logs and hosted logs as needed
+
+    def decrement_count(self, discord_id, count_type):
+        """
+        Decrements the specified count for the given discord_id in the Sailorinfo table.
+
+        Args:
+            discord_id (int): The Discord ID of the user.
+            count_type (str): The type of count to decrement ("hosted_count" or "voyage_count").
+        """
+        try:
+            self.cursor.execute(f"""
+                UPDATE Sailorinfo 
+                SET {count_type} = GREATEST({count_type} - 1, 0)  -- Prevent negative counts
+                WHERE discord_id = %s
+            """, (discord_id,))
+            self.conn.commit()
+        except mariadb.Error as e:
+            print(f"Error decrementing {count_type}: {e}")
+
+    def remove_voyage_log_entries(self, log_id):
+        """
+        Removes entries from the VoyageLog table associated with the given log_id.
+        This is used when a log is fully deleted.
+
+        Args:
+            log_id (int): The ID of the voyage log to remove.
+        """
+        try:
+            self.cursor.execute("DELETE FROM VoyageLog WHERE log_id = %s", (log_id,))
+            self.conn.commit()
+        except mariadb.Error as e:
+            print(f"Error removing voyage log entries: {e}")
+
+    def remove_hosted_entry(self, log_id):
+        """
+        Removes the entry from the Hosted table associated with the given log_id.
+
+        Args:
+            log_id (int): The ID of the hosted voyage to remove.
+        """
+        try:
+            self.cursor.execute("DELETE FROM Hosted WHERE log_id = %s", (log_id,))
+            self.conn.commit()
+        except mariadb.Error as e:
+            print(f"Error removing hosted entry: {e}")

@@ -67,33 +67,52 @@ async def on_message(message):
         await process_voyage_log(message)
         print(f"Voyage log processed: {message.id}")
 
-        '''
-        log_id = message.id
-        host_id = message.author.id
-        log_time = message.created_at
-        print(f"I see log: {log_id}, by {host_id} at {log_time}")
-
-        # --- Get Participant IDs ---
-        participant_ids = []
-        for user in message.mentions:  #participants are mentioned in the message
-            participant_ids.append(user.id)
-        print(f"Participants: {participant_ids}")
-        # Hosted Count
-        if not db_manager.log_id_exists(log_id, "Hosted"):
-            db_manager.log_hosted_data(log_id, host_id, log_time)
-            #print(f"Hosting logged for: {host_id}")
-
-            # Voyage Log Count
-            for participant_id in participant_ids:
-                if not db_manager.log_id_exists(log_id, "VoyageLog"):
-                    db_manager.log_voyage_data(log_id, participant_id, log_time)
-                    print(f"Voyage logged for: {participant_id}")
-        else:
-            print(f"Voyage not logged for: {host_id} , already logged")
-        '''
     else:
         # allows bot to process commands in messages
         await bot.process_commands(message)
+
+# Remove voyages, and hosted on message deletion
+@bot.event
+async def on_message_delete(message):
+    if message.channel.id == int(os.getenv('VOYAGE_LOGS')):
+            log_id = message.id
+            host_id = message.author.id
+            participant_ids = [user.id for user in message.mentions]
+
+            # Decrement hosted count
+            db_manager.decrement_count(host_id, "hosted_count")
+            db_manager.remove_hosted_entry( log_id)
+
+            # Decrement voyage counts for participants
+            for participant_id in participant_ids:
+                db_manager.decrement_count(participant_id, "voyage_count")
+
+            # Remove entries from VoyageLog table (if necessary)
+            db_manager.remove_voyage_log_entries(log_id)
+    else:
+        # allows bot to process commands in messages
+        await bot.process_commands(message)
+
+#On Message Editing events
+@bot.event
+async def on_message_edit(before, after):
+    if before.channel.id == int(os.getenv('VOYAGE_LOGS')):
+        old_participant_ids = [user.id for user in before.mentions]
+        new_participant_ids = [user.id for user in after.mentions]
+
+        # Participants removed from the log
+        removed_participants = set(old_participant_ids) - set(new_participant_ids)
+        for participant_id in removed_participants:
+            db_manager.decrement_voyage_count(participant_id)
+            db_manager.remove_voyage_log_entry(after.id, participant_id)
+
+        # New participants added to the log
+        added_participants = set(new_participant_ids) - set(old_participant_ids)
+        for participant_id in added_participants:
+            db_manager.increment_voyage_count(participant_id)
+            # Add new entry to VoyageLog table if needed
+            if not db_manager.voyage_log_entry_exists(after.id, participant_id):
+                db_manager.log_voyage_data(after.id, participant_id, after.created_at)
 
 #Function that specifies Discord ID's for NSC Engineers
 def is_allowed_user(ctx):
@@ -355,7 +374,7 @@ def calculate_utc_offset(local_time_str: str):
 
     return formatted_offset, None
 
-#subrutine to check if a voyage log already exists, and processes it if it does not.
+#subroutine to check if a voyage log already exists, and processes it if it does not.
 async def process_voyage_log(message):
     log_id = message.id
     host_id = message.author.id
@@ -367,7 +386,7 @@ async def process_voyage_log(message):
     #print(f" logid: {log_id} hostid: {host_id} time: {log_time}") # Used to view data on console as it is processed.
 
     # 1. Check if the log_id already exists in the database
-    if db_manager.log_id_exists(log_id):
+    if db_manager.hosted_log_id_exists(log_id):
         return  # Skip if the log has already been processed
 
     # 2. If not, process the log as you did in on_message
@@ -378,7 +397,7 @@ async def process_voyage_log(message):
     for participant_id in participant_ids:
         if not db_manager.voyage_log_entry_exists(log_id, participant_id):
                 voyage_data.append((log_id, participant_id, log_time))
-                voyage_data.append((log_id, participant_id, log_time))
+                db_manager.increment_voyage_count(participant_id, "voyage_count")
 
     # Batch insert voyage data
     db_manager.batch_log_voyage_data(voyage_data)
