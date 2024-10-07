@@ -122,18 +122,6 @@ def is_allowed_user(ctx):
     allowed_user_ids = [646516242949341236, 690264788257079439]
     return ctx.author.id in allowed_user_ids
 
-#NEW On ready function for re-reading logs when bot comes back online
-@bot.event
-async def on_ready():
-    voyage_channel_id = 1291589712544268288  # Your voyage log channel ID
-    voyage_channel = bot.get_channel(voyage_channel_id)
-
-    # Fetch recent messages (you can limit this to the last 100, 200 messages, etc.)
-    async for message in voyage_channel.history(limit=100):  # Adjust the limit as needed
-        await compare_message_with_db(message)
-
-    print(f"Checked recent messages in channel {voyage_channel_id} on startup.")
-
 #NEW Compare message with DB after reboot PAUL
 async def compare_message_with_db(message):
     # Get the current participants from the database
