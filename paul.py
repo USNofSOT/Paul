@@ -63,7 +63,7 @@ async def on_ready():
 @bot.event
 async def on_message(message):
     # Voyage Channel Work
-    if message.channel.id == str(os.getenv('VOYAGE_LOGS')):
+    if message.channel.id == 1291589712544268288:
         await process_voyage_log(message)
         print(f"Voyage log processed: {message.id}")
 
@@ -74,7 +74,7 @@ async def on_message(message):
 # Remove voyages, and hosted on message deletion
 @bot.event
 async def on_message_delete(message):
-    if message.channel.id == int(os.getenv('VOYAGE_LOGS')):
+    if message.channel.id == 1291589712544268288:
             log_id = message.id
             host_id = message.author.id
             participant_ids = [user.id for user in message.mentions]
@@ -86,9 +86,10 @@ async def on_message_delete(message):
             # Decrement voyage counts for participants
             for participant_id in participant_ids:
                 db_manager.decrement_count(participant_id, "voyage_count")
-
+                print(f"Voyage count delted: {participant_id}")
             # Remove entries from VoyageLog table (if necessary)
             db_manager.remove_voyage_log_entries(log_id)
+            print(f"Voyage log deleted: {log_id}")
     else:
         # allows bot to process commands in messages
         await bot.process_commands(message)
@@ -96,15 +97,16 @@ async def on_message_delete(message):
 #On Message Editing events
 @bot.event
 async def on_message_edit(before, after):
-    if before.channel.id == int(os.getenv('VOYAGE_LOGS')):
+    if before.channel.id == 1291589712544268288:
         old_participant_ids = [user.id for user in before.mentions]
         new_participant_ids = [user.id for user in after.mentions]
 
         # Participants removed from the log
         removed_participants = set(old_participant_ids) - set(new_participant_ids)
         for participant_id in removed_participants:
-            db_manager.decrement_voyage_count(participant_id)
+            db_manager.decrement_count(participant_id, "voyage_count")
             db_manager.remove_voyage_log_entry(after.id, participant_id)
+            print(f"Voyage log removed: {after.id}")
 
         # New participants added to the log
         added_participants = set(new_participant_ids) - set(old_participant_ids)
@@ -113,6 +115,7 @@ async def on_message_edit(before, after):
             # Add new entry to VoyageLog table if needed
             if not db_manager.voyage_log_entry_exists(after.id, participant_id):
                 db_manager.log_voyage_data(after.id, participant_id, after.created_at)
+                print(f"Voyage log added: {after.id}")
 
 #Function that specifies Discord ID's for NSC Engineers
 def is_allowed_user(ctx):
@@ -397,7 +400,7 @@ async def process_voyage_log(message):
     for participant_id in participant_ids:
         if not db_manager.voyage_log_entry_exists(log_id, participant_id):
                 voyage_data.append((log_id, participant_id, log_time))
-                db_manager.increment_voyage_count(participant_id, "voyage_count")
+                db_manager.increment_voyage_count(participant_id)
 
     # Batch insert voyage data
     db_manager.batch_log_voyage_data(voyage_data)
