@@ -530,7 +530,7 @@ class DatabaseManager:
 
     def remove_voyage_log_entry(self, log_id, participant_id):
         """
-        Removes a specific entry from the VoyageLog table based on log_id and participant_id.
+        Removes a specific entry from the Voyages table based on log_id and participant_id.
         This is used for edits where not all logs need to be deleted.
 
         Args:
@@ -538,7 +538,7 @@ class DatabaseManager:
             participant_id (int): The Discord ID of the participant.
         """
         try:
-            self.cursor.execute("DELETE FROM VoyageLog WHERE log_id = %s AND participant_id = %s",
+            self.cursor.execute("DELETE FROM Voyages WHERE log_id = %s AND participant_id = %s",
                                 (log_id, participant_id))
             self.conn.commit()
         except mariadb.Error as e:
@@ -585,14 +585,14 @@ class DatabaseManager:
 
     def remove_voyage_log_entries(self, log_id):
         """
-        Removes entries from the VoyageLog table associated with the given log_id.
+        Removes entries from the Voyages table associated with the given log_id.
         This is used when a log is fully deleted.
 
         Args:
             log_id (int): The ID of the voyage log to remove.
         """
         try:
-            self.cursor.execute("DELETE FROM VoyageLog WHERE log_id = %s", (log_id,))
+            self.cursor.execute("DELETE FROM Voyages WHERE log_id = %s", (log_id,))
             self.conn.commit()
         except mariadb.Error as e:
             print(f"Error removing voyage log entries: {e}")
