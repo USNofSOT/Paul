@@ -49,7 +49,7 @@ async def on_ready():
 
         if voyage_log_channel_id is not None:
          channel = bot.get_channel(int(voyage_log_channel_id))
-         await channel.history(limit=50).flatten() #cache last 50 voyages in case of edits
+         #await channel.history(limit=50).flatten() #cache last 50 voyages in case of edits
          async for message in channel.history(limit=50, oldest_first=False):  # Fetch the last 50
             await process_voyage_log(message)
             await asyncio.sleep(1)  # Introduce a 100second delay to prevent blocking
@@ -344,7 +344,7 @@ async def updatemembers(interaction: discord.Interaction):
 
     except Exception as e:
         await interaction.followup.send(f"An error occurred: {e}")
-
+'''
 #member command
 @bot.tree.command(name="member", description="Check information of a user or all users in a role")
 @app_commands.describe(target="Choose a user or role to grab info for")
@@ -373,7 +373,7 @@ if level.lower() == "moderation":
     if not any(role.name in allowed_roles for role in interaction.user.roles):
         await interaction.response.send_message("You don't have permission to use this level.", ephemeral=True)
         return
-
+'''
 """ Commands - 4"""
 
 
