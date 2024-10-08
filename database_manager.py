@@ -89,7 +89,7 @@ class DatabaseManager:
                     discord_id BIGINT PRIMARY KEY,
                     gamertag TINYTEXT,
                     timezone TINYTEXT,
-                    award_ping_enabled BOOLEAN,
+                    award_ping_enabled BOOLEAN DEFAULT TRUE,
                     carpenter_points INTEGER DEFAULT 0,
                     flex_points INTEGER DEFAULT 0,
                     cannoneer_points INTEGER DEFAULT 0,
