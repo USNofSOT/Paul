@@ -23,17 +23,21 @@ TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
 
 #bot setup
 current_time = datetime.now(timezone.utc)
-
-bot = discord.ext.commands.Bot(command_prefix="!", intents=discord.Intents.all())
+intents=discord.Intents.all()
+intents.message_content = True
+bot = discord.ext.commands.Bot(command_prefix="!", intents=intents)
 
 # Initialize DatabaseManager
 db_manager = DatabaseManager()
+
+#set variables
+voyage_log_channel_id = os.getenv('VOYAGE_LOGS')
 
 # startup
 
 @bot.event
 async def on_ready():
-    print(f'{bot.user} is now running!')
+    print(f'{bot.user} is loading!')
     try:
         synced_commands = await bot.tree.sync()
         print(f"Synced {len(synced_commands)} commands.")
@@ -41,10 +45,11 @@ async def on_ready():
         print("An error with syncing application commands has occurred: ", e)
 
     try:
-        voyage_log_channel_id = os.getenv('VOYAGE_LOGS')
+
 
         if voyage_log_channel_id is not None:
          channel = bot.get_channel(int(voyage_log_channel_id))
+         await channel.history(limit=50).flatten() #cache last 50 voyages in case of edits
          async for message in channel.history(limit=50, oldest_first=False):  # Fetch the last 50
             await process_voyage_log(message)
             await asyncio.sleep(1)  # Introduce a 100second delay to prevent blocking
@@ -53,6 +58,8 @@ async def on_ready():
 
     except Exception as e:
         print("An error with processing existing voyage logs has occurred: ", e)
+
+    print(f'{bot.user} is Done checking old logs and ready to go!')
 
 
 
@@ -63,7 +70,7 @@ async def on_ready():
 @bot.event
 async def on_message(message):
     # Voyage Channel Work
-    if message.channel.id == 1291589712544268288:
+    if message.channel.id == int(voyage_log_channel_id):
         await process_voyage_log(message)
         print(f"Voyage log processed: {message.id}")
 
@@ -74,7 +81,7 @@ async def on_message(message):
 # Remove voyages, and hosted on message deletion
 @bot.event
 async def on_message_delete(message):
-    if message.channel.id == 1291589712544268288:
+    if message.channel.id == int(voyage_log_channel_id):
             log_id = message.id
             host_id = message.author.id
             participant_ids = [user.id for user in message.mentions]
@@ -86,7 +93,7 @@ async def on_message_delete(message):
             # Decrement voyage counts for participants
             for participant_id in participant_ids:
                 db_manager.decrement_count(participant_id, "voyage_count")
-                print(f"Voyage count delted: {participant_id}")
+                print(f"Voyage count deleted: {participant_id}")
             # Remove entries from VoyageLog table (if necessary)
             db_manager.remove_voyage_log_entries(log_id)
             print(f"Voyage log deleted: {log_id}")
@@ -97,7 +104,8 @@ async def on_message_delete(message):
 #On Message Editing events
 @bot.event
 async def on_message_edit(before, after):
-    if before.channel.id == 1291589712544268288:
+    if before.channel.id == int(voyage_log_channel_id):
+        print(f"Edit Seen: {before.id}")
         old_participant_ids = [user.id for user in before.mentions]
         new_participant_ids = [user.id for user in after.mentions]
 
@@ -241,6 +249,7 @@ async def addsubclass(interaction: discord.Interaction, log_id: str):
 
         await ctx.respond(response_message + "\n" + end_response.rstrip('\n'), ephemeral=True)
 
+#addinfo
 @bot.tree.command(name="addinfo", description="Add Gamertag or Timezone to yourself or another user")
 @app_commands.describe(target="Select the user to add information to")
 @app_commands.describe(gamertag="Enter the user's in-game username")
@@ -314,7 +323,9 @@ async def addinfo(ctx, target: discord.Member = None, gamertag: str = None, time
     else:
         await ctx.respond("You didn't add any information.")
 
+#updatemembers
 @bot.tree.command(name="updatemembers", description="Update the Sailorinfo table with current server members")
+@commands.has_any_role("Board of Admiralty", "Senior Officer", "Junior Officer")
 async def updatemembers(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)  # Defer the response for potentially long operation
 
@@ -334,6 +345,34 @@ async def updatemembers(interaction: discord.Interaction):
     except Exception as e:
         await interaction.followup.send(f"An error occurred: {e}")
 
+#member command
+@bot.tree.command(name="member", description="Check information of a user or all users in a role")
+@app_commands.describe(target="Choose a user or role to grab info for")
+@app_commands.describe(level="Choose info view")
+@app_commands.choices(level=[
+    app_commands.Choice(name="Default", value="default"),
+    app_commands.Choice(name="Moderation", value="moderation"),
+    app_commands.Choice(name="Promotion", value="promotion")
+])
+async def member(interaction: discord.Interaction, target: discord.Member | discord.Role = None, level: str = None):
+    # ... your command logic ...
+    if target is None
+        target = interaction.user
+
+
+if level is None:
+    level = "default"  # Set default level
+
+    if level.lower() == "default"
+
+    if level.lower() == "promotion"
+
+if level.lower() == "moderation":
+    allowed_roles = ["Board of Admiralty", "Junior Officer", "Senior Officer",
+                     "Senior Non Commissioned Officer"]  # Add other allowed roles here
+    if not any(role.name in allowed_roles for role in interaction.user.roles):
+        await interaction.response.send_message("You don't have permission to use this level.", ephemeral=True)
+        return
 
 """ Commands - 4"""
 
