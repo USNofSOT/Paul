@@ -8,7 +8,7 @@ import aiohttp
 import discord
 import os
 import re
-from database_manager import DatabaseManager
+from utils.database_manager import DatabaseManager
 from datetime import datetime, timezone
 from discord import app_commands
 from discord.ext import commands, tasks
