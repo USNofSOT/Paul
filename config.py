@@ -1,0 +1,26 @@
+from __future__ import annotations
+from typing import Final
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
+#BOAT COMMAND CHANNEL ID'S
+
+BC_LUSTY: Final[int]=995297017439977625
+BC_AUDACIOUS: Final[int]=1164680390204739674
+BC_MAELSTROM: Final[int]=1002304943291641896
+BC_ADUN: Final[int]=1240784666835943525
+BC_ADRESTIA: Final[int]=1084452484392697936
+BC_HYPERION: Final[int]=1157426343777157270
+BC_PLATYPUS: Final[int]=995299008987803719
+BC_ARIZONA: Final[int]=1058850504630866050
+BC_PHANTOM: Final[int]=1274254041823580225
+BC_ORIGIN: Final[int]=995299843448770690
+BC_VENOM: Final[int]=1237840915914297414
+BC_COLLINS: Final[int]=1247403752210694197
+#BOA is a side channel so that bot does not need to be in main boa channel
+BC_BOA: Final[int]=1101193993909456956
+
+#VOYAGE LOG CHANNEL
+VOYAGE_LOGS: Final[int]=935343526626078850
