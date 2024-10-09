@@ -12,7 +12,18 @@ python-dotenv   1.0.1
 load-dotenv     0.1.0
 
 
-Structure of the bot is as follows:
+Updated Bot setup:
+
+main.py starts the bot which is located in the core\bot.py file
+utils folder holds utility classes that are imported to the cog based commands as needed.
+cogs holds the individual command files the bot runs from.
+
+
+
+
+
+
+Structure of the paul.py bot is as follows:
 
 paul.py is the main code of the bot, all areas should be commented in:
 """ Imports - 0 """ - brings in libraries as needed
