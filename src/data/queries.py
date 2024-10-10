@@ -1,7 +1,7 @@
 from sqlalchemy.orm import sessionmaker
 
 from engine import engine
-from src.database.models import Sailor
+from src.data.models import Sailor
 
 # Get a session from the engine
 Session = sessionmaker(bind=engine)
