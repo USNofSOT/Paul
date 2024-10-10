@@ -31,4 +31,5 @@ class Bot(discord.ext.commands.Bot):
         for fn in os.listdir('src/cogs'):
             if fn.endswith('.py'):
                 await self.load_extension(f"cogs.{fn[:-3]}")
-                await self.tree.sync()
+                await self.tree.sync() 
+   
