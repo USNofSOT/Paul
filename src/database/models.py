@@ -24,10 +24,10 @@ class Coins(Base):
     __tablename__ = "coins"
 
     coin_id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
-    target_id: Mapped[BIGINT] = mapped_column(ForeignKey("sailor.discord_id"))
+    target_id = mapped_column(ForeignKey("sailor.discord_id"))
     coin_nam = Column(TEXT)
     coin_type = Column(TINYTEXT)
-    moderator_id: Mapped[BIGINT] = mapped_column(ForeignKey("sailor.discord_id"))
+    moderator_id = mapped_column(ForeignKey("sailor.discord_id"))
     old_name = Column(TINYTEXT)
     coin_time = Column(DATETIME)
 
@@ -36,10 +36,10 @@ class ForceAdd(Base):
     __tablename__ = "force_add"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    target_id: Mapped[BIGINT] = mapped_column(ForeignKey("sailor.discord_id"))
+    target_id = mapped_column(ForeignKey("sailor.discord_id"))
     add_type = Column(TINYTEXT)
     amount = Column(Integer)
-    moderator_id: Mapped[BIGINT] = mapped_column(ForeignKey("sailor.discord_id"))
+    moderator_id = mapped_column(ForeignKey("sailor.discord_id"))
     add_time = Column(DATETIME)
 
 
@@ -47,7 +47,7 @@ class Hosted(Base):
     __tablename__ = "hosted"
 
     log_id = Column(BIGINT, primary_key=True)
-    target_id: Mapped[BIGINT] = mapped_column(ForeignKey("sailor.discord_id"))
+    target_id = mapped_column(ForeignKey("sailor.discord_id"))
     amount = Column(Integer)
     log_time = Column(DATETIME)
 
@@ -56,19 +56,19 @@ class ModNotes(Base):
     __tablename__ = "mod_notes"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    target_id: Mapped[BIGINT] = mapped_column(ForeignKey("sailor.discord_id"))
-    moderator_id: Mapped[BIGINT] = mapped_column(ForeignKey("sailor.discord_id"))
+    target_id = mapped_column(ForeignKey("sailor.discord_id"))
+    moderator_id = mapped_column(ForeignKey("sailor.discord_id"))
     note = Column(TEXT)
     note_time = Column(DATETIME)
     hidden = Column(BOOLEAN, default=False)
-    who_hid: Mapped[BIGINT] = mapped_column(ForeignKey("sailor.discord_id"))
+    who_hid = mapped_column(ForeignKey("sailor.discord_id"))
     hide_time = Column(DATETIME)
 
 
 class Sailor(Base):
     __tablename__ = "sailor"
 
-    discord_id: Mapped[BIGINT] = mapped_column(BIGINT, primary_key=True)
+    discord_id = mapped_column(BIGINT, primary_key=True)
     gamertag = Column(TINYTEXT)
     timezone = Column(TINYTEXT)
     award_ping_enabled = Column(BOOLEAN, default=True)
@@ -94,10 +94,11 @@ class Subclasses(Base):
     __tablename__ = "subclasses"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    author_id = Column(BIGINT)
+    author_id = mapped_column(ForeignKey("sailor.discord_id"))
     log_link = Column(TINYTEXT)
-    target_id: Mapped[BIGINT] = mapped_column(ForeignKey("sailor.discord_id"))
+    target_id = mapped_column(ForeignKey("sailor.discord_id"))
     subclass = Column(TINYTEXT)
+    subclass_count = Column(Integer)
     log_time = Column(DATETIME)
 
 
@@ -105,7 +106,7 @@ class Voyages(Base):
     __tablename__ = "voyages"
 
     log_id = Column(BIGINT, primary_key=True)
-    target_id: Mapped[BIGINT] = mapped_column(ForeignKey("sailor.discord_id"), primary_key=True)
+    target_id = mapped_column(ForeignKey("sailor.discord_id"), primary_key=True)
     log_time = Column(DATETIME)
 
 
