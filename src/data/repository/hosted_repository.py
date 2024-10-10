@@ -1,31 +1,56 @@
 import logging
 from datetime import datetime
-from xmlrpc.client import DateTime
+from typing import Type
 
-from sqlalchemy import update, delete
+from sqlalchemy import delete
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.sql.functions import coalesce
 
-from engine import engine
-from models import Hosted
+from src.data.engine import engine
+from src.data.models import Hosted
 
 log = logging.getLogger(__name__)
 Session = sessionmaker(bind=engine)
 
-def hosted_log_id_exists(log_id: int) -> bool:
+def get_hosted_by_target_id(target_id: int) -> list[Type[Hosted]]:
+    """
+    Get all hosted log entries for a specific target ID
+
+    Args:
+        target_id (int): The discord ID of the target user
+    Returns:
+        Hosted: A list of all hosted log entries for the target ID
+    """
+    session = Session()
+    try:
+        return session.query(Hosted).filter(Hosted.target_id == target_id).all()
+    except Exception as e:
+        log.error(f"Error getting hosted log entries: {e}")
+        raise e
+    finally:
+        session.close()
+
+def check_hosted_log_id_exists(log_id: int) -> bool:
+    """
+    Check if the hosted log ID exists
+
+    Args:
+        log_id (int): The log ID to check.
+    Returns:
+        bool: True if the log ID exists, False otherwise.
+    """
     session = Session()
     try:
         exists = session.query(Hosted).filter(Hosted.log_id == log_id).scalar() is not None
         return exists
     except Exception as e:
-        print(f"Error checking if hosted log ID exists: {e}")
-        return False
+        log.error(f"Error checking if hosted log ID exists: {e}")
+        raise e
     finally:
         session.close()
 
-def log_hosted_data(log_id: int, target_id: int, log_time: datetime = datetime.now()) -> bool:
+def save_hosted_data(log_id: int, target_id: int, log_time: datetime = datetime.now()) -> bool:
     """
-    Log hosted data
+    Adds a hosted data entry to the Hosted table.
 
     Args:
         log_id (int): The log ID of the hosted data.
@@ -46,7 +71,7 @@ def log_hosted_data(log_id: int, target_id: int, log_time: datetime = datetime.n
     finally:
         session.close()
 
-def remove_hosted_entry(log_id: int) -> bool:
+def remove_hosted_entry_by_log_id(log_id: int) -> bool:
     """
     Removes the entry from the Hosted table associated with the given log_id.
 

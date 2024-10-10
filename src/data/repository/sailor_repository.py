@@ -4,13 +4,34 @@ from sqlalchemy import update
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql.functions import coalesce
 
-from engine import engine
-from models import Sailor
+from src.data.engine import engine
+from src.data.models import Sailor
 
 log = logging.getLogger(__name__)
 Session = sessionmaker(bind=engine)
 
-def get_gamertag(target_id: int) -> str | None:
+def save_sailor(target_id: int) -> bool:
+    """
+    Add a Sailor to the database
+
+    Args:
+        target_id (int): The Discord ID of the user.
+    Returns:
+        bool: True if the operation was successful, False otherwise.
+    """
+    session = Session()
+    try:
+        session.add(Sailor(discord_id=target_id))
+        session.commit()
+        return True
+    except Exception as e:
+        log.error(f"Error adding discord ID: {e}")
+        session.rollback()
+        return False
+    finally:
+        session.close()
+
+def get_gamertag_by_discord_id(target_id: int) -> str | None:
     """
     Get the gamertag of a Sailor
 
@@ -24,12 +45,12 @@ def get_gamertag(target_id: int) -> str | None:
         sailor = session.query(Sailor).filter(Sailor.discord_id == target_id).first()
         return sailor.gamertag if sailor else None
     except Exception as e:
-        print(f"Error retrieving gamertag: {e}")
+        log.error(f"Error retrieving gamertag: {e}")
         return None
     finally:
         session.close()
 
-def get_timezone(target_id: int) -> str | None:
+def get_timezone_by_discord_id(target_id: int) -> str | None:
     """
     Get the timezone of a Sailor
 
@@ -43,12 +64,12 @@ def get_timezone(target_id: int) -> str | None:
         sailor = session.query(Sailor).filter(Sailor.discord_id == target_id).first()
         return sailor.timezone if sailor else None
     except Exception as e:
-        print(f"Error retrieving timezone: {e}")
+        log.error(f"Error retrieving timezone: {e}")
         return None
     finally:
         session.close()
 
-def add_gamertag(target_id: int, gamertag: str) -> bool:
+def update_gamertag_by_discord_id(target_id: int, gamertag: str) -> bool:
     """
     Set the gamertag column for a specific Sailor
 
@@ -69,12 +90,12 @@ def add_gamertag(target_id: int, gamertag: str) -> bool:
             log.error(f"Setting gamertag failed: Sailor with discord_id {target_id} not found")
         return False
     except Exception as e:
-        print(f"Error adding gamertag: {e}")
+        log.error(f"Error setting gamertag: {e}")
         return False
     finally:
         session.close()
 
-def increment_voyage_count(target_id: int) -> bool:
+def increment_voyage_count_by_discord_id(target_id: int) -> bool:
     """
     Increment the voyage_count column for a specific Sailor
 
@@ -95,13 +116,13 @@ def increment_voyage_count(target_id: int) -> bool:
         session.commit()
         return True
     except Exception as e:
-        print(f"Error incrementing voyage count: {e}")
+        log.error(f"Error incrementing voyage count: {e}")
         session.rollback()
         return False
     finally:
         session.close()
 
-def decrement_voyage_count(target_id: int) -> bool:
+def decrement_voyage_count_by_discord_id(target_id: int) -> bool:
     """
     Decrement the voyage_count column for a specific Sailor
 
@@ -124,13 +145,13 @@ def decrement_voyage_count(target_id: int) -> bool:
         session.commit()
         return True
     except Exception as e:
-        print(f"Error decrementing voyage count: {e}")
+        log.error(f"Error decrementing voyage count: {e}")
         session.rollback()
         return False
     finally:
         session.close()
 
-def discord_id_exists(target_id: int) -> bool:
+def check_discord_id_exists(target_id: int) -> bool:
     """
     Check if a Sailor with a specific discord ID exists
 
@@ -144,10 +165,7 @@ def discord_id_exists(target_id: int) -> bool:
         exists = session.query(Sailor.discord_id).filter(Sailor.discord_id == target_id).scalar() is not None
         return exists
     except Exception as e:
-        print(f"Error checking if discord ID exists: {e}")
+        log.error(f"Error checking if discord ID exists: {e}")
         return False
     finally:
         session.close()
-
-if __name__ == '__main__':
-    increment_voyage_count(1)
