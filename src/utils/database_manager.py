@@ -92,7 +92,15 @@ class DatabaseManager:
                     grenadier_points INTEGER DEFAULT 0,
                     surgeon_points INTEGER DEFAULT 0,
                     voyage_count INTEGER DEFAULT 0,
-                    hosted_count INTEGER DEFAULT 0
+                    hosted_count INTEGER DEFAULT 0,
+                    force_carpenter_points INTEGER DEFAULT 0,
+                    force_flex_points INTEGER DEFAULT 0,
+                    force_cannoneer_points INTEGER DEFAULT 0,
+                    force_helm_points INTEGER DEFAULT 0,
+                    force_grenadier_points INTEGER DEFAULT 0,
+                    force_surgeon_points INTEGER DEFAULT 0,
+                    force_voyage_count INTEGER DEFAULT 0,
+                    force_hosted_count INTEGER DEFAULT 0
                     )
             ''')
 
