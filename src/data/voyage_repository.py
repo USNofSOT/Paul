@@ -1,8 +1,7 @@
 import logging
 
-from sqlalchemy import update, delete
+from sqlalchemy import delete
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.sql.functions import coalesce
 
 from engine import engine
 from models import Voyages
