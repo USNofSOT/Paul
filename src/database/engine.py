@@ -17,5 +17,5 @@ db_config = {
 
 # Initialize the engine used to connect to the database
 # See: https://docs.sqlalchemy.org/en/20/core/engines.html
-engine_string = f"mysql+mariadbconnector://{db_config['user']}:{db_config['password']}@{db_config['host']}"
+engine_string = f"mysql+mariadbconnector://{db_config['user']}:{db_config['password']}@{db_config['host']}/{db_config['database']}"
 engine: Engine = create_engine(engine_string)
