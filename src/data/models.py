@@ -1,16 +1,27 @@
+import enum
 import logging
 
 from sqlalchemy.dialects.mysql import TINYTEXT
-from sqlalchemy.sql.sqltypes import BOOLEAN, TEXT, DATETIME
+from sqlalchemy.sql.sqltypes import BOOLEAN, TEXT, DATETIME, Enum
 from sqlalchemy import Column, Integer, BIGINT, ForeignKey, VARCHAR
 
-from sqlalchemy.orm import declarative_base, Mapped, mapped_column
+from sqlalchemy.orm import declarative_base, mapped_column
 
-from engine import engine
+from .engine import engine
 
 log = logging.getLogger(__name__)
-Base = declarative_base()
 
+# Enumerated types for the different types of subclasses
+class SubclassType(enum.Enum):
+    CARPENTER = "Carpenter"
+    FLEX = "Flex"
+    CANNONEER = "Cannoneer"
+    HELM = "Helm"
+    GRENADE = "Grenadier"
+    SURGEON = "Surgeon"
+
+# Base class for all models
+Base = declarative_base()
 
 class AuditLogs(Base):
     __tablename__ = "audit_logs"
@@ -96,7 +107,7 @@ class Subclasses(Base):
     author_id = mapped_column(ForeignKey("sailor.discord_id"))
     log_id = Column(BIGINT)
     target_id = mapped_column(ForeignKey("sailor.discord_id"))
-    subclass = Column(VARCHAR(255))
+    subclass = Column(Enum(SubclassType))
     subclass_count = Column(Integer, server_default="1")
     log_time = Column(DATETIME)
 
@@ -109,14 +120,13 @@ class Voyages(Base):
     amount = Column(Integer, server_default="1") # Note: This may not need to exist
     log_time = Column(DATETIME)
 
-
+# Nifty function to create all tables
 def create_tables():
     try:
         log.info("Attempting to create all tables")
         Base.metadata.create_all(engine)
     except Exception as e:
         log.error("Failed to create tables: %s", e)
-
 
 if __name__ == '__main__':
     create_tables()

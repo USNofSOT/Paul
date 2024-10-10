@@ -28,7 +28,7 @@ class Bot(discord.ext.commands.Bot):
         """Sending error Message"""
         pass
     async def setup_hook(self):
-        for fn in os.listdir('src/cogs'):
+        for fn in os.listdir('cogs'):
             if fn.endswith('.py'):
                 await self.load_extension(f"cogs.{fn[:-3]}")
                 await self.tree.sync() 
