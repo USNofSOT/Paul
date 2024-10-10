@@ -1,14 +1,9 @@
 #imports
 
-import asyncio
-import datetime
-import discord
-import mariadb
+
+import mysql.connector
 import os
 
-from datetime import datetime, timezone
-from discord import Intents, Client, Message
-from discord.ext.commands import Bot
 from dotenv import load_dotenv
 from typing import Final
 
@@ -23,7 +18,7 @@ class DatabaseManager:
         self.DB_USER = os.getenv('DB_USER')
         self.DB_PASSWORD = os.getenv('DB_PASSWORD')
         self.DB_NAME = os.getenv('DB_NAME')
-        self.conn = mariadb.connect(
+        self.conn = mysql.connector.connect(
             host=self.DB_HOST,
             user=self.DB_USER,
             password=self.DB_PASSWORD,
@@ -97,7 +92,15 @@ class DatabaseManager:
                     grenadier_points INTEGER DEFAULT 0,
                     surgeon_points INTEGER DEFAULT 0,
                     voyage_count INTEGER DEFAULT 0,
-                    hosted_count INTEGER DEFAULT 0
+                    hosted_count INTEGER DEFAULT 0,
+                    force_carpenter_points INTEGER DEFAULT 0,
+                    force_flex_points INTEGER DEFAULT 0,
+                    force_cannoneer_points INTEGER DEFAULT 0,
+                    force_helm_points INTEGER DEFAULT 0,
+                    force_grenadier_points INTEGER DEFAULT 0,
+                    force_surgeon_points INTEGER DEFAULT 0,
+                    force_voyage_count INTEGER DEFAULT 0,
+                    force_hosted_count INTEGER DEFAULT 0
                     )
             ''')
 
@@ -122,7 +125,7 @@ class DatabaseManager:
             ''')
 
             self.conn.commit()
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error creating tables: {e}")
 
     # Database Queries
@@ -134,7 +137,7 @@ class DatabaseManager:
             self.cursor.execute('SELECT award_ping_enabled FROM sailorinfo WHERE user_id = %s', (user_id,))
             row = self.cursor.fetchone()
             return row[0] if row else None  # Return None if no setting is found
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error retrieving ping setting: {e}")
             return None
 
@@ -146,7 +149,7 @@ class DatabaseManager:
             # You might want to create a list of dictionaries or objects representing each coin,
             # extracting relevant information like coin type, moderator who awarded it, etc.
             return rows  # Return fetched rows or processed data
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error retrieving coins: {e}")
             return None
 
@@ -155,7 +158,7 @@ class DatabaseManager:
             self.cursor.execute('SELECT gamertag FROM Gamertags WHERE user_id = %s', (user_id,))
             row = self.cursor.fetchone()
             return row[0] if row else None
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error retrieving gamertag: {e}")
             return None
 
@@ -164,7 +167,7 @@ class DatabaseManager:
             self.cursor.execute('SELECT * FROM Hosted WHERE host_id = %s', (member_id,))
             rows = self.cursor.fetchall()
             # Process the fetched rows to calculate hosted voyage info (similar to your existing logic)
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error fetching hosted info: {e}")
             return None
 
@@ -176,7 +179,7 @@ class DatabaseManager:
             # You could create a list of dictionaries or objects representing each note,
             # including the note text, moderator who added it, and timestamp.
             return rows  # Return fetched rows or processed data
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error getting notes: {e}")
             return None
 
@@ -190,7 +193,7 @@ class DatabaseManager:
             ''', (member_id,))
             rows = self.cursor.fetchall()
             # Process the fetched rows to get subclass points for each subclass
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error fetching subclass info: {e}")
             return None
 
@@ -199,7 +202,7 @@ class DatabaseManager:
             self.cursor.execute('SELECT timezone FROM Timezones WHERE user_id = %s', (user_id,))
             row = self.cursor.fetchone()
             return row[0] if row else None
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error retrieving timezone: {e}")
             return None
 
@@ -208,7 +211,7 @@ class DatabaseManager:
             self.cursor.execute('SELECT * FROM Voyages WHERE target_id = %s', (member_id,))
             rows = self.cursor.fetchall()
             # Process the fetched rows to calculate voyage info
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error fetching voyage info: {e}")
             return None
 
@@ -226,7 +229,7 @@ class DatabaseManager:
                 ON DUPLICATE KEY UPDATE gamertag = VALUES(gamertag)
             ''', (user_id, gamertag))
             self.conn.commit()
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error writing Gamertag: {e}")
 
     def add_note_to_file(self, target_id, moderator_id, note, note_time):
@@ -245,7 +248,7 @@ class DatabaseManager:
                 VALUES (%s, %s, %s, %s, FALSE, NULL, NULL)
             ''', (target_id, moderator_id, note))
             self.conn.commit()
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error adding note: {e}")
 
     def hide_note(self, note_id, who_hid, hide_time):
@@ -263,7 +266,7 @@ class DatabaseManager:
                 WHERE id = ?
             ''', (who_hid, hide_time, note_id))
             self.conn.commit()
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error hiding note in database: {e}")
 
     def log_coin(self, target_id, coin_type, moderator_id, old_name, coin_time):
@@ -283,7 +286,7 @@ class DatabaseManager:
                 VALUES (%s, %s, %s, %s, %s)
             ''', (target_id, coin_type, moderator_id, old_name, coin_time))
             self.conn.commit()
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error logging Coin: {e}")
 
     def log_event(self, event):
@@ -296,7 +299,7 @@ class DatabaseManager:
                 VALUES (%s)
             ''', (event,))
             self.conn.commit()
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error logging Event: {e}")
 
     def log_forceadd(self, target_id, type, amount, moderator_id, timestamp):
@@ -306,7 +309,7 @@ class DatabaseManager:
                 VALUES (%s, %s, %s, %s, %s)
             ''', (target_id, type, amount, moderator_id, timestamp))
             self.conn.commit()
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error logging forceadd: {e}")
         """
 
@@ -351,7 +354,7 @@ class DatabaseManager:
                                 ''', (host_id,))
                 self.conn.commit()
 
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error logging hosted data: {e}")
 
 
@@ -382,7 +385,7 @@ class DatabaseManager:
                                            ''', (participant_id,))
             self.conn.commit()
 
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error logging voyage data: {e}")
 
     def voyage_log_entry_exists(self, log_id, participant_id):
@@ -391,7 +394,7 @@ class DatabaseManager:
                                 (log_id, participant_id))
             count = self.cursor.fetchone()[0]
             return count > 0
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error checking Voyages entry existence: {e}")
             return False
 
@@ -400,7 +403,7 @@ class DatabaseManager:
             self.cursor.execute("SELECT COUNT(*) FROM Hosted WHERE log_id = %s", (log_id,))
             count = self.cursor.fetchone()[0]
             return count > 0  # Returns True if log_id exists, False otherwise
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error checking log_id existence: {e}")
             return False  # Handle the error appropriately (e.g., return False)
 
@@ -433,7 +436,7 @@ class DatabaseManager:
                 ''', (author_id, log_link, target_id, subclass, log_time) )
                 self.conn.commit()
 
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error logging subclasses: {e}")
 
     def log_voyage_data(self, log_id, participant_id, log_time):
@@ -462,7 +465,7 @@ class DatabaseManager:
                 ''', (log_id, participant_id, log_time))
                 self.conn.commit()
 
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error logging voyage data: {e}")
 
     def remove_coin(self, coin_id):
@@ -474,7 +477,7 @@ class DatabaseManager:
         try:
             self.cursor.execute('DELETE FROM Coins WHERE coin_id = %s', (coin_id,))
             self.conn.commit()
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error deleting coin: {e}")
 
     def batch_log_voyage_data(self, voyage_data):
@@ -491,7 +494,7 @@ class DatabaseManager:
                     VALUES (%s, %s, %s)
                 """, voyage_data)
                 self.conn.commit()
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error batch logging voyage data: {e}")
 
     def toggle_award_ping(self, discord_id, new_choice):
@@ -508,7 +511,7 @@ class DatabaseManager:
                 ON DUPLICATE KEY UPDATE award_ping_enabled = VALUES(award_ping_enabled)
             ''', (discord_id, new_choice))
             self.conn.commit()
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error changing award ping setting: {e}")
 
     def increment_voyage_count(self, discord_id):
@@ -525,7 +528,7 @@ class DatabaseManager:
                 WHERE discord_id = %s
             """, (discord_id,))
             self.conn.commit()
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error incrementing voyage_count: {e}")
 
     def remove_voyage_log_entry(self, log_id, participant_id):
@@ -541,7 +544,7 @@ class DatabaseManager:
             self.cursor.execute("DELETE FROM Voyages WHERE log_id = %s AND participant_id = %s",
                                 (log_id, participant_id))
             self.conn.commit()
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error removing voyage log entry: {e}")
 
 
@@ -552,7 +555,7 @@ class DatabaseManager:
             self.cursor.execute("SELECT COUNT(*) FROM Sailorinfo WHERE discord_id = %s", (discord_id,))
             count = self.cursor.fetchone()[0]
             return count > 0
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error checking discord_id existence: {e}")
             return False
 
@@ -560,7 +563,7 @@ class DatabaseManager:
         try:
             self.cursor.execute("INSERT IGNORE INTO Sailorinfo (discord_id) VALUES (%s)", (discord_id,))
             self.conn.commit()
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error adding discord_id: {e}")
 
     #Removal of voyage logs and hosted logs as needed
@@ -580,7 +583,7 @@ class DatabaseManager:
                 WHERE discord_id = %s
             """, (discord_id,))
             self.conn.commit()
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error decrementing {count_type}: {e}")
 
     def remove_voyage_log_entries(self, log_id):
@@ -594,7 +597,7 @@ class DatabaseManager:
         try:
             self.cursor.execute("DELETE FROM Voyages WHERE log_id = %s", (log_id,))
             self.conn.commit()
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error removing voyage log entries: {e}")
 
     def remove_hosted_entry(self, log_id):
@@ -607,5 +610,5 @@ class DatabaseManager:
         try:
             self.cursor.execute("DELETE FROM Hosted WHERE log_id = %s", (log_id,))
             self.conn.commit()
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error removing hosted entry: {e}")
