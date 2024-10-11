@@ -1,7 +1,6 @@
 import logging
-from typing import Type
 
-from sqlalchemy import update, null
+from sqlalchemy import update
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql.functions import coalesce
 
@@ -70,15 +69,15 @@ def get_timezone_by_discord_id(target_id: int) -> str | None:
     finally:
         session.close()
 
-def update_or_create_sailor_by_discord_id(target_id: int, gamertag: str | None, timezone: str | None) -> Sailor | None:
+def update_or_create_sailor_by_discord_id(target_id: int, gamertag: str | None = None, timezone: str | None = None) -> Sailor | None:
     """
     Set the gamertag and or timezone for a Sailor by Discord ID
     Will create a new Sailor if one does not exist
 
     Args:
         target_id (int): The Discord ID of the user.
-        gamertag (str | None): The gamertag to set for the user.
-        timezone (str | None): The timezone to set for the user.
+        gamertag (str | None): The gamertag to set for the user. Optional.
+        timezone (str | None): The timezone to set for the user. Optional.
     Returns:
         Sailor: The Sailor object that was updated, or None if the operation failed.
     """
