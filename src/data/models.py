@@ -99,6 +99,8 @@ class Sailor(Base):
     force_voyage_count = Column(Integer, server_default="0")
     force_hosted_count = Column(Integer, server_default="0")
 
+    def __str__(self):
+        return f"[Sailor] {self.gamertag} ({self.discord_id})"
 
 class Subclasses(Base):
     __tablename__ = "subclasses"
