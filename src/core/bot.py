@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from typing import Optional
 from discord.ext import commands
-from logging import getLogger; log= getLogger("Bot")
+from logging import getLogger
+
+from discord.ext.commands import ExtensionNotFound, NoEntryPointError, ExtensionFailed
+
+log= getLogger(__name__)
 import discord, os
 
 
@@ -27,10 +31,13 @@ class Bot(discord.ext.commands.Bot):
     async def   error(self, content: str, interaction: discord.Interaction, ephemeral: Optional[bool]):
         """Sending error Message"""
         pass
+
     async def setup_hook(self):
-        for fn in os.listdir('cogs'):
-            if fn.endswith('.py'):
-                await self.load_extension(f"cogs.{fn[:-3]}")
-                await self.tree.sync() 
-   
+        # Dynamically get all cogs in the cogs directory
+        initial_extensions = [f"cogs.{filename[:-3]}" for filename in os.listdir("cogs") if filename.endswith(".py")]
+        for extension in initial_extensions:
+            try:
                 log.info(f"Attempting to load extension: {extension}")
+                await self.load_extension(extension)
+            except Exception as e:
+                log.error(f"Failed to load extension {extension}.", exc_info=e)
