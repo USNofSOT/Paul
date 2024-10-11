@@ -30,13 +30,13 @@ class DatabaseManager:
     def create_tables(self):
         try:
             self.cursor.execute('''
-                CREATE TABLE IF NOT EXISTS Auditlogs (
+                CREATE TABLE IF NOT EXISTS audit_logs (
                     id INTEGER PRIMARY KEY AUTO_INCREMENT,
                     event TEXT
                 )
             ''')
             self.cursor.execute('''
-                CREATE TABLE IF NOT EXISTS Coins (
+                CREATE TABLE IF NOT EXISTS coins (
                     coin_id INTEGER PRIMARY KEY AUTO_INCREMENT,
                     target_id BIGINT,
                     coin_type TINYTEXT,
@@ -47,7 +47,7 @@ class DatabaseManager:
             ''')
 
             self.cursor.execute('''
-                CREATE TABLE IF NOT EXISTS Forceadd (
+                CREATE TABLE IF NOT EXISTS force_add (
                     id INTEGER PRIMARY KEY AUTO_INCREMENT,
                     target_id BIGINT,
                     add_type TINYTEXT,
@@ -59,7 +59,7 @@ class DatabaseManager:
 
 
             self.cursor.execute('''
-                CREATE TABLE IF NOT EXISTS Hosted (
+                CREATE TABLE IF NOT EXISTS hosted (
                     log_id BIGINT PRIMARY KEY,
                     host_id BIGINT,
                     log_time TIMESTAMP
@@ -67,7 +67,7 @@ class DatabaseManager:
             ''')
 
             self.cursor.execute('''
-                CREATE TABLE IF NOT EXISTS ModNotes (
+                CREATE TABLE IF NOT EXISTS mod_notes (
                     id INTEGER PRIMARY KEY AUTO_INCREMENT,
                     target_id BIGINT,
                     moderator_id BIGINT,
@@ -80,7 +80,7 @@ class DatabaseManager:
             ''')
 
             self.cursor.execute('''
-                CREATE TABLE IF NOT EXISTS Sailorinfo (
+                CREATE TABLE IF NOT EXISTS sailor (
                     discord_id BIGINT PRIMARY KEY,
                     gamertag TINYTEXT,
                     timezone TINYTEXT,
@@ -105,7 +105,7 @@ class DatabaseManager:
             ''')
 
             self.cursor.execute('''
-                CREATE TABLE IF NOT EXISTS Subclasses (
+                CREATE TABLE IF NOT EXISTS subclasses (
                     id INTEGER PRIMARY KEY AUTO_INCREMENT,
                     author_id BIGINT,
                     log_link TINYTEXT,
@@ -116,7 +116,7 @@ class DatabaseManager:
             ''')
 
             self.cursor.execute('''
-                CREATE TABLE IF NOT EXISTS Voyages (
+                CREATE TABLE IF NOT EXISTS voyages (
                     log_id BIGINT,
                     participant_id BIGINT,
                     log_time TIMESTAMP,
@@ -134,7 +134,7 @@ class DatabaseManager:
 
     def get_award_ping_setting(self, user_id):
         try:
-            self.cursor.execute('SELECT award_ping_enabled FROM sailorinfo WHERE user_id = %s', (user_id,))
+            self.cursor.execute('SELECT award_ping_enabled FROM sailor WHERE discord_id = %s', (user_id,))
             row = self.cursor.fetchone()
             return row[0] if row else None  # Return None if no setting is found
         except mysql.connector.Error as e:
@@ -143,7 +143,7 @@ class DatabaseManager:
 
     def get_coins(self, member_id):
         try:
-            self.cursor.execute('SELECT * FROM Coins WHERE member_id = %s', (member_id,))
+            self.cursor.execute('SELECT * FROM coins WHERE target_id = %s', (member_id,))
             rows = self.cursor.fetchall()
             # Process the fetched rows to get coin information.
             # You might want to create a list of dictionaries or objects representing each coin,
@@ -153,18 +153,9 @@ class DatabaseManager:
             print(f"Error retrieving coins: {e}")
             return None
 
-    def get_gamertag(self, user_id):
-        try:
-            self.cursor.execute('SELECT gamertag FROM Gamertags WHERE user_id = %s', (user_id,))
-            row = self.cursor.fetchone()
-            return row[0] if row else None
-        except mysql.connector.Error as e:
-            print(f"Error retrieving gamertag: {e}")
-            return None
-
     def get_hosted_info(self, member_id):
         try:
-            self.cursor.execute('SELECT * FROM Hosted WHERE host_id = %s', (member_id,))
+            self.cursor.execute('SELECT * FROM hosted WHERE target_id = %s', (member_id,))
             rows = self.cursor.fetchall()
             # Process the fetched rows to calculate hosted voyage info (similar to your existing logic)
         except mysql.connector.Error as e:
@@ -173,7 +164,7 @@ class DatabaseManager:
 
     def get_notes(self, member_id):
         try:
-            self.cursor.execute('SELECT * FROM ModNotes WHERE target_id = %s', (member_id,))
+            self.cursor.execute('SELECT * FROM mod_notes WHERE target_id = %s', (member_id,))
             rows = self.cursor.fetchall()
             # Process the fetched rows to get moderation notes.
             # You could create a list of dictionaries or objects representing each note,
@@ -186,8 +177,8 @@ class DatabaseManager:
     def get_subclass_points(self, member_id):
         try:
             self.cursor.execute('''
-                SELECT subclass, SUM(count) 
-                FROM Subclasses 
+                SELECT subclass, SUM(subclass_count) 
+                FROM subclasses 
                 WHERE target_id = %s
                 GROUP BY subclass
             ''', (member_id,))
@@ -197,18 +188,9 @@ class DatabaseManager:
             print(f"Error fetching subclass info: {e}")
             return None
 
-    def get_timezone(self, user_id):
-        try:
-            self.cursor.execute('SELECT timezone FROM Timezones WHERE user_id = %s', (user_id,))
-            row = self.cursor.fetchone()
-            return row[0] if row else None
-        except mysql.connector.Error as e:
-            print(f"Error retrieving timezone: {e}")
-            return None
-
     def get_voyage_info(self, member_id):
         try:
-            self.cursor.execute('SELECT * FROM Voyages WHERE target_id = %s', (member_id,))
+            self.cursor.execute('SELECT * FROM voyages WHERE target_id = %s', (member_id,))
             rows = self.cursor.fetchall()
             # Process the fetched rows to calculate voyage info
         except mysql.connector.Error as e:
@@ -224,7 +206,7 @@ class DatabaseManager:
         """
         try:
             self.cursor.execute('''
-                INSERT INTO Sailorinfo (discord_id, gamertag)
+                INSERT INTO sailor (discord_id, gamertag)
                 VALUES (%s, %s)
                 ON DUPLICATE KEY UPDATE gamertag = VALUES(gamertag)
             ''', (user_id, gamertag))
@@ -244,7 +226,7 @@ class DatabaseManager:
 
         try:
             self.cursor.execute('''
-                INSERT INTO ModNotes (target_id, moderator_id, note, note_time, hidden, who_hid, hide_time)
+                INSERT INTO mod_notes (target_id, moderator_id, note, note_time, hidden, who_hid, hide_time)
                 VALUES (%s, %s, %s, %s, FALSE, NULL, NULL)
             ''', (target_id, moderator_id, note))
             self.conn.commit()
@@ -261,7 +243,7 @@ class DatabaseManager:
         """
         try:
             self.cursor.execute('''
-                UPDATE ModNotes 
+                UPDATE mod_notes 
                 SET hidden = 1, who_hid = ?, hide_time = ? 
                 WHERE id = ?
             ''', (who_hid, hide_time, note_id))
@@ -282,7 +264,7 @@ class DatabaseManager:
 
         try:
             self.cursor.execute('''
-                INSERT INTO Coins (target_id, coin_type, moderator_id, old_name, coin_time)
+                INSERT INTO coins (target_id, coin_type, moderator_id, old_name, coin_time)
                 VALUES (%s, %s, %s, %s, %s)
             ''', (target_id, coin_type, moderator_id, old_name, coin_time))
             self.conn.commit()
@@ -295,7 +277,7 @@ class DatabaseManager:
         
         try:
             self.cursor.execute('''
-                INSERT INTO Auditlogs (event)
+                INSERT INTO audit_logs (event)
                 VALUES (%s)
             ''', (event,))
             self.conn.commit()
@@ -305,12 +287,12 @@ class DatabaseManager:
     def log_forceadd(self, target_id, type, amount, moderator_id, timestamp):
         try:
             self.cursor.execute('''
-                INSERT INTO Forceadd (target_id, type, amount, moderator_id, timestamp)
+                INSERT INTO force_add (target_id, type, amount, moderator_id, timestamp)
                 VALUES (%s, %s, %s, %s, %s)
             ''', (target_id, type, amount, moderator_id, timestamp))
             self.conn.commit()
         except mysql.connector.Error as e:
-            print(f"Error logging forceadd: {e}")
+            print(f"Error logging force_add: {e}")
         """
 
     def log_hosted_data(self, log_id, host_id, log_time):
@@ -325,30 +307,30 @@ class DatabaseManager:
         """
         try:
             # Check if a record with the given log_id already exists
-            self.cursor.execute("SELECT COUNT(*) FROM Hosted WHERE log_id = %s", (log_id,))
+            self.cursor.execute("SELECT COUNT(*) FROM hosted WHERE log_id = %s", (log_id,))
             record_exists = self.cursor.fetchone()[0] > 0
 
             if not record_exists:
                 # Insert a new record if no duplicates are found
                 self.cursor.execute('''
-                    INSERT INTO Hosted (log_id, host_id, log_time) 
+                    INSERT INTO hosted (log_id, target_id, log_time) 
                     VALUES (%s, %s, %s)
                 ''', (log_id, host_id, log_time))
 
-                # Check if the discord_id exists in Sailorinfo
-                self.cursor.execute("SELECT COUNT(*) FROM Sailorinfo WHERE discord_id = %s", (host_id,))
+                # Check if the discord_id exists in sailor
+                self.cursor.execute("SELECT COUNT(*) FROM sailor WHERE discord_id = %s", (host_id,))
                 host_exists = self.cursor.fetchone()[0] > 0
 
                 if not host_exists:
-                    # Insert a new record in Sailorinfo with hosted_count = 1
+                    # Insert a new record in sailor with hosted_count = 1
                     self.cursor.execute('''
-                                    INSERT INTO Sailorinfo (discord_id, hosted_count) 
+                                    INSERT INTO sailor (discord_id, hosted_count) 
                                     VALUES (%s, 1)
                                 ''', (host_id,))
                 else:
-                    # Increment hosted_count in Sailorinfo
+                    # Increment hosted_count in sailor
                     self.cursor.execute('''
-                                    UPDATE Sailorinfo 
+                                    UPDATE sailor 
                                     SET hosted_count = hosted_count + 1 
                                     WHERE discord_id = %s
                                 ''', (host_id,))
@@ -362,24 +344,24 @@ class DatabaseManager:
     def log_voyage_data(self, log_id, participant_id, log_time):  # New function
         try:
             self.cursor.execute('''
-                INSERT INTO Voyages (log_id, participant_id, log_time) 
+                INSERT INTO voyages (log_id, target_id, log_time) 
                 VALUES (%s, %s, %s)
             ''', (log_id, participant_id, log_time))
 
-            # Check if the participant_id exists in Sailorinfo
-            self.cursor.execute("SELECT COUNT(*) FROM Sailorinfo WHERE discord_id = %s", (participant_id,))
+            # Check if the participant_id exists in sailor
+            self.cursor.execute("SELECT COUNT(*) FROM sailor WHERE discord_id = %s", (participant_id,))
             participant_exists = self.cursor.fetchone()[0] > 0
 
             if not participant_exists:
-                # Insert a new record in Sailorinfo with voyage_count = 1
+                # Insert a new record in sailor with voyage_count = 1
                 self.cursor.execute('''
-                                               INSERT INTO Sailorinfo (discord_id, voyage_count) 
+                                               INSERT INTO sailor (discord_id, voyage_count) 
                                                VALUES (%s, 1)
                                            ''', (participant_id,))
             else:
-                # Increment voyage_count in Sailorinfo
+                # Increment voyage_count in sailor
                 self.cursor.execute('''
-                                               UPDATE Sailorinfo 
+                                               UPDATE sailor 
                                                SET voyage_count = voyage_count + 1 
                                                WHERE discord_id = %s
                                            ''', (participant_id,))
@@ -390,17 +372,17 @@ class DatabaseManager:
 
     def voyage_log_entry_exists(self, log_id, participant_id):
         try:
-            self.cursor.execute("SELECT COUNT(*) FROM Voyages WHERE log_id = %s AND participant_id = %s",
+            self.cursor.execute("SELECT COUNT(*) FROM voyages WHERE log_id = %s AND target_id = %s",
                                 (log_id, participant_id))
             count = self.cursor.fetchone()[0]
             return count > 0
         except mysql.connector.Error as e:
-            print(f"Error checking Voyages entry existence: {e}")
+            print(f"Error checking voyages entry existence: {e}")
             return False
 
     def hosted_log_id_exists(self, log_id):
         try:
-            self.cursor.execute("SELECT COUNT(*) FROM Hosted WHERE log_id = %s", (log_id,))
+            self.cursor.execute("SELECT COUNT(*) FROM hosted WHERE log_id = %s", (log_id,))
             count = self.cursor.fetchone()[0]
             return count > 0  # Returns True if log_id exists, False otherwise
         except mysql.connector.Error as e:
@@ -408,14 +390,14 @@ class DatabaseManager:
             return False  # Handle the error appropriately (e.g., return False)
 
 
-    def log_subclasses(self, author_id, log_link, target_id, subclass, log_time):
+    def log_subclasses(self, author_id, log_id, target_id, subclass, log_time):
         """
         Adds a subclass record for a member. If a record with the same target_id,
         subclass, and log_link exists, the write action is ignored to prevent duplicates.
 
         Args:
             author_id (int): Discord ID of the person adding the subclass record.
-            log_link (str): Link to the Discord message (log) for the subclass entry.
+            log_id (int): Link to the Discord message (log) for the subclass entry.
             target_id (int): Discord ID of the member receiving the subclass entry.
             subclass (str): Name of the subclass (e.g., "Carpenter", "Flex").
             log_time (datetime): Time of the subclass entry.
@@ -423,17 +405,17 @@ class DatabaseManager:
         try:
             # Check if a record with the same target_id, subclass, and log_link already exists
             self.cursor.execute('''
-                SELECT COUNT(*) FROM Subclasses 
-                WHERE target_id = %s AND subclass = %s AND log_link = %s
-            ''', (target_id, subclass, log_link))
+                SELECT COUNT(*) FROM subclasses 
+                WHERE target_id = %s AND subclass = %s AND log_id = %s
+            ''', (target_id, subclass, log_id))
             record_exists = self.cursor.fetchone()[0] > 0
 
             if not record_exists:
                 # Insert a new record if no duplicates are found
                 self.cursor.execute('''
-                    INSERT INTO Subclasses (author_id, log_link, target_id, subclass, log_time)
+                    INSERT INTO subclasses (author_id, log_id, target_id, subclass, log_time)
                     VALUES (%s, %s, %s, %s, %s)
-                ''', (author_id, log_link, target_id, subclass, log_time) )
+                ''', (author_id, log_id, target_id, subclass, log_time) )
                 self.conn.commit()
 
         except mysql.connector.Error as e:
@@ -452,15 +434,15 @@ class DatabaseManager:
         try:
             # Check if a record with the same log_id and target_id already exists
             self.cursor.execute('''
-                SELECT COUNT(*) FROM Voyages 
-                WHERE log_id = %s AND participant_id = %s
+                SELECT COUNT(*) FROM voyages 
+                WHERE log_id = %s AND target_id = %s
             ''', (log_id, participant_id))
             record_exists = self.cursor.fetchone()[0] > 0
 
             if not record_exists:
                 # Insert a new record if no duplicates are found
                 self.cursor.execute('''
-                    INSERT INTO Voyages (log_id, participant_id, log_time)
+                    INSERT INTO voyages (log_id, target_id, log_time)
                     VALUES (%s, %s, %s)
                 ''', (log_id, participant_id, log_time))
                 self.conn.commit()
@@ -469,13 +451,13 @@ class DatabaseManager:
             print(f"Error logging voyage data: {e}")
 
     def remove_coin(self, coin_id):
-        """Removes a challenge coin from the Coins table in the database.
+        """Removes a challenge coin from the coins table in the database.
 
         Args:
             coin_id (int): The ID of the coin to remove.
         """
         try:
-            self.cursor.execute('DELETE FROM Coins WHERE coin_id = %s', (coin_id,))
+            self.cursor.execute('DELETE FROM coins WHERE coin_id = %s', (coin_id,))
             self.conn.commit()
         except mysql.connector.Error as e:
             print(f"Error deleting coin: {e}")
@@ -490,7 +472,7 @@ class DatabaseManager:
         try:
             if voyage_data:  # Only execute if there's data to insert
                 self.cursor.executemany("""
-                    INSERT IGNORE INTO Voyages (log_id, participant_id, log_time)
+                    INSERT IGNORE INTO voyages (log_id, target_id, log_time)
                     VALUES (%s, %s, %s)
                 """, voyage_data)
                 self.conn.commit()
@@ -506,7 +488,7 @@ class DatabaseManager:
         """
         try:
             self.cursor.execute('''
-                INSERT INTO Sailorinfo (discord_id, award_ping_enabled)
+                INSERT INTO sailor (discord_id, award_ping_enabled)
                 VALUES (%s, %s)
                 ON DUPLICATE KEY UPDATE award_ping_enabled = VALUES(award_ping_enabled)
             ''', (discord_id, new_choice))
@@ -516,14 +498,14 @@ class DatabaseManager:
 
     def increment_voyage_count(self, discord_id):
         """
-        Increments the voyage_count for the given discord_id in the Sailorinfo table.
+        Increments the voyage_count for the given discord_id in the sailor table.
 
         Args:
             discord_id (int): The Discord ID of the user.
         """
         try:
             self.cursor.execute("""
-                UPDATE Sailorinfo 
+                UPDATE sailor 
                 SET voyage_count = voyage_count + 1 
                 WHERE discord_id = %s
             """, (discord_id,))
@@ -533,7 +515,7 @@ class DatabaseManager:
 
     def remove_voyage_log_entry(self, log_id, participant_id):
         """
-        Removes a specific entry from the Voyages table based on log_id and participant_id.
+        Removes a specific entry from the voyages table based on log_id and participant_id.
         This is used for edits where not all logs need to be deleted.
 
         Args:
@@ -541,7 +523,7 @@ class DatabaseManager:
             participant_id (int): The Discord ID of the participant.
         """
         try:
-            self.cursor.execute("DELETE FROM Voyages WHERE log_id = %s AND participant_id = %s",
+            self.cursor.execute("DELETE FROM voyages WHERE log_id = %s AND target_id = %s",
                                 (log_id, participant_id))
             self.conn.commit()
         except mysql.connector.Error as e:
@@ -552,7 +534,7 @@ class DatabaseManager:
 
     def discord_id_exists(self, discord_id):
         try:
-            self.cursor.execute("SELECT COUNT(*) FROM Sailorinfo WHERE discord_id = %s", (discord_id,))
+            self.cursor.execute("SELECT COUNT(*) FROM sailor WHERE discord_id = %s", (discord_id,))
             count = self.cursor.fetchone()[0]
             return count > 0
         except mysql.connector.Error as e:
@@ -561,7 +543,7 @@ class DatabaseManager:
 
     def add_discord_id(self, discord_id):
         try:
-            self.cursor.execute("INSERT IGNORE INTO Sailorinfo (discord_id) VALUES (%s)", (discord_id,))
+            self.cursor.execute("INSERT IGNORE INTO sailor (discord_id) VALUES (%s)", (discord_id,))
             self.conn.commit()
         except mysql.connector.Error as e:
             print(f"Error adding discord_id: {e}")
@@ -570,7 +552,7 @@ class DatabaseManager:
 
     def decrement_count(self, discord_id, count_type):
         """
-        Decrements the specified count for the given discord_id in the Sailorinfo table.
+        Decrements the specified count for the given discord_id in the sailor table.
 
         Args:
             discord_id (int): The Discord ID of the user.
@@ -578,7 +560,7 @@ class DatabaseManager:
         """
         try:
             self.cursor.execute(f"""
-                UPDATE Sailorinfo 
+                UPDATE sailor 
                 SET {count_type} = GREATEST({count_type} - 1, 0)  -- Prevent negative counts
                 WHERE discord_id = %s
             """, (discord_id,))
@@ -588,27 +570,27 @@ class DatabaseManager:
 
     def remove_voyage_log_entries(self, log_id):
         """
-        Removes entries from the Voyages table associated with the given log_id.
+        Removes entries from the voyages table associated with the given log_id.
         This is used when a log is fully deleted.
 
         Args:
             log_id (int): The ID of the voyage log to remove.
         """
         try:
-            self.cursor.execute("DELETE FROM Voyages WHERE log_id = %s", (log_id,))
+            self.cursor.execute("DELETE FROM voyages WHERE log_id = %s", (log_id,))
             self.conn.commit()
         except mysql.connector.Error as e:
             print(f"Error removing voyage log entries: {e}")
 
     def remove_hosted_entry(self, log_id):
         """
-        Removes the entry from the Hosted table associated with the given log_id.
+        Removes the entry from the hosted table associated with the given log_id.
 
         Args:
             log_id (int): The ID of the hosted voyage to remove.
         """
         try:
-            self.cursor.execute("DELETE FROM Hosted WHERE log_id = %s", (log_id,))
+            self.cursor.execute("DELETE FROM hosted WHERE log_id = %s", (log_id,))
             self.conn.commit()
         except mysql.connector.Error as e:
             print(f"Error removing hosted entry: {e}")
