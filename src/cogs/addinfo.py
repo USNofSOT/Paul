@@ -1,12 +1,21 @@
-
-
+import discord, config
+from discord.ext import commands
+from discord import app_commands
+from utils.database_manager import DatabaseManager
 
 #addinfo
-@bot.tree.command(name="addinfo", description="Add Gamertag or Timezone to yourself or another user")
-@app_commands.describe(target="Select the user to add information to")
-@app_commands.describe(gamertag="Enter the user's in-game username")
-#@app_commands.describe(timezone="Enter the user's timezone manually (e.g., UTC+2) or leave empty to calculate automatically")
-@app_commands.choices(timezone=[
+
+
+
+class Add_Info(commands.Cog):
+    def __init__(self, bot: commands.Bot) -> None:
+        self.bot = bot
+    
+    @app_commands.command(name="addinfo", description="Add Gamertag or Timezone to yourself or another user")
+    @app_commands.describe(target="Select the user to add information to")
+    @app_commands.describe(gamertag="Enter the user's in-game username")
+    #@app_commands.describe(timezone="Enter the user's timezone manually (e.g., UTC+2) or leave empty to calculate automatically")
+    @app_commands.choices(timezone=[
                                    app_commands.Choice(name="UTC-12:00 (IDLW) - International Date Line West", value="UTC-12:00 (IDLW)"),
                                    app_commands.Choice(name="UTC-11:00 (NUT) - Niue Time, Samoa Standard Time", value="UTC-11:00 (NUT)"),
                                    app_commands.Choice(name="UTC-10:00 (HST) - Hawaii-Aleutian Standard Time", value="UTC-10:00 (HST)"),
@@ -33,44 +42,35 @@
                                    app_commands.Choice(name="UTC+11:00 (VLAT) - Vladivostok Time, Solomon Islands Time", value="UTC+11:00 (VLAT)"),
                                    app_commands.Choice(name="UTC+12:00 (NZST) - New Zealand Standard Time, Fiji Time", value="UTC+12:00 (NZST)")
                                 ])
+    async def addinfo(self, ctx, target: discord.Member = None, gamertag: str = None, timezone: str = None):
+        await ctx.defer(ephemeral=True)
+        
+        db_manager = DatabaseManager()
+        # Default to the author if no target is provided
+        if target is None:
+            target = ctx.author 
 
-@app_commands.describe(local_time="Enter your current local time (HH:MM) to calculate your timezone automatically")
-async def addinfo(ctx, target: discord.Member = None, gamertag: str = None, timezone: str = None, local_time: str = None):
-    await ctx.defer(ephemeral=True)
+        # Initialize response
+        response = f"Information added for {target.name}: \n"
+        data_added = False
 
-    # Default to the author if no target is provided
-    if target is None:
-        target = ctx.author
-
-    # Initialize response
-    response = f"Information added for {target.name}: \n"
-    data_added = False
-
-    # Process Gamertag
-    if gamertag:
-        db_manager.add_gamertag(target.id, gamertag)
-        response += f"Gamertag: {gamertag}\n"
-        data_added = True
-
-    # If the user provided a timezone manually, use that
-    if timezone:
-        db_manager.add_timezone(target.id, timezone)
-        response += f"Timezone: {timezone}\n"
-        data_added = True
-
-    # If no timezone was provided but local_time is provided, calculate the timezone automatically
-    elif local_time:
-        utc_offset, error = calculate_utc_offset(local_time)
-        if error:
-            await ctx.respond(f"Error: {error}")
-            return
-        else:
-            db_manager.add_timezone(target.id, utc_offset)
-            response += f"Timezone (calculated): {utc_offset}\n"
+        # Process Gamertag
+        if gamertag:
+            db_manager.add_gamertag(target.id, gamertag)
+            response += f"Gamertag: {gamertag}\n"
             data_added = True
 
-    # Respond with the result
-    if data_added:
-        await ctx.respond(response)
-    else:
-        await ctx.respond("You didn't add any information.")
+        # If the user provided a timezone manually, use that
+        if timezone:
+            db_manager.add_timezone(target.id, timezone)
+            response += f"Timezone: {timezone}\n"
+            data_added = True
+
+                # Respond with the result
+        if data_added:
+            await ctx.respond(response)
+        else:
+            await ctx.respond("You didn't add any information.")
+
+async def setup(bot: commands.Bot):
+    await bot.add_cog(Add_Info(bot))  # Classname(bot)

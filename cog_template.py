@@ -16,7 +16,7 @@ class Test(commands.Cog):
     #
     #Slash Command
     # @app_commands.command(name="", description="")
-    # aysnc def _*name*(self, ctx: discord.Interaction):
+    # async def _*name*(self, ctx: discord.Interaction):
     #
 
 async def setup(bot: commands.Bot):
