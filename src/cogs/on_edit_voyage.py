@@ -13,7 +13,7 @@ class On_Edit_Voyages(commands.Cog):
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_message_edit(before, after):
+    async def on_message_edit(self, before, after):
         if before.channel.id == int(VOYAGE_LOGS):
             print(f"Edit Seen: {before.id}")
             old_participant_ids = [user.id for user in before.mentions]

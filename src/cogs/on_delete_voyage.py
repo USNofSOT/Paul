@@ -13,7 +13,7 @@ class On_Delete_Voyages(commands.Cog):
         self.bot = bot
         
     @commands.Cog.listener()
-    async def on_message_delete(message):
+    async def on_message_delete(self, message):
         if message.channel.id == VOYAGE_LOGS:
                 log_id = message.id
                 host_id = message.author.id

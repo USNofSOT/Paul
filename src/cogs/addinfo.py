@@ -42,13 +42,13 @@ class Add_Info(commands.Cog):
                                    app_commands.Choice(name="UTC+11:00 (VLAT) - Vladivostok Time, Solomon Islands Time", value="UTC+11:00 (VLAT)"),
                                    app_commands.Choice(name="UTC+12:00 (NZST) - New Zealand Standard Time, Fiji Time", value="UTC+12:00 (NZST)")
                                 ])
-    async def addinfo(self, ctx, target: discord.Member = None, gamertag: str = None, timezone: str = None):
-        await ctx.defer(ephemeral=True)
+    async def addinfo(self, interaction: discord.interactions, target: discord.Member = None, gamertag: str = None, timezone: str = None):
+        await interaction.response.defer (ephemeral=True)
         
         db_manager = DatabaseManager()
         # Default to the author if no target is provided
         if target is None:
-            target = ctx.author 
+            target = interaction.user
 
         # Initialize response
         response = f"Information added for {target.name}: \n"
@@ -62,15 +62,16 @@ class Add_Info(commands.Cog):
 
         # If the user provided a timezone manually, use that
         if timezone:
-            db_manager.add_timezone(target.id, timezone)
+            raise NotImplemented
+           # db_manager.add_timezone(target.id, timezone)
             response += f"Timezone: {timezone}\n"
             data_added = True
 
                 # Respond with the result
         if data_added:
-            await ctx.respond(response)
+            await interaction.followup.send(response)
         else:
-            await ctx.respond("You didn't add any information.")
+            await interaction.followup.send("You didn't add any information.")
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Add_Info(bot))  # Classname(bot)
