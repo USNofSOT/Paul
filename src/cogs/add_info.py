@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands, Embed
 
+from src.config import SNCO_AND_UP
 from src.data import Sailor
 from src.data.repository.sailor_repository import update_or_create_sailor_by_discord_id
 from src.utils.embeds import error_embed
@@ -13,6 +14,7 @@ class AddInfo(commands.Cog):
     @app_commands.command(name="addinfo", description="Add Gamertag or Timezone to yourself or another user")
     @app_commands.describe(target="Select the user to add information to")
     @app_commands.describe(gamertag="Enter the user's in-game username")
+    @app_commands.checks.has_any_role(*SNCO_AND_UP)
     #@app_commands.describe(timezone="Enter the user's timezone manually (e.g., UTC+2) or leave empty to calculate automatically")
     @app_commands.choices(timezone=[
                                    app_commands.Choice(name="UTC-12:00 (IDLW) - International Date Line West", value="UTC-12:00 (IDLW)"),
