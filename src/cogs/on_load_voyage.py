@@ -16,7 +16,6 @@ class On_Load_Voyages(commands.Cog):
             print(f"{self.bot.user} started procesing logs!")
         
             channel = self.bot.get_channel(VOYAGE_LOGS)
-            await channel.history(limit=50) #cache last 50 voyages in case of edits
             async for message in channel.history(limit=50, oldest_first=False):  # Fetch the last 50
                 await Process_Voyage_Log.process_voyage_log(message)
                 await asyncio.sleep(1)  # Introduce a 1second delay to prevent blocking
