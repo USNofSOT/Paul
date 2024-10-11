@@ -33,3 +33,4 @@ class Bot(discord.ext.commands.Bot):
                 await self.load_extension(f"cogs.{fn[:-3]}")
                 await self.tree.sync() 
    
+                log.info(f"Attempting to load extension: {extension}")
