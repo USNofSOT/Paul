@@ -10,9 +10,11 @@ class Ping(commands.Cog):
     
     @commands.command()
     async def ping(self,ctx):
+        # Get the appropriate avatar URL
+        avatar_url = ctx.author.guild_avatar.url if ctx.author.guild_avatar else ctx.author.avatar.url
         ping_embed = discord.Embed(title="Ping", description="Pong!", color=discord.Color.blue())
         ping_embed.add_field(name=f"{self.bot.user.name}'s Latancy (ms)", value=f"{round(self.bot.latency * 1000)}", inline=False)
-        ping_embed.set_footer(text=f"Pinged by {ctx.author.name}", icon_url=ctx.author.guild_avatar.url)
+        ping_embed.set_footer(text=f"Pinged by {ctx.author.name}", icon_url=avatar_url)
         await ctx.send(embed=ping_embed)
 
 async def setup(bot: commands.Bot):
