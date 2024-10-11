@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from typing import Type
 
 from sqlalchemy import delete
@@ -50,3 +51,31 @@ def remove_voyage_by_log_id(log_id: int) -> bool:
         return False
     finally:
         session.close()
+
+def batch_save_voyage_data(voyage_data: list[tuple[int, int, datetime]]):
+    """
+    Batch inserts voyage records. Ignores duplicates based on log_id and participant_id.
+
+    Args:
+        voyage_data (list): A list of tuples, where each tuple contains (log_id, target_id, datetime)
+    """
+    session = Session()
+    try:
+        for log_id, target_id, log_time in voyage_data:
+            if not session.query(Voyages).filter_by(log_id=log_id, target_id=target_id).first():
+                session.add(Voyages(log_id=log_id, target_id=target_id, log_time=log_time))
+        session.commit()
+    except Exception as e:
+        log.error(f"Error inserting voyage data: {e}")
+        session.rollback()
+        raise e
+    finally:
+        session.close()
+
+
+if __name__ == '__main__':
+    batch_save_voyage_data([
+        (55, 2, datetime.now()),
+        (8, 2, datetime.now()),
+        (7, 2, datetime.now()),
+    ])
