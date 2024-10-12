@@ -1,19 +1,20 @@
-import discord, config
+import discord
 from discord.ext import commands
-from discord import app_commands
-from utils.database_manager import DatabaseManager
+from discord import app_commands, Embed
 
-#addinfo
+from src.config import SNCO_AND_UP
+from src.data import Sailor
+from src.data.repository.sailor_repository import update_or_create_sailor_by_discord_id
+from src.utils.embeds import error_embed
 
-
-
-class Add_Info(commands.Cog):
+class AddInfo(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
     
     @app_commands.command(name="addinfo", description="Add Gamertag or Timezone to yourself or another user")
     @app_commands.describe(target="Select the user to add information to")
     @app_commands.describe(gamertag="Enter the user's in-game username")
+    @app_commands.checks.has_any_role(*SNCO_AND_UP)
     #@app_commands.describe(timezone="Enter the user's timezone manually (e.g., UTC+2) or leave empty to calculate automatically")
     @app_commands.choices(timezone=[
                                    app_commands.Choice(name="UTC-12:00 (IDLW) - International Date Line West", value="UTC-12:00 (IDLW)"),
@@ -44,34 +45,32 @@ class Add_Info(commands.Cog):
                                 ])
     async def addinfo(self, interaction: discord.interactions, target: discord.Member = None, gamertag: str = None, timezone: str = None):
         await interaction.response.defer (ephemeral=True)
-        
-        db_manager = DatabaseManager()
-        # Default to the author if no target is provided
+
+        # Quick exit if no gamertag or timezone is provided
+        if gamertag is None and timezone is None:
+            await interaction.followup.send("You didn't add any information.")
+            return
+
+        # Set the target to the user if not provided
         if target is None:
             target = interaction.user
 
-        # Initialize response
-        response = f"Information added for {target.name}: \n"
-        data_added = False
+        # Attempt to add the information to the database
+        # This function will create a new Sailor if one does not exist
+        # Ad will not alter gamertag or timezone if None is provided
+        try:
+            sailor : Sailor = update_or_create_sailor_by_discord_id(target.id, gamertag, timezone)
+        except Exception as e:
+            await interaction.followup.send(embed=error_embed("Failed to add information. Please try again.", e))
+            return
 
-        # Process Gamertag
-        if gamertag:
-            db_manager.add_gamertag(target.id, gamertag)
-            response += f"Gamertag: {gamertag}\n"
-            data_added = True
-
-        # If the user provided a timezone manually, use that
-        if timezone:
-            raise NotImplemented
-           # db_manager.add_timezone(target.id, timezone)
-            response += f"Timezone: {timezone}\n"
-            data_added = True
-
-                # Respond with the result
-        if data_added:
-            await interaction.followup.send(response)
+        if sailor:
+            sailor_embed = discord.Embed(title="Information Added", description=f"Displaying current information for {target.mention}")
+            sailor_embed.add_field(name="Gamertag", value=sailor.gamertag if sailor.gamertag else "Not Set")
+            sailor_embed.add_field(name="Timezone", value=sailor.timezone if sailor.timezone else "Not Set")
+            await interaction.followup.send(embed=sailor_embed)
         else:
-            await interaction.followup.send("You didn't add any information.")
+            await interaction.followup.send(embed=error_embed("Failed to add information. Please try again."))
 
 async def setup(bot: commands.Bot):
-    await bot.add_cog(Add_Info(bot))  # Classname(bot)
+    await bot.add_cog(AddInfo(bot))  # Classname(bot)

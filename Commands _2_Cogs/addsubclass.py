@@ -82,7 +82,7 @@ async def addsubclass(interaction: discord.Interaction, log_id: str):
 
             for subclass in subclasses:
                 count = 1
-                db_manager.log_subclasses(author_id, log_link, target_id, subclass, count, datetime.utcnow())
+                db_manager.log_subclasses(author_id, log_link, log_id, subclass, count, datetime.utcnow())
 
             end_response += f"{user_mention}: Subclass points added.\n"
 

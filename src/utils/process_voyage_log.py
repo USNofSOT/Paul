@@ -1,6 +1,9 @@
 import config
 from utils.database_manager import DatabaseManager
 
+from src.data.repository.sailor_repository import update_or_create_sailor_by_discord_id
+
+
 class Process_Voyage_Log:
     #subroutine to check if a voyage log already exists, and processes it if it does not.
     async def process_voyage_log(message):
@@ -15,6 +18,7 @@ class Process_Voyage_Log:
         #print(f" logid: {log_id} hostid: {host_id} time: {log_time}") # Used to view data on console as it is processed.
 
         # 1. Check if the log_id already exists in the database
+        update_or_create_sailor_by_discord_id(host_id, None, None)
         if db_manager.hosted_log_id_exists(log_id):
             return  # Skip if the log has already been processed
 

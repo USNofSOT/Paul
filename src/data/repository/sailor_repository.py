@@ -69,29 +69,34 @@ def get_timezone_by_discord_id(target_id: int) -> str | None:
     finally:
         session.close()
 
-def update_gamertag_by_discord_id(target_id: int, gamertag: str) -> bool:
+def update_or_create_sailor_by_discord_id(target_id: int, gamertag: str | None = None, timezone: str | None = None) -> Sailor | None:
     """
-    Set the gamertag column for a specific Sailor
+    Set the gamertag and or timezone for a Sailor by Discord ID
+    Will create a new Sailor if one does not exist
 
     Args:
         target_id (int): The Discord ID of the user.
-        gamertag (str): The gamertag to set
+        gamertag (str | None): The gamertag to set for the user. Optional.
+        timezone (str | None): The timezone to set for the user. Optional.
     Returns:
-        bool: True if the operation was successful, False otherwise.
+        Sailor: The Sailor object that was updated, or None if the operation failed.
     """
     session = Session()
     try:
-        sailor = session.query(Sailor).filter(Sailor.discord_id == target_id).first()
-        if sailor:
+        sailor = Sailor(discord_id=target_id)
+
+        # Ensures that the gamertag and timezone are only altered if they are not None
+        if gamertag:
             sailor.gamertag = gamertag
-            session.commit()
-            return True
-        else:
-            log.error(f"Setting gamertag failed: Sailor with discord_id {target_id} not found")
-        return False
+        if timezone:
+            sailor.timezone = timezone
+
+        session.merge(sailor) # merge will update or create the sailor object if it doesn't exist
+        session.commit()
+        return session.query(Sailor).filter(Sailor.discord_id == target_id).first() # This will return the updated Sailor object
     except Exception as e:
         log.error(f"Error setting gamertag: {e}")
-        return False
+        raise e
     finally:
         session.close()
 
