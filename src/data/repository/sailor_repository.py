@@ -25,8 +25,6 @@ def increment_subclass_count_by_discord_id(target_id: int, subclass: SubclassTyp
     """
     session = Session()
     column = subclass.value.lower() + "_points"
-    print(column)
-    print(increment)
     try:
         session.execute(
             update(Sailor)
