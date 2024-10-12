@@ -18,11 +18,12 @@ class On_Load_Voyages(commands.Cog):
             channel = self.bot.get_channel(VOYAGE_LOGS)
             async for message in channel.history(limit=50, oldest_first=False):  # Fetch the last 50
                 await Process_Voyage_Log.process_voyage_log(message)
-                await asyncio.sleep(1)  # Introduce a 1second delay to prevent blocking
+                await asyncio.sleep(0.5)  # Introduce a 1second delay to prevent blocking
                 #print(f"Processed log: {message.id}.")  #enable this line if you need to view the processing as it happens.
-           
         except Exception as e:
             print("An error with processing existing voyage logs has occurred: ", e)
+        finally:
+            print("Done processing existing voyage logs.")
 
 
 async def setup(bot: commands.Bot):
