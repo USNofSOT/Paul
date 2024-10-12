@@ -11,6 +11,26 @@ from src.data.models import Voyages
 log = logging.getLogger(__name__)
 Session = sessionmaker(bind=engine)
 
+def check_voyage_log_id_with_target_id_exists(log_id: int, target_id: int) -> bool:
+    """
+    Check if the voyage log ID exists for a specific target ID
+
+    Args:
+        log_id (int): The log ID to check.
+        target_id (int): The target ID to check.
+    Returns:
+        bool: True if the log ID exists, False otherwise.
+    """
+    session = Session()
+    try:
+        exists = session.query(Voyages).filter(Voyages.log_id == log_id, Voyages.target_id == target_id).scalar() is not None
+        return exists
+    except Exception as e:
+        log.error(f"Error checking if voyage log ID exists: {e}")
+        raise e
+    finally:
+        session.close()
+
 def get_voyages_by_target_id(target_id: int) -> list[Type[Voyages]]:
     """
     Get all voyage log entries for a specific target ID

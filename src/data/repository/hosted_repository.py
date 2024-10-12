@@ -2,9 +2,11 @@ import logging
 from datetime import datetime
 from typing import Type
 
-from sqlalchemy import delete
+from sqlalchemy import delete, update
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.sql.functions import coalesce
 
+from src.data import Sailor
 from src.data.engine import engine
 from src.data.models import Hosted
 
@@ -61,7 +63,21 @@ def save_hosted_data(log_id: int, target_id: int, log_time: datetime = datetime.
     """
     session = Session()
     try:
-        session.add(Hosted(log_id=log_id, target_id=target_id, log_time=log_time))
+        # First, check if the log ID already exists
+        if check_hosted_log_id_exists(log_id):
+            raise ValueError(f"Log ID {log_id} already exists in the Hosted table.")
+        else:
+            session.add(Hosted(log_id=log_id, target_id=target_id, log_time=log_time))
+
+            # Increment the host count for the target
+            session.execute(
+                update(Sailor)
+                .where(Sailor.discord_id == target_id)
+                .values({
+                    "hosted_count": coalesce(Sailor.hosted_count, 0) + 1
+                })
+            )
+
         session.commit()
         return True
     except Exception as e:
