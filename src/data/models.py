@@ -58,7 +58,7 @@ class Hosted(Base):
 
     log_id = Column(BIGINT, primary_key=True)
     target_id = mapped_column(ForeignKey("sailor.discord_id"))
-    amount = Column(Integer, server_default="1") # Note: This may not need to exist
+    # amount = Column(Integer, server_default="1") Note: no longer needed
     log_time = Column(DATETIME)
 
 
@@ -119,7 +119,7 @@ class Voyages(Base):
 
     log_id = Column(BIGINT, primary_key=True)
     target_id = mapped_column(ForeignKey("sailor.discord_id"), primary_key=True)
-    amount = Column(Integer, server_default="1") # Note: This may not need to exist
+    # amount = Column(Integer, server_default="1") Note: no longer needed
     log_time = Column(DATETIME)
 
 # Nifty function to create all tables
