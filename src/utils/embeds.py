@@ -4,7 +4,28 @@ Generic embeds for the bot.
 import discord
 
 from discord.ext import commands
+from discord.ext.commands.parameters import empty
 
+
+def default_embed(title: str = None, description: str = None):
+    """
+    Create a default embed.
+
+    Args:
+        title (str): The title of the embed.
+        description (str): The description of the embed.
+    Returns:
+        discord.Embed: The default embed
+    """
+    embed = discord.Embed(
+        title=title,
+        description=description,
+        color=discord.Color.blue(),
+    )
+    embed.set_author(
+        name="The United States Navy SoT"
+    )
+    return embed
 
 def error_embed(description: str, exception: Exception = None):
     """
