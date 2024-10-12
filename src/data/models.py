@@ -17,7 +17,7 @@ class SubclassType(enum.Enum):
     FLEX = "Flex"
     CANNONEER = "Cannoneer"
     HELM = "Helm"
-    GRENADE = "Grenadier"
+    GRENADIER = "Grenadier"
     SURGEON = "Surgeon"
 
 # Base class for all models

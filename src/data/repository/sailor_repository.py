@@ -1,14 +1,68 @@
 import logging
+from typing import Any, Type
 
 from sqlalchemy import update
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql.functions import coalesce
 
+from src.data import SubclassType
 from src.data.engine import engine
 from src.data.models import Sailor
 
 log = logging.getLogger(__name__)
 Session = sessionmaker(bind=engine)
+
+def increment_subclass_count_by_discord_id(target_id: int, subclass: SubclassType, increment: int = 1) -> bool:
+    """
+    Increment the subclass count for a specific Sailor
+
+    Args:
+        target_id (int): The Discord ID of the user.
+        subclass (SubclassType): The subclass to increment the count for.
+        increment (int): The amount to increment the count by.
+    Returns:
+        bool: True if the operation was successful, False otherwise.
+    """
+    session = Session()
+    column = subclass.value.lower() + "_points"
+    print(column)
+    print(increment)
+    try:
+        session.execute(
+            update(Sailor)
+            .where(Sailor.discord_id == target_id)
+            .values({
+                column: coalesce(getattr(Sailor, column), 0) + increment
+            })
+        )
+        session.commit()
+    except Exception as e:
+        log.error(f"Error incrementing subclass count: {e}")
+        session.rollback()
+        return False
+    finally:
+        session.close()
+
+
+def ensure_sailor_exists(target_id: int) -> Type[Sailor] | None:
+    """
+    Ensure that a Sailor exists in the database
+
+    Args:
+        target_id (int): The Discord ID of the user.
+    Returns:
+        Sailor: The Sailor object that was created or retrieved.
+    """
+    session = Session()
+    try:
+        sailor = Sailor(discord_id=target_id)
+        session.merge(sailor) # merge will update or create the sailor object if it doesn't exist
+        session.commit()
+        return session.query(Sailor).filter(Sailor.discord_id == target_id).first() # This will return the updated Sailor object
+    except Exception as e:
+        log.error(f"Error checking if Sailor exists: {e}")
+    finally:
+        session.close()
 
 def save_sailor(target_id: int) -> bool:
     """

@@ -4,8 +4,10 @@ from typing import Type
 
 from sqlalchemy.orm import sessionmaker
 
+from src.data import SubclassType
 from src.data.engine import engine
 from src.data.models import Subclasses
+from src.data.repository.sailor_repository import ensure_sailor_exists, increment_subclass_count_by_discord_id
 
 log = logging.getLogger(__name__)
 Session = sessionmaker(bind=engine)
@@ -28,19 +30,20 @@ def get_subclasses_by_target_id(target_id: int) -> list[Type[Subclasses]]:
     finally:
         session.close()
 
-def save_subclass(author_id: int, log_id: int, target_id: int, subclass: str, log_time: datetime) -> bool:
+def save_subclass(author_id: int, log_id: int, target_id: int, subclass: SubclassType, subclass_count: int = 1, log_time: datetime = datetime.datetime.now()) -> Subclasses or int:
     """
-    Adds a subclass record for a member. If a record with the same target_id,
-    subclass, and log_link exists, the write action is ignored to prevent duplicates.
+    Save a subclass record to the database
 
     Args:
-        author_id (int): Discord ID of the person adding the subclass record.
-        log_id (int): ID of the Discord message (log) for the subclass entry.
-        target_id (int): Discord ID of the member receiving the subclass entry.
-        subclass (str): Name of the subclass (e.g., "Carpenter", "Flex").
-        log_time (datetime): Time of the subclass entry.
+        author_id (int): The Discord ID of the author
+        log_id (int): The ID of the log message
+        target_id (int): The Discord ID of the target user
+        subclass (SubclassType): The subclass to log
+        subclass_count (int): The number of times the subclass was logged
+        log_time (datetime): The time the log was created
     Returns:
-        bool: True if the operation was successful, False otherwise.
+        Subclasses: The subclass record that was saved
+        -1: If a duplicate record is found
     """
 
     session = Session()
@@ -53,23 +56,31 @@ def save_subclass(author_id: int, log_id: int, target_id: int, subclass: str, lo
         ).first()
 
         if existing:
-            log.info(f"Subclass record already exists for {target_id}, {subclass}, {log_id}")
-            return False
+            log.warning(f"Duplicate subclass record found for {target_id} and {subclass} under log {log_id}, skipping")
+            return existing
 
         # Insert a new record if no duplicates are found
-        session.add(Subclasses(
+        new_subclass = Subclasses(
             author_id=author_id,
             log_id=log_id,
             target_id=target_id,
             subclass=subclass,
-            log_time=log_time
-        ))
+            log_time=log_time,
+            subclass_count=subclass_count
+        )
+
+        session.add(new_subclass)
+        print(subclass_count)
+        # Increment the subclass count for the target
+        increment_subclass_count_by_discord_id(target_id, subclass, subclass_count)
+
         session.commit()
-        return True
+
+        return new_subclass
 
     except Exception as e:
         print(f"Error logging subclass: {e}")
         session.rollback()
-        return False
+        raise e
     finally:
         session.close()
