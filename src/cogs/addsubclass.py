@@ -10,7 +10,7 @@ from src.config import VOYAGE_LOGS, NSC_ROLE, CANNONEER_SYNONYMS, FLEX_SYNONYMS,
     SURGEON_SYNONYMS, GRENADIER_SYNONYMS, NCO_AND_UP
 from src.data import SubclassType, engine
 from src.data.repository.sailor_repository import ensure_sailor_exists
-from src.data.repository.subclass_repository import save_subclass
+from src.data.repository.subclass_repository import SubclassRepository
 from src.utils.embeds import error_embed, default_embed
 
 log = getLogger(__name__)
@@ -49,6 +49,8 @@ class ConfirmView(discord.ui.View):
     async def confirm_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message(f"Attempting to add subclasses...", ephemeral=True)
 
+        subclass_repository = SubclassRepository()
+
         # Ensure the author exists in the database
         ensure_sailor_exists(self.author_id)
 
@@ -57,18 +59,19 @@ class ConfirmView(discord.ui.View):
             ensure_sailor_exists(discord_id)
             try:
                 log.debug(f"Adding main subclass {main_subclass} to {discord_id}")
-                save_subclass(self.author_id, self.log_id, discord_id, main_subclass)
+                subclass_repository.save_subclass(self.author_id, self.log_id, discord_id, main_subclass)
                 if is_surgeon:
                     log.debug(f"Adding Surgeon subclass to {discord_id}")
-                    save_subclass(self.author_id, self.log_id, discord_id, SubclassType.SURGEON)
+                    subclass_repository.save_subclass(self.author_id, self.log_id, discord_id, SubclassType.SURGEON)
                 if grenadier_points > 0:
                     log.debug(f"Adding {grenadier_points} Grenadier subclass to {discord_id}")
-                    save_subclass(self.author_id, self.log_id, discord_id, SubclassType.GRENADIER, grenadier_points)
+                    subclass_repository.save_subclass(self.author_id, self.log_id, discord_id, SubclassType.GRENADIER, grenadier_points)
             except Exception as e:
                 log.error(f"Error adding subclass: {e}")
                 return await interaction.followup.send(embed=error_embed(description="An error occurred while adding subclasses"))
+
         # End the interaction
-        # Edit the original message to inform the user that the subclasses were added successfully
+        subclass_repository.close_session()
         await interaction.followup.send(":white_check_mark: Subclasses added successfully", ephemeral=True)
 
 
