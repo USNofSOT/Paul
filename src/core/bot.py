@@ -6,6 +6,8 @@ from logging import getLogger
 
 from discord.ext.commands import ExtensionNotFound, NoEntryPointError, ExtensionFailed
 
+from src.cogs import EXTENTIONS
+
 log= getLogger(__name__)
 import discord, os
 
@@ -33,11 +35,11 @@ class Bot(discord.ext.commands.Bot):
         pass
 
     async def setup_hook(self):
-        # Dynamically get all cogs in the cogs directory
-        initial_extensions = [f"cogs.{filename[:-3]}" for filename in os.listdir("cogs") if filename.endswith(".py")]
-        for extension in initial_extensions:
-            try:
-                log.info(f"Attempting to load extension: {extension}")
-                await self.load_extension(extension)
-            except Exception as e:
-                log.error(f"Failed to load extension {extension}.", exc_info=e)
+        log.info(f"Loading {len(EXTENTIONS)} extensions")
+        for extension in EXTENTIONS:
+            log.info(f"Loading {extension}")
+            await self.load_extension(extension)
+        log.info("All extentions loaded")
+        await self.tree.sync()
+        log.info("Tree Synced")
+
