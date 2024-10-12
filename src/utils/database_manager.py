@@ -25,7 +25,8 @@ class DatabaseManager:
             database=self.DB_NAME
         )
         self.cursor = self.conn.cursor()
-        self.create_tables()
+        # Warning: Deprecated should use new database manager instead
+        # self.create_tables()
 
     def create_tables(self):
         try:
