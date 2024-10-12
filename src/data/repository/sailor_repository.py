@@ -12,34 +12,43 @@ from src.data.models import Sailor
 log = logging.getLogger(__name__)
 Session = sessionmaker(bind=engine)
 
-def increment_subclass_count_by_discord_id(target_id: int, subclass: SubclassType, increment: int = 1) -> bool:
-    """
-    Increment the subclass count for a specific Sailor
+class SailorRepository:
+    def __init__(self):
+        self.session = Session()
 
-    Args:
-        target_id (int): The Discord ID of the user.
-        subclass (SubclassType): The subclass to increment the count for.
-        increment (int): The amount to increment the count by.
-    Returns:
-        bool: True if the operation was successful, False otherwise.
-    """
-    session = Session()
-    column = subclass.value.lower() + "_points"
-    try:
-        session.execute(
-            update(Sailor)
-            .where(Sailor.discord_id == target_id)
-            .values({
-                column: coalesce(getattr(Sailor, column), 0) + increment
-            })
-        )
-        session.commit()
-    except Exception as e:
-        log.error(f"Error incrementing subclass count: {e}")
-        session.rollback()
-        return False
-    finally:
-        session.close()
+    def get_session(self):
+        return self.session
+
+    def close_session(self):
+        self.session.close()
+
+    def increment_subclass_count_by_discord_id(self, target_id: int, subclass: SubclassType, increment: int = 1) -> bool:
+        """
+        Increment the subclass count for a specific Sailor
+
+        Args:
+            target_id (int): The Discord ID of the user.
+            subclass (SubclassType): The subclass to increment the count for.
+            increment (int): The amount to increment the count by.
+        Returns:
+            bool: True if the operation was successful, False otherwise.
+        """
+        column = subclass.value.lower() + "_points"
+        try:
+            self.session.execute(
+                update(Sailor)
+                .where(Sailor.discord_id == target_id)
+                .values({
+                    column: coalesce(getattr(Sailor, column), 0) + increment
+                })
+            )
+            self.session.commit()
+        except Exception as e:
+            log.error(f"Error incrementing subclass count: {e}")
+            self.session.rollback()
+            raise e
+        finally:
+            self.session.close()
 
 
 def ensure_sailor_exists(target_id: int) -> Type[Sailor] | None:

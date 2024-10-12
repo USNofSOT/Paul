@@ -7,18 +7,20 @@ from sqlalchemy.orm import sessionmaker
 from src.data import SubclassType
 from src.data.engine import engine
 from src.data.models import Subclasses
-from src.data.repository.sailor_repository import ensure_sailor_exists, increment_subclass_count_by_discord_id
+from src.data.repository.sailor_repository import ensure_sailor_exists, SailorRepository
 
 log = logging.getLogger(__name__)
 Session = sessionmaker(bind=engine)
 class SubclassRepository:
     def __init__(self):
         self.session = Session()
+        self.sailor_repository = SailorRepository()
 
     def get_session(self):
         return self.session
 
     def close_session(self):
+        self.sailor_repository.close_session()
         self.session.close()
 
     def save_subclass(self, author_id: int, log_id: int, target_id: int, subclass: SubclassType, subclass_count: int = 1, log_time: datetime = datetime.datetime.now()) -> Subclasses or int:
@@ -61,7 +63,7 @@ class SubclassRepository:
 
             self.session.add(new_subclass)
             # Increment the subclass count for the target
-            increment_subclass_count_by_discord_id(target_id, subclass, subclass_count)
+            self.sailor_repository.increment_subclass_count_by_discord_id(target_id, subclass, subclass_count)
             self.session.commit()
 
             return new_subclass
