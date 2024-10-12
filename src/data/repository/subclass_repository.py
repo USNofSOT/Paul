@@ -70,7 +70,6 @@ def save_subclass(author_id: int, log_id: int, target_id: int, subclass: Subclas
         )
 
         session.add(new_subclass)
-        print(subclass_count)
         # Increment the subclass count for the target
         increment_subclass_count_by_discord_id(target_id, subclass, subclass_count)
 
@@ -79,7 +78,7 @@ def save_subclass(author_id: int, log_id: int, target_id: int, subclass: Subclas
         return new_subclass
 
     except Exception as e:
-        print(f"Error logging subclass: {e}")
+        log.error(f"Error saving subclass record: {e}")
         session.rollback()
         raise e
     finally:
