@@ -34,6 +34,3 @@ def  save_forceadd(target_id: int, type: str, amount: int, moderator_id: int, ad
         raise e
     finally:
         session.close()
-
-if __name__ == '__main__':
-    log_forceadd(123, "test", 100, 2)

@@ -1,15 +1,17 @@
-#imports
+"""
+DEPRECATION NOTICE:
+DO NOT USE THIS MANAGER. THIS MANAGER DEPRECATED AND WILL BE REMOVED IN THE FUTURE.
 
+---
+
+NEW DATABASE MANAGER CAN BE FOUND UNDER /src/data/
+"""
 
 import mysql.connector
 import os
 
 from dotenv import load_dotenv
 from typing import Final
-
-
-
-
 
 class DatabaseManager:
     def __init__(self):
@@ -25,7 +27,8 @@ class DatabaseManager:
             database=self.DB_NAME
         )
         self.cursor = self.conn.cursor()
-        self.create_tables()
+        # Warning: Deprecated should use new database manager instead
+        # self.create_tables()
 
     def create_tables(self):
         try:
