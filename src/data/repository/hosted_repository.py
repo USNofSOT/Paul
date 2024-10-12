@@ -52,7 +52,7 @@ def check_hosted_log_id_exists(log_id: int) -> bool:
 
 def save_hosted_data(log_id: int, target_id: int, log_time: datetime = datetime.now()) -> bool:
     """
-    Adds a hosted data entry to the Hosted table.
+    Adds a hosted data entry to the Hosted table. Also increments the hosted count for the target.
 
     Args:
         log_id (int): The log ID of the hosted data.

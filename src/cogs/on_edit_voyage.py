@@ -1,12 +1,14 @@
-import discord, config
+import discord
 from discord.ext import commands
 from discord import app_commands
-from config import VOYAGE_LOGS
-from utils.database_manager import DatabaseManager
+
+from src.config import VOYAGE_LOGS
+from src.data.repository.sailor_repository import decrement_voyage_count_by_discord_id, \
+    increment_voyage_count_by_discord_id
+from src.data.repository.voyage_repository import remove_voyage_by_log_id, remove_voyage_log_entry, \
+    check_voyage_log_id_with_target_id_exists, save_voyage
 
 #On Message Editing events adjust voyages
-
-db_manager = DatabaseManager()
 
 class On_Edit_Voyages(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -22,17 +24,19 @@ class On_Edit_Voyages(commands.Cog):
             # Participants removed from the log
             removed_participants = set(old_participant_ids) - set(new_participant_ids)
             for participant_id in removed_participants:
-                db_manager.decrement_count(participant_id, "voyage_count")
-                db_manager.remove_voyage_log_entry(after.id, participant_id)
+                # Decrement voyage count for the participant
+                decrement_voyage_count_by_discord_id(participant_id)
+                # Remove entry from VoyageLog table
+                remove_voyage_log_entry(after.id, participant_id)
                 print(f"Voyage log removed: {after.id}")
 
             # New participants added to the log
             added_participants = set(new_participant_ids) - set(old_participant_ids)
             for participant_id in added_participants:
-                db_manager.increment_voyage_count(participant_id)
+                increment_voyage_count_by_discord_id(participant_id)
                 # Add new entry to VoyageLog table if needed
-                if not db_manager.voyage_log_entry_exists(after.id, participant_id):
-                    db_manager.log_voyage_data(after.id, participant_id, after.created_at)
+                if not check_voyage_log_id_with_target_id_exists(after.id, participant_id):
+                    save_voyage(after.id, participant_id, after.created_at)
                     print(f"Voyage log added: {after.id}")
 
 async def setup(bot: commands.Bot):

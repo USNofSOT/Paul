@@ -1,12 +1,12 @@
-import discord, config
+import discord
 from discord.ext import commands
 from discord import app_commands
-from config import VOYAGE_LOGS
-from utils.database_manager import DatabaseManager
 
-# Remove voyages, and hosted on message deletion
-
-db_manager = DatabaseManager()
+from src.config import VOYAGE_LOGS
+from src.data.repository.hosted_repository import remove_hosted_entry_by_log_id
+from src.data.repository.sailor_repository import decrement_voyage_count_by_discord_id, \
+    decrement_hosted_count_by_discord_id
+from src.data.repository.voyage_repository import remove_voyage_log_entry, remove_voyage_log_entries
 
 class On_Delete_Voyages(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -20,15 +20,15 @@ class On_Delete_Voyages(commands.Cog):
                 participant_ids = [user.id for user in message.mentions]
 
                 # Decrement hosted count
-                db_manager.decrement_count(host_id, "hosted_count")
-                db_manager.remove_hosted_entry( log_id)
+                decrement_hosted_count_by_discord_id(host_id)
+                remove_hosted_entry_by_log_id(log_id)
 
                 # Decrement voyage counts for participants
                 for participant_id in participant_ids:
-                    db_manager.decrement_count(participant_id, "voyage_count")
+                    decrement_voyage_count_by_discord_id(participant_id)
                     print(f"Voyage count deleted: {participant_id}")
                 # Remove entries from VoyageLog table (if necessary)
-                db_manager.remove_voyage_log_entries(log_id)
+                remove_voyage_log_entries(log_id)
                 print(f"Voyage log deleted: {log_id}")
         
 

@@ -127,6 +127,36 @@ def increment_voyage_count_by_discord_id(target_id: int) -> bool:
     finally:
         session.close()
 
+def decrement_hosted_count_by_discord_id(target_id: int) -> bool:
+    """
+    Decrement the hosted_count column for a specific Sailor
+
+    Cannot go below 0
+
+    Args:
+        target_id (int): The Discord ID of the user.
+    Returns:
+        bool: True if the operation was successful, False otherwise.
+    """
+    session = Session()
+    try:
+        session.execute(
+            update(Sailor)
+            .where(Sailor.discord_id == target_id)
+            .values({
+                "hosted_count": max(coalesce(Sailor.hosted_count, 0) - 1, 0)
+            })
+        )
+        session.commit()
+        return True
+    except Exception as e:
+        log.error(f"Error decrementing hosted count: {e}")
+        session.rollback()
+        return False
+    finally:
+        session.close()
+        
+
 def decrement_voyage_count_by_discord_id(target_id: int) -> bool:
     """
     Decrement the voyage_count column for a specific Sailor
