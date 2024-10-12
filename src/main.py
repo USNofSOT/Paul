@@ -2,6 +2,8 @@ from __future__ import annotations
 import asyncio, discord, os, config
 from logging import getLogger
 
+from src.data import create_tables
+
 log= getLogger(__name__)
 from core import Bot
 
@@ -15,5 +17,7 @@ async def main():
         async def on_message(message):
             await bot.process_commands(message)  # Process commands here
 
+
 if __name__ == '__main__':
+    create_tables()
     asyncio.run(main())
