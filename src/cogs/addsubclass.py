@@ -39,7 +39,7 @@ subclass_map = {
 
 
 class ConfirmView(discord.ui.View):
-    def __init__(self, updates, author_id, log_id):
+    def __init__(self, updates : [any], author_id, log_id):
         self.author_id = author_id
         self.log_id = log_id
         self.updates = updates
@@ -178,6 +178,14 @@ class AddSubclass(commands.Cog):
         view = ConfirmView(updates, author_id, log_id)
 
         await interaction.followup.send(embed=embed, view=view)
+
+
+    @addsubclass.error
+    async def addsubclass_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        log.error(f"Error occurred in addsubclass command: {error}")
+        if isinstance(error, app_commands.errors.MissingAnyRole):
+            embed = error_embed(title="Missing Permissions", description="You do not have the required permissions to use this command.", footer=False)
+            await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
 async def setup(bot: commands.Bot):

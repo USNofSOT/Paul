@@ -27,22 +27,26 @@ def default_embed(title: str = None, description: str = None):
     )
     return embed
 
-def error_embed(description: str, exception: Exception = None):
+def error_embed(title: str = "Error occurred", description: str = "Something went wrong...", exception: Exception = None, footer: bool = True):
     """
     Create a generic error embed.
 
     Args:
+        title (str): The title of the error.
         description (str): The description of the error.
         exception (Exception): The error identifier. Commonly a python exception.
+        footer (bool): Whether to include the footer message.
     Returns:
         discord.Embed: The error embed
     """
     embed = discord.Embed(
-        title="Error occurred",
+        title=title,
         description=description,
         color=discord.Color.red(),
     )
-    embed.set_footer(text="If this issue persists, please contact the NCS Department.")
+
+    if footer:
+        embed.set_footer(text="If this issue persists, please contact the NCS Department.")
 
     if exception:
         embed.add_field(name="Error Type", value=exception.__class__.__name__)
