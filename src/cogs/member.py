@@ -31,11 +31,16 @@ class Member(commands.Cog):
 
         ensure_sailor_exists(target.id)
 
+        # Get the appropriate avatar URL
+        avatar_url = target.guild_avatar.url if target.guild_avatar else target.avatar.url
+
         embed = default_embed(
             title=f"{target.display_name or target.name}",
             description=f"{target.mention}",
             author=False
         )
+
+        embed.set_thumbnail(url=avatar_url)
 
         embed.add_field(
             name="Time in Server",
