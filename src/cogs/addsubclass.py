@@ -172,7 +172,6 @@ class AddSubclass(commands.Cog):
             requires_update = False
 
             # Check if any of the subclasses are already in the database
-            print(main_subclass)
             if any(entry.subclass == main_subclass for entry in relative_entries):
                 is_new = False  # Main subclass already exists
 
