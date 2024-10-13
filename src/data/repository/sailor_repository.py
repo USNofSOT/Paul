@@ -50,6 +50,61 @@ class SailorRepository:
         finally:
             self.session.close()
 
+    def update_or_create_sailor_by_discord_id(self, target_id: int, gamertag: str | None = None,
+                                              timezone: str | None = None) -> Sailor | None:
+        """
+        Set the gamertag and or timezone for a Sailor by Discord ID
+        Will create a new Sailor if one does not exist
+
+        Args:
+            target_id (int): The Discord ID of the user.
+            gamertag (str | None): The gamertag to set for the user. Optional.
+            timezone (str | None): The timezone to set for the user. Optional.
+        Returns:
+            Sailor: The Sailor object that was updated, or None if the operation failed.
+        """
+        try:
+            sailor = Sailor(discord_id=target_id)
+
+            # Ensures that the gamertag and timezone are only altered if they are not None
+            if gamertag:
+                sailor.gamertag = gamertag
+            if timezone:
+                sailor.timezone = timezone
+
+            self.session.merge(sailor)  # merge will update or create the sailor object if it doesn't exist
+            self.session.commit()
+            return self.session.query(Sailor).filter(
+                Sailor.discord_id == target_id).first()  # This will return the updated Sailor object
+        except Exception as e:
+            log.error(f"Error setting gamertag: {e}")
+            self.session.rollback()
+            raise e
+
+    def increment_voyage_count_by_discord_id(self, target_id: int) -> bool:
+        """
+        Increment the voyage_count column for a specific Sailor
+
+        Args:
+            target_id (int): The Discord ID of the user.
+        Returns:
+            bool: True if the operation was successful, False otherwise.
+        """
+        try:
+            self.session.execute(
+                update(Sailor)
+                .where(Sailor.discord_id == target_id)
+                .values({
+                    "voyage_count": coalesce(Sailor.voyage_count, 0) + 1
+                })
+            )
+            self.session.commit()
+            return True
+        except Exception as e:
+            log.error(f"Error incrementing voyage count: {e}")
+            self.session.rollback()
+            return False
+
 
 def ensure_sailor_exists(target_id: int) -> Type[Sailor] | None:
     """
@@ -127,64 +182,6 @@ def get_timezone_by_discord_id(target_id: int) -> str | None:
     except Exception as e:
         log.error(f"Error retrieving timezone: {e}")
         return None
-    finally:
-        session.close()
-
-def update_or_create_sailor_by_discord_id(target_id: int, gamertag: str | None = None, timezone: str | None = None) -> Sailor | None:
-    """
-    Set the gamertag and or timezone for a Sailor by Discord ID
-    Will create a new Sailor if one does not exist
-
-    Args:
-        target_id (int): The Discord ID of the user.
-        gamertag (str | None): The gamertag to set for the user. Optional.
-        timezone (str | None): The timezone to set for the user. Optional.
-    Returns:
-        Sailor: The Sailor object that was updated, or None if the operation failed.
-    """
-    session = Session()
-    try:
-        sailor = Sailor(discord_id=target_id)
-
-        # Ensures that the gamertag and timezone are only altered if they are not None
-        if gamertag:
-            sailor.gamertag = gamertag
-        if timezone:
-            sailor.timezone = timezone
-
-        session.merge(sailor) # merge will update or create the sailor object if it doesn't exist
-        session.commit()
-        return session.query(Sailor).filter(Sailor.discord_id == target_id).first() # This will return the updated Sailor object
-    except Exception as e:
-        log.error(f"Error setting gamertag: {e}")
-        raise e
-    finally:
-        session.close()
-
-def increment_voyage_count_by_discord_id(target_id: int) -> bool:
-    """
-    Increment the voyage_count column for a specific Sailor
-
-    Args:
-        target_id (int): The Discord ID of the user.
-    Returns:
-        bool: True if the operation was successful, False otherwise.
-    """
-    session = Session()
-    try:
-        session.execute(
-            update(Sailor)
-            .where(Sailor.discord_id == target_id)
-            .values({
-                "voyage_count": coalesce(Sailor.voyage_count, 0) + 1
-            })
-        )
-        session.commit()
-        return True
-    except Exception as e:
-        log.error(f"Error incrementing voyage count: {e}")
-        session.rollback()
-        return False
     finally:
         session.close()
 

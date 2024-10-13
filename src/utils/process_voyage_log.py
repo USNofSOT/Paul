@@ -1,8 +1,9 @@
 from logging import getLogger
 
+import discord
+
 from src.data.repository.hosted_repository import HostedRepository
-from src.data.repository.sailor_repository import update_or_create_sailor_by_discord_id, \
-    increment_voyage_count_by_discord_id
+from src.data.repository.sailor_repository import SailorRepository
 from src.data.repository.voyage_repository import VoyageRepository
 
 log = getLogger(__name__)
@@ -10,9 +11,10 @@ log = getLogger(__name__)
 class Process_Voyage_Log:
     #subroutine to check if a voyage log already exists, and processes it if it does not.
     async def process_voyage_log(
-            message,
+            message: discord.Message,
             voyage_repository: VoyageRepository = VoyageRepository(),
-            hosted_repository: HostedRepository = HostedRepository()
+            hosted_repository: HostedRepository = HostedRepository(),
+            sailor_repository: SailorRepository = SailorRepository()
     ):
         log_id = message.id
         host_id = message.author.id
@@ -29,7 +31,7 @@ class Process_Voyage_Log:
             return  # Skip if the log has already been processed
 
         # 2. If not, process the log. But first, ensure the host is in the Sailor table
-        update_or_create_sailor_by_discord_id(host_id)
+        sailor_repository.update_or_create_sailor_by_discord_id(host_id)
         hosted_repository.save_hosted_data(log_id, host_id, log_time)
         # 3.Log Voyage Count
 
@@ -37,15 +39,11 @@ class Process_Voyage_Log:
         for participant_id in participant_ids:
             if not voyage_repository.check_voyage_log_id_with_target_id_exists(log_id, participant_id):
                     # Ensure the participant is in the Sailor table
-                    update_or_create_sailor_by_discord_id(participant_id)
+                    sailor_repository.update_or_create_sailor_by_discord_id(participant_id)
                     # Add the voyage data to the list
                     voyage_data.append((log_id, participant_id, log_time))
                     # Increment the voyage count for the participant
-                    increment_voyage_count_by_discord_id(participant_id)
+                    sailor_repository.increment_voyage_count_by_discord_id(participant_id)
 
         # Batch insert voyage data
         voyage_repository.batch_save_voyage_data(voyage_data)
-
-        # Close the session
-        voyage_repository.close_session()
-        hosted_repository.close_session()
