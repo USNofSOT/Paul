@@ -12,6 +12,53 @@ from src.data.models import Voyages
 log = logging.getLogger(__name__)
 Session = sessionmaker(bind=engine)
 
+class VoyageRepository:
+    def __init__(self, session: Session = None):
+        self.session = session or Session
+
+    def get_session(self):
+        return self.session
+
+    def close_session(self):
+        self.session.close()
+
+    def batch_save_voyage_data(self, voyage_data: list[tuple[int, int, datetime]]):
+        """
+        Batch inserts voyage records. Ignores duplicates based on log_id and participant_id.
+
+        Args:
+            voyage_data (list): A list of tuples, where each tuple contains (log_id, target_id, datetime)
+        """
+        try:
+            for log_id, target_id, log_time in voyage_data:
+                if not self.session.query(Voyages).filter_by(log_id=log_id, target_id=target_id).first():
+                    self.session.add(Voyages(log_id=log_id, target_id=target_id, log_time=log_time))
+            self.session.commit()
+        except Exception as e:
+            log.error(f"Error inserting voyage data: {e}")
+            self.session.rollback()
+            raise e
+
+    def check_voyage_log_id_with_target_id_exists(self, log_id: int, target_id: int) -> bool:
+        """
+        Check if the voyage log ID exists for a specific target ID
+
+        Args:
+            log_id (int): The log ID to check.
+            target_id (int): The target ID to check.
+        Returns:
+            bool: True if the log ID exists, False otherwise.
+        """
+        try:
+            exists = self.session.query(Voyages).filter(Voyages.log_id == log_id,
+                                                   Voyages.target_id == target_id).scalar() is not None
+            return exists
+        except Exception as e:
+            log.error(f"Error checking if voyage log ID exists: {e}")
+            self.session.rollback()
+            raise e
+
+
 def check_voyage_log_id_with_target_id_exists(log_id: int, target_id: int) -> bool:
     """
     Check if the voyage log ID exists for a specific target ID
@@ -106,26 +153,6 @@ def remove_voyage_by_log_id(log_id: int) -> bool:
     finally:
         session.close()
 
-def batch_save_voyage_data(voyage_data: list[tuple[int, int, datetime]]):
-    """
-    Batch inserts voyage records. Ignores duplicates based on log_id and participant_id.
-
-    Args:
-        voyage_data (list): A list of tuples, where each tuple contains (log_id, target_id, datetime)
-    """
-    session = Session()
-    try:
-        for log_id, target_id, log_time in voyage_data:
-            if not session.query(Voyages).filter_by(log_id=log_id, target_id=target_id).first():
-                session.add(Voyages(log_id=log_id, target_id=target_id, log_time=log_time))
-        session.commit()
-    except Exception as e:
-        log.error(f"Error inserting voyage data: {e}")
-        session.rollback()
-        raise e
-    finally:
-        session.close()
-
 def remove_voyage_log_entries(log_id: int) -> bool:
     """
     Remove all voyage log entries for a specific log ID
@@ -172,10 +199,3 @@ def remove_voyage_log_entry(log_id: int, target_id: int) -> bool:
         return False
     finally:
         session.close()
-
-if __name__ == '__main__':
-    batch_save_voyage_data([
-        (55, 2, datetime.now()),
-        (8, 2, datetime.now()),
-        (7, 2, datetime.now()),
-    ])
