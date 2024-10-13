@@ -1,6 +1,8 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
+
+from src.config import JO_AND_UP
 from src.data.repository.coin_repository import CoinRepository
 from logging import getLogger
 
@@ -26,7 +28,7 @@ class AddCoin(commands.Cog):
 
     @app_commands.command(name="addcoin", description="Add coins to a user")
     @app_commands.describe(target="Select the user you want to add coins to")
-    @app_commands.checks.has_any_role("Junior Officer", "Senior Officer")
+    @app_commands.checks.has_any_role(JO_AND_UP)
     async def addcoin(self, interaction: discord.Interaction, target: discord.Member = None, coins: int = 0):
         # Set the target to the user running the command if not provided
         if target is None:

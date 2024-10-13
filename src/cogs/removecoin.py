@@ -1,6 +1,8 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
+
+from src.config import JO_AND_UP
 from src.data.repository.coin_repository import CoinRepository
 from logging import getLogger
 
@@ -27,7 +29,7 @@ class RemoveCoin(commands.Cog):
 
     @app_commands.command(name="removecoin", description="Remove coins from a user")
     @app_commands.describe(target="Select the user you want to remove coins from")
-    @app_commands.checks.has_any_role("Junior Officer", "Senior Officer")
+    @app_commands.checks.has_any_role(JO_AND_UP)
     async def removecoin(self, interaction: discord.Interaction, target: discord.Member = None, coins: int = 0):
         # Set the target to the user running the command if not provided
         if target is None:
