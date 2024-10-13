@@ -118,7 +118,6 @@ class SailorRepository:
         """
         column = subclass.value.lower() + "_points"
         try:
-            log.info(f"Decrementing {subclass} count for {target_id} by {subclass_count}")
             self.session.execute(
                 update(Sailor)
                 .where(Sailor.discord_id == target_id)
