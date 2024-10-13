@@ -9,10 +9,11 @@ log = getLogger(__name__)
 
 class Process_Voyage_Log:
     #subroutine to check if a voyage log already exists, and processes it if it does not.
-    async def process_voyage_log(message, session = None):
-        voyage_repository = VoyageRepository(session)
-        hosted_repository = HostedRepository(session)
-
+    async def process_voyage_log(
+            message,
+            voyage_repository: VoyageRepository = VoyageRepository(),
+            hosted_repository: HostedRepository = HostedRepository()
+    ):
         log_id = message.id
         host_id = message.author.id
         log_time = message.created_at
