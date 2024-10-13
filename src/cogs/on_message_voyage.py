@@ -1,3 +1,5 @@
+from logging import getLogger
+
 import discord, config, asyncio
 from discord.ext import commands
 from discord import app_commands
@@ -5,6 +7,8 @@ from config import VOYAGE_LOGS
 from utils.process_voyage_log import Process_Voyage_Log
 
 # from utils.database_manager import DatabaseManager   # Imports Database Manager from Utilies if needed uncomment it!
+
+log = getLogger(__name__)
 
 class On_Message_Process_voyage(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -17,7 +21,7 @@ class On_Message_Process_voyage(commands.Cog):
         # Voyage Channel Work
         if message.channel.id == int(VOYAGE_LOGS):
             await Process_Voyage_Log.process_voyage_log(message)
-            print(f"Voyage log processed: {message.id}")
+            log.info(f"[{message.id}] Voyage log processed.")
 
 
         

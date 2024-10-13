@@ -1,8 +1,11 @@
+from logging import getLogger
+
 from src.data.repository.hosted_repository import check_hosted_log_id_exists, save_hosted_data
 from src.data.repository.sailor_repository import update_or_create_sailor_by_discord_id, \
     increment_voyage_count_by_discord_id
 from src.data.repository.voyage_repository import batch_save_voyage_data, check_voyage_log_id_with_target_id_exists
 
+log = getLogger(__name__)
 
 class Process_Voyage_Log:
     #subroutine to check if a voyage log already exists, and processes it if it does not.
@@ -14,7 +17,7 @@ class Process_Voyage_Log:
         for user in message.mentions:
             participant_ids.append(user.id)
 
-        #print(f" logid: {log_id} hostid: {host_id} time: {log_time}") # Used to view data on console as it is processed.
+        log.info(f"[{log_id}] Processing voyage log for host: {host_id} with {len(participant_ids)} participants.")
 
         # 1. Check if the log has already been processed
         if check_hosted_log_id_exists(log_id):
