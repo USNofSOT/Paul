@@ -73,6 +73,11 @@ class ConfirmView(discord.ui.View):
         subclass_repository.close_session()
         await interaction.followup.send(":white_check_mark: Subclasses added successfully", ephemeral=True)
 
+        # Get the log message
+        message = await interaction.channel.fetch_message(int(self.log_id))
+        # Add a reaction to the log message
+        await message.add_reaction(":white_check_mark:")
+
 
 class AddSubclass(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -179,6 +184,7 @@ class AddSubclass(commands.Cog):
             if surgeon and any(entry.subclass == SubclassType.SURGEON for entry in relative_entries):
                 is_new = False  # Surgeon subclass already exists
 
+
             # Check if Grenadier subclass is already in the database
             if grenadier > 0 and any(entry.subclass == SubclassType.GRENADIER for entry in relative_entries):
                 is_new = False  # Grenadier subclass already exists
@@ -189,6 +195,9 @@ class AddSubclass(commands.Cog):
                     (surgeon and not any(entry.subclass == SubclassType.SURGEON for entry in relative_entries)) or
                     (0 < grenadier != sum(entry.subclass_count for entry in relative_entries if entry.subclass == SubclassType.GRENADIER))
             )
+
+            if not surgeon and any(entry.subclass == SubclassType.SURGEON for entry in relative_entries):
+                requires_update = True
 
             # If no update is required, add to duplicates and skip
             if not requires_update:
