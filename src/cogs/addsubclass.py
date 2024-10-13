@@ -11,6 +11,7 @@ from src.config import VOYAGE_LOGS, NSC_ROLE, CANNONEER_SYNONYMS, FLEX_SYNONYMS,
 from src.data import SubclassType
 from src.data.repository.sailor_repository import ensure_sailor_exists
 from src.data.repository.subclass_repository import SubclassRepository
+from src.utils.discord_utils import get_best_display_name
 from src.utils.embeds import error_embed, default_embed
 
 log = getLogger(__name__)
@@ -109,7 +110,7 @@ class AddSubclass(commands.Cog):
 
         # Retrieve the author of the log
         log_author = log_message.author
-        embed.set_author(name="Author: " + self.bot.get_guild(log_message.guild.id).get_member(log_author.id).display_name)
+        embed.set_author(name="Author: " + get_best_display_name(self.bot, log_author.id))
         embed.add_field(name="\u200b", value="\u200b", inline=False)
         author_id = log_author.id
 
@@ -134,10 +135,7 @@ class AddSubclass(commands.Cog):
             # Retrieve the Discord ID from the line
             discord_id = retrieve_discord_id_from_process_line(process_line)
             # Get users name from GUILD or Anonymous
-            user_name = "Anonymous"
-            user = self.bot.get_user(discord_id)
-            if user:
-                user_name = self.bot.get_guild(log_message.guild.id).get_member(discord_id).display_name
+            user_name = get_best_display_name(self.bot, discord_id)
 
             # Check for main subclasses
             main_subclass = None
