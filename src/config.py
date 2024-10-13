@@ -8,6 +8,9 @@ load_dotenv()
 # TOKEN
 TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
 
+# GUILD ID
+GUILD_ID: Final[int] = 933907909954371654
+
 # BOAT COMMAND CHANNEL ID'S
 BC_LUSTY: Final[int]=995297017439977625
 BC_AUDACIOUS: Final[int]=1164680390204739674
@@ -40,7 +43,16 @@ BOA_ROLE = 933914385099923497 # Board of Admirality
 NRC_ROLE = 944631719456284735 # NRC Department
 NSC_ROLE = 1293725126562680985 # NSC Department
 
+# Subclass Synonyms
+CARPENTER_SYNONYMS = ['carpenter', 'carp', 'bilge']
+FLEX_SYNONYMS = ['flex', 'flexer', 'boarder']
+CANNONEER_SYNONYMS = ['cannoneer', 'cannon', 'gunner', 'canonneer', 'cannons']
+HELM_SYNONYMS = ['helm', 'helmsman', 'navigator']
+SURGEON_SYNONYMS = ['surgeon', 'doc', 'medic', 'field surgeon']
+GRENADIER_SYNONYMS = ['grenadier', 'kegger', 'bomber']
+
 # PERMISSIONS these are list with integers values, every integer value corresponds with a role\
 # Note: For adding these you should declare them as followed @app_commands.checks.has_any_role(*SNCO_AND_UP)
 JE_AND_UP = JE_ROLE, NCO_ROLE, SNCO_ROLE, JO_ROLE, SO_ROLE, BOA_ROLE, NSC_ROLE
+NCO_AND_UP = NCO_ROLE, SNCO_ROLE, JO_ROLE, SO_ROLE, BOA_ROLE, NSC_ROLE
 SNCO_AND_UP = SNCO_ROLE, JO_ROLE, SO_ROLE, BOA_ROLE, NSC_ROLE
