@@ -3,7 +3,7 @@ from typing import Any, Type
 
 from sqlalchemy import update
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.sql.functions import coalesce
+from sqlalchemy.sql.functions import coalesce, func
 
 from src.data import SubclassType
 from src.data.engine import engine
@@ -190,9 +190,9 @@ def increment_voyage_count_by_discord_id(target_id: int) -> bool:
 
 def decrement_hosted_count_by_discord_id(target_id: int) -> bool:
     """
-    Decrement the hosted_count column for a specific Sailor
+    Decrement the hosted_count column for a specific Sailor.
 
-    Cannot go below 0
+    Cannot go below 0.
 
     Args:
         target_id (int): The Discord ID of the user.
@@ -205,7 +205,7 @@ def decrement_hosted_count_by_discord_id(target_id: int) -> bool:
             update(Sailor)
             .where(Sailor.discord_id == target_id)
             .values({
-                "hosted_count": max(coalesce(Sailor.hosted_count, 0) - 1, 0)
+                "hosted_count": func.greatest(func.coalesce(Sailor.hosted_count, 0) - 1, 0)
             })
         )
         session.commit()
@@ -235,7 +235,7 @@ def decrement_voyage_count_by_discord_id(target_id: int) -> bool:
             update(Sailor)
             .where(Sailor.discord_id == target_id)
             .values({
-                "voyage_count": max(coalesce(Sailor.voyage_count, 0) - 1, 0)
+                "voyage_count": func.greatest(func.coalesce(Sailor.voyage_count, 0) - 1, 0)
             })
         )
         session.commit()
