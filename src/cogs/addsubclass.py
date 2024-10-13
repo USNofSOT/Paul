@@ -40,8 +40,9 @@ subclass_map = {
 subclass_repository = SubclassRepository()
 
 class ConfirmView(discord.ui.View):
-    def __init__(self, updates : [any], author_id, log_id):
+    def __init__(self, updates : [any], missing_users: [int], author_id: int, log_id: str):
         self.author_id = author_id
+        self.missing_users = missing_users
         self.log_id = log_id
         self.updates = updates
         super().__init__(timeout=None)
@@ -51,6 +52,11 @@ class ConfirmView(discord.ui.View):
         await interaction.response.send_message(f"Attempting to add subclasses...", ephemeral=True)
         # Ensure the author exists in the database
         ensure_sailor_exists(self.author_id)
+
+        for discord_id in self.missing_users:
+            ensure_sailor_exists(discord_id)
+            subclass_repository.delete_subclasses_for_target_in_log(discord_id, self.log_id)
+
 
         for discord_id, main_subclass, is_surgeon, grenadier_points in self.updates:
             # ensure the sailor exists in the database
@@ -72,11 +78,6 @@ class ConfirmView(discord.ui.View):
         # End the interaction
         subclass_repository.close_session()
         await interaction.followup.send(":white_check_mark: Subclasses added successfully", ephemeral=True)
-
-        # Get the log message
-        message = await interaction.channel.fetch_message(int(self.log_id))
-        # Add a reaction to the log message
-        await message.add_reaction(":white_check_mark:")
 
 
 class AddSubclass(commands.Cog):
@@ -133,16 +134,23 @@ class AddSubclass(commands.Cog):
                 log.debug(f"Found line to be processed: {line}")
 
         current_entries = subclass_repository.entries_for_log_id(int(log_id))
+        users_found_in_database = [entry.target_id for entry in current_entries]
+        users_found_in_processed_lines = []
+
         # A duplicate is an update that is fully present in the database, this means every entry of it
         duplicates = []
         # A list of updates to be made
         updates = []
+
         for process_line in to_be_processed_lines:
             log.debug(f"Processing line: {process_line}")
             # Retrieve the Discord ID from the line
             discord_id = retrieve_discord_id_from_process_line(process_line)
+
             # Get users name from GUILD or Anonymous
             user_name = get_best_display_name(self.bot, discord_id)
+
+
 
             # Check for main subclasses
             main_subclass = None
@@ -151,6 +159,12 @@ class AddSubclass(commands.Cog):
                     log.debug(f"Adding {subclass} subclass to {discord_id}")
                     main_subclass = subclass
                     break
+
+            if not main_subclass:
+                continue
+            else:
+                users_found_in_processed_lines.append(discord_id)
+
             if not main_subclass:
                 log.error(f"Couldn't process the log properly, please ensure the log is formatted correctly")
                 await interaction.followup.send(
@@ -216,12 +230,25 @@ class AddSubclass(commands.Cog):
                 inline=False,
             )
 
+        missing_users = {entry.target_id for entry in current_entries if
+                         entry.target_id not in users_found_in_processed_lines}
+
+        for missing_users_id in missing_users:
+            user_name = get_best_display_name(self.bot, missing_users_id)
+            embed.add_field(
+                name=f"{user_name} - :x:",
+                value="User not found in log",
+                inline=False,
+            )
+
         if duplicates:
             embed.set_footer(text=f"{len(duplicates)} out of {len(to_be_processed_lines)} entries were duplicates and were removed from this list.")
-        if len(duplicates) == len(to_be_processed_lines):
+        if len(duplicates) == len(to_be_processed_lines) and len(missing_users) == 0:
             return await interaction.followup.send(embed=default_embed(description=f"All entries ({len(duplicates)}) were duplicates. No subclasses to add."))
+        if len(updates) == 0 and len(missing_users) == 0:
+            return await interaction.followup.send(embed=default_embed(description="No new subclasses to add."))
 
-        view = ConfirmView(updates, author_id, log_id)
+        view = ConfirmView(updates, missing_users, author_id, log_id)
         await interaction.followup.send(embed=embed, view=view)
 
 
