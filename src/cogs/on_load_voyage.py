@@ -31,7 +31,7 @@ class On_Load_Voyages(commands.Cog):
 
 
             channel = self.bot.get_channel(VOYAGE_LOGS)
-            async for message in channel.history(limit=50, oldest_first=False):  # Fetch the last 50
+            async for message in channel.history(limit=0, oldest_first=False):  # Fetch the last 50
                 await Process_Voyage_Log.process_voyage_log(message, voyage_repository, hosted_repository, sailor_repository)
                 await asyncio.sleep(0.5)  # Introduce a 1second delay to prevent blocking
                 #print(f"Processed log: {message.id}.")  #enable this line if you need to view the processing as it happens.

@@ -1,14 +1,13 @@
 from logging import getLogger
 
-import discord
 from discord.ext import commands
-from discord import app_commands
 
 from src.config import VOYAGE_LOGS
 from src.data.repository.hosted_repository import remove_hosted_entry_by_log_id
 from src.data.repository.sailor_repository import decrement_voyage_count_by_discord_id, \
     decrement_hosted_count_by_discord_id
-from src.data.repository.voyage_repository import remove_voyage_log_entry, remove_voyage_log_entries
+from src.data.repository.subclass_repository import SubclassRepository
+from src.data.repository.voyage_repository import remove_voyage_log_entries
 
 log = getLogger(__name__)
 
@@ -19,6 +18,8 @@ class On_Delete_Voyages(commands.Cog):
     @commands.Cog.listener()
     async def on_message_delete(self, message):
         if message.channel.id == VOYAGE_LOGS:
+                subclass_repository: SubclassRepository = SubclassRepository()
+
                 log_id = message.id
                 host_id = message.author.id
                 participant_ids = [user.id for user in message.mentions]
@@ -29,6 +30,9 @@ class On_Delete_Voyages(commands.Cog):
                 decrement_hosted_count_by_discord_id(host_id)
                 remove_hosted_entry_by_log_id(log_id)
                 log.info(f"[{log_id}] Removed hosted entry for: {host_id}")
+
+                # Remove subclass entries
+                subclass_entries = subclass_repository.delete_all_subclass_entries_for_log_id(log_id)
 
                 # Decrement voyage counts for participants
                 for participant_id in participant_ids:

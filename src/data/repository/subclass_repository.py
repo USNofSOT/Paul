@@ -1,13 +1,12 @@
 import datetime
 import logging
-from typing import Type
 
 from sqlalchemy.orm import sessionmaker
 
 from src.data import SubclassType
 from src.data.engine import engine
 from src.data.models import Subclasses
-from src.data.repository.sailor_repository import ensure_sailor_exists, SailorRepository
+from src.data.repository.sailor_repository import SailorRepository
 
 log = logging.getLogger(__name__)
 Session = sessionmaker(bind=engine)
@@ -84,3 +83,23 @@ class SubclassRepository:
             log.error(f"Error saving subclass record: {e}")
             self.session.rollback()
             raise e
+
+    def delete_all_subclass_entries_for_log_id(self, log_id: int):
+        """
+        Delete all subclass entries for
+
+        Args:
+            log_id (int): The ID of the log message
+        """
+        try:
+            # Get entries for the log
+            entries = self.entries_for_log_id(log_id)
+            # Remove all subclass counts
+            for entry in entries:
+                self.sailor_repository.decrement_subclass_count_by_discord_id(entry.target_id, entry.subclass, entry.subclass_count)
+            # Delete all entries
+            self.session.query(Subclasses).filter(Subclasses.log_id == log_id).delete()
+            self.session.commit()
+        except Exception as e:
+            log.error(f"Error deleting subclass entries for log {log_id}: {e}")
+            self.session.rollback()
