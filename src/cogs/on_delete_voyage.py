@@ -28,6 +28,7 @@ class On_Delete_Voyages(commands.Cog):
                 # Decrement hosted count
                 decrement_hosted_count_by_discord_id(host_id)
                 remove_hosted_entry_by_log_id(log_id)
+                log.info(f"[{log_id}] Removed hosted entry for: {host_id}")
 
                 # Decrement voyage counts for participants
                 for participant_id in participant_ids:
