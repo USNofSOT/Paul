@@ -2,20 +2,19 @@ import discord
 from discord.ext import commands
 from discord import app_commands, Embed
 
-from src.config import SNCO_AND_UP
+from src.config import SNCO_AND_UP, JE_AND_UP
 from src.data import Sailor
 from src.data.repository.sailor_repository import update_or_create_sailor_by_discord_id
 from src.utils.embeds import error_embed, default_embed
 
 
-class AddInfo(commands.Cog):
+class SetInfo(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
     
-    @app_commands.command(name="addinfo", description="Add Gamertag or Timezone to yourself or another user")
-    @app_commands.describe(target="Select the user to add information to")
+    @app_commands.command(name="setinfo", description="Set your Gamertag or Timezone")
     @app_commands.describe(gamertag="Enter the user's in-game username")
-    @app_commands.checks.has_any_role(*SNCO_AND_UP)
+    @app_commands.checks.has_any_role(*JE_AND_UP)
     #@app_commands.describe(timezone="Enter the user's timezone manually (e.g., UTC+2) or leave empty to calculate automatically")
     @app_commands.choices(timezone=[
                                    app_commands.Choice(name="UTC-12:00 (IDLW) - International Date Line West", value="UTC-12:00 (IDLW)"),
@@ -44,7 +43,7 @@ class AddInfo(commands.Cog):
                                    app_commands.Choice(name="UTC+11:00 (VLAT) - Vladivostok Time, Solomon Islands Time", value="UTC+11:00 (VLAT)"),
                                    app_commands.Choice(name="UTC+12:00 (NZST) - New Zealand Standard Time, Fiji Time", value="UTC+12:00 (NZST)")
                                 ])
-    async def addinfo(self, interaction: discord.interactions, target: discord.Member = None, gamertag: str = None, timezone: str = None):
+    async def setinfo(self, interaction: discord.interactions, gamertag: str = None, timezone: str = None):
         await interaction.response.defer (ephemeral=True)
 
         # Quick exit if no gamertag or timezone is provided
@@ -52,21 +51,17 @@ class AddInfo(commands.Cog):
             await interaction.followup.send("You didn't add any information.")
             return
 
-        # Set the target to the user if not provided
-        if target is None:
-            target = interaction.user
-
         # Attempt to add the information to the database
         # This function will create a new Sailor if one does not exist
         # Ad will not alter gamertag or timezone if None is provided
         try:
-            sailor : Sailor = update_or_create_sailor_by_discord_id(target.id, gamertag, timezone)
+            sailor : Sailor = update_or_create_sailor_by_discord_id(interaction.user.id, gamertag, timezone)
         except Exception as e:
             await interaction.followup.send(embed=error_embed("Failed to add information. Please try again.", e))
             return
 
         if sailor:
-            sailor_embed = default_embed(title="Information Added", description=f"Displaying current information for {target.mention}")
+            sailor_embed = default_embed(title="Information Added", description=f"Displaying current information for {interaction.user.mention}")
             sailor_embed.add_field(name="Gamertag", value=sailor.gamertag if sailor.gamertag else "Not Set")
             sailor_embed.add_field(name="Timezone", value=sailor.timezone if sailor.timezone else "Not Set")
             await interaction.followup.send(embed=sailor_embed)
@@ -74,4 +69,4 @@ class AddInfo(commands.Cog):
             await interaction.followup.send(embed=error_embed("Failed to add information. Please try again."))
 
 async def setup(bot: commands.Bot):
-    await bot.add_cog(AddInfo(bot))  # Classname(bot)
+    await bot.add_cog(SetInfo(bot))  # Classname(bot)
