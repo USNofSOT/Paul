@@ -4,7 +4,7 @@ from discord import app_commands, Embed
 
 from src.config import SNCO_AND_UP
 from src.data import Sailor
-from src.data.repository.sailor_repository import update_or_create_sailor_by_discord_id
+from src.data.repository.sailor_repository import SailorRepository
 from src.utils.embeds import error_embed, default_embed
 
 
@@ -60,9 +60,9 @@ class AddInfo(commands.Cog):
         # This function will create a new Sailor if one does not exist
         # Ad will not alter gamertag or timezone if None is provided
         try:
-            sailor : Sailor = update_or_create_sailor_by_discord_id(target.id, gamertag, timezone)
+            sailor : Sailor = SailorRepository().update_or_create_sailor_by_discord_id(target.id, gamertag, timezone)
         except Exception as e:
-            await interaction.followup.send(embed=error_embed("Failed to add information. Please try again.", e))
+            await interaction.followup.send(embed=error_embed("Failed to add information. Please try again.", exception=e))
             return
 
         if sailor:

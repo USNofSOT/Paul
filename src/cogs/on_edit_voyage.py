@@ -5,8 +5,7 @@ from discord.ext import commands
 from discord import app_commands
 
 from src.config import VOYAGE_LOGS
-from src.data.repository.sailor_repository import decrement_voyage_count_by_discord_id, \
-    increment_voyage_count_by_discord_id
+from src.data.repository.sailor_repository import decrement_voyage_count_by_discord_id
 from src.data.repository.voyage_repository import remove_voyage_by_log_id, remove_voyage_log_entry, \
     check_voyage_log_id_with_target_id_exists, save_voyage
 
