@@ -35,8 +35,8 @@ class On_Delete_Voyages(commands.Cog):
                     log.info(f"[{log_id}] Voyage log entry removed for participant: {participant_id}")
                 # Remove entries from VoyageLog table (if necessary)
                 remove_voyage_log_entries(log_id)
-                print(f"[{log_id}] Voyage log removed.")
-        
+                log.info(f"[{log_id}] Voyage log entries removed.")
+
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(On_Delete_Voyages(bot))  # Classname(bot)

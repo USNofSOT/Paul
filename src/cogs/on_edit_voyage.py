@@ -37,9 +37,9 @@ class On_Edit_Voyages(commands.Cog):
             # New participants added to the log
             added_participants = set(new_participant_ids) - set(old_participant_ids)
             for participant_id in added_participants:
-                increment_voyage_count_by_discord_id(participant_id)
                 # Add new entry to VoyageLog table if needed
                 if not check_voyage_log_id_with_target_id_exists(after.id, participant_id):
+                    # This will both save the voyage log entry and increment the voyage count for the participant
                     save_voyage(after.id, participant_id, after.created_at)
                     log.info(f"[{before.id}] Voyage log entry added for participant: {participant_id}")
 
