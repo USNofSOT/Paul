@@ -23,6 +23,18 @@ class SubclassRepository:
         self.sailor_repository.close_session()
         self.session.close()
 
+
+    def entries_for_log_id(self, log_id: int) -> [Subclasses]:
+        """
+        Retrieve all subclass entries for a specific log ID
+
+        Args:
+            log_id (int): The ID of the log message
+        Returns:
+            [Subclasses]: A list of subclass entries
+        """
+        return self.session.query(Subclasses).filter(Subclasses.log_id == log_id).all()
+
     def save_subclass(self, author_id: int, log_id: int, target_id: int, subclass: SubclassType, subclass_count: int = 1, log_time: datetime = datetime.datetime.now()) -> Subclasses or int:
         """
         Save a subclass record to the database
@@ -40,7 +52,7 @@ class SubclassRepository:
         """
 
         try:
-            # Check if a record with the same target_id, subclass, and log_link already exists
+            # Check if a record with the same target_id, subclass, and log_id already exists
             existing = self.session.query(Subclasses).filter(
                 Subclasses.target_id == target_id,
                 Subclasses.subclass == subclass,
