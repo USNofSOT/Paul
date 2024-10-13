@@ -4,7 +4,6 @@ from logging import getLogger
 import discord
 from discord import app_commands
 from discord.ext import commands
-from sqlalchemy.orm import sessionmaker
 
 from src.config import VOYAGE_LOGS, NSC_ROLE, CANNONEER_SYNONYMS, FLEX_SYNONYMS, CARPENTER_SYNONYMS, HELM_SYNONYMS, \
     SURGEON_SYNONYMS, GRENADIER_SYNONYMS, NCO_AND_UP
@@ -38,6 +37,7 @@ subclass_map = {
     **{alias: SubclassType.HELM for alias in HELM_SYNONYMS},
 }
 
+subclass_repository = SubclassRepository()
 
 class ConfirmView(discord.ui.View):
     def __init__(self, updates : [any], author_id, log_id):
@@ -49,9 +49,6 @@ class ConfirmView(discord.ui.View):
     @discord.ui.button(label="Confirm", style=discord.ButtonStyle.success)
     async def confirm_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message(f"Attempting to add subclasses...", ephemeral=True)
-
-        subclass_repository = SubclassRepository()
-
         # Ensure the author exists in the database
         ensure_sailor_exists(self.author_id)
 
@@ -129,6 +126,10 @@ class AddSubclass(commands.Cog):
                 to_be_processed_lines.append(line)
                 log.debug(f"Found line to be processed: {line}")
 
+        current_entries = subclass_repository.entries_for_log_id(int(log_id))
+        # A duplicate is an update that is fully present in the database, this means every entry of it
+        duplicates = []
+        # A list of updates to be made
         updates = []
         for process_line in to_be_processed_lines:
             log.debug(f"Processing line: {process_line}")
@@ -162,19 +163,55 @@ class AddSubclass(commands.Cog):
             for alias in GRENADIER_SYNONYMS:
                 grenadier += process_line.lower().count(alias.lower())
 
+            # Get all entries for the current user and log
+            relative_entries = [entry for entry in current_entries if entry.target_id == discord_id and entry.log_id == int(log_id)]
+
+            # Keep track of whether the subclass is new or requires an update
+            is_new = True
+            requires_update = False
+
+            # Check if any of the subclasses are already in the database
+            if any(entry.subclass == main_subclass for entry in relative_entries):
+                is_new = False  # Main subclass already exists
+
+            # Check if Surgeon subclass is already in the database
+            if surgeon and any(entry.subclass == SubclassType.SURGEON for entry in relative_entries):
+                is_new = False  # Surgeon subclass already exists
+
+            # Check if Grenadier subclass is already in the database
+            if grenadier > 0 and any(entry.subclass == SubclassType.GRENADIER for entry in relative_entries):
+                is_new = False  # Grenadier subclass already exists
+
+            # Now check if update is needed (i.e., if any subclass is missing)
+            requires_update = (
+                    not any(entry.subclass == main_subclass for entry in relative_entries) or
+                    (surgeon and not any(entry.subclass == SubclassType.SURGEON for entry in relative_entries)) or
+                    (grenadier > 0 and not any(entry.subclass == SubclassType.GRENADIER for entry in relative_entries))
+            )
+
+            # If no update is required, add to duplicates and skip
+            if not requires_update:
+                log.warning(f"Skipping {discord_id} as all subclasses already exist")
+                duplicates.append(process_line)
+                continue
+
+            emoji = ":new:" if is_new else ":repeat:"
+
+            updates.append((discord_id, main_subclass, surgeon, grenadier))
             embed.add_field(
-                # mention the user
-                name=f"{user_name}",
+                name=f"{user_name} - {emoji}",
                 value=f"Main Subclass: {main_subclass.value}\n"
                       f"Surgeon Pts.: {1 if surgeon else 0}\n"
                       f"Grenadier Pts.: {grenadier}",
                 inline=False,
             )
 
-            updates.append((discord_id, main_subclass, surgeon, grenadier))
+        if duplicates:
+            embed.set_footer(text=f"{len(duplicates)} out of {len(to_be_processed_lines)} entries were duplicates and were removed from this list.")
+        if len(duplicates) == len(to_be_processed_lines):
+            return await interaction.followup.send(embed=default_embed(description=f"All entries ({len(duplicates)}) were duplicates. No subclasses to add."))
 
         view = ConfirmView(updates, author_id, log_id)
-
         await interaction.followup.send(embed=embed, view=view)
 
 
