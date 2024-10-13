@@ -8,7 +8,7 @@ from sqlalchemy.orm import sessionmaker
 
 from src.config import VOYAGE_LOGS, NSC_ROLE, CANNONEER_SYNONYMS, FLEX_SYNONYMS, CARPENTER_SYNONYMS, HELM_SYNONYMS, \
     SURGEON_SYNONYMS, GRENADIER_SYNONYMS, NCO_AND_UP
-from src.data import SubclassType, engine
+from src.data import SubclassType
 from src.data.repository.sailor_repository import ensure_sailor_exists
 from src.data.repository.subclass_repository import SubclassRepository
 from src.utils.embeds import error_embed, default_embed
@@ -68,7 +68,7 @@ class ConfirmView(discord.ui.View):
                     subclass_repository.save_subclass(self.author_id, self.log_id, discord_id, SubclassType.GRENADIER, grenadier_points)
             except Exception as e:
                 log.error(f"Error adding subclass: {e}")
-                return await interaction.followup.send(embed=error_embed(description="An error occurred while adding subclasses"))
+                return await interaction.followup.send(embed=error_embed(description="An error occurred adding subclasses into the databasse", exception=e), ephemeral=True)
 
         # End the interaction
         subclass_repository.close_session()
@@ -93,19 +93,19 @@ class AddSubclass(commands.Cog):
 
         # Prepare the embed message
         embed = default_embed(title="Confirm Subclasses",
-                              description="Please confirm the subclasses to be added before confirming.")
+                              description="Please confirm the subclasses to be added before continuing")
 
         # Retrieve the logs channel
         try:
             logs_channel = self.bot.get_channel(VOYAGE_LOGS)
-        except discord.NotFound:
-            return await interaction.followup.send(embed=error_embed(description="The logs channel is not found"))
+        except discord.NotFound as e:
+            return await interaction.followup.send(embed=error_embed(description="Unable to find the logs channel", exception=e))
 
         # Retrieve the log message
         try:
             log_message = await logs_channel.fetch_message(int(log_id))
-        except discord.NotFound:
-            return await interaction.followup.send(embed=error_embed(description="The log message is not found"))
+        except discord.NotFound as e:
+            return await interaction.followup.send(embed=error_embed(description="Unable to find the specified log", exception=e))
 
         # Retrieve the author of the log
         log_author = log_message.author
@@ -147,9 +147,9 @@ class AddSubclass(commands.Cog):
                     main_subclass = subclass
                     break
             if not main_subclass:
-                log.error(f"No subclasses matches found in the line: {process_line}")
+                log.error(f"Couldn't process the log properly, please ensure the log is formatted correctly")
                 await interaction.followup.send(
-                    embed=error_embed(description="Not all subclasses were found in the log message"))
+                    embed=error_embed(description="Couldn't process the log properly, please ensure the log is formatted correctly"))
                 return
 
             # Check if the user is Surgeon
