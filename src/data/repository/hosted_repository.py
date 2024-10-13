@@ -14,8 +14,8 @@ log = logging.getLogger(__name__)
 Session = sessionmaker(bind=engine)
 
 class HostedRepository:
-    def __init__(self, session: Session = None):
-        self.session = session or Session()
+    def __init__(self):
+        self.session = Session()
 
     def get_session(self):
         return self.session
