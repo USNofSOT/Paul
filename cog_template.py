@@ -1,13 +1,18 @@
-import discord, config
+import discord
 from discord.ext import commands
 from discord import app_commands
-# from utils.database_manager import DatabaseManager   # Imports Database Manager from Utilies if needed uncomment it!
+# from src.data.repository.subclass_repository import SubclassRepository
+from logging import getLogger
+
+log = getLogger(__name__)
+
 
 class Test(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
+        # Example of repository usage
+        # self.subclass_repository = SubclassRepository()
 
-    
     #Put Command here:
     #
     # ! commands:
@@ -16,9 +21,9 @@ class Test(commands.Cog):
     #
     #Slash Command
     # @app_commands.command(name="", description="")
-    # async def _*name*(self, ctx: discord.Interaction):
+    # async def _*name*(self, interaction: discord.Interaction):
     #
 
+
 async def setup(bot: commands.Bot):
-    await bot.add_cog(Test(bot))  # Classname(bot)
-        
+    await bot.add_cog(Test(bot))
