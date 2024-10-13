@@ -33,3 +33,5 @@ class ModNoteRepository:
             log.error(f"Error saving mod note: {e}")
             self.session.rollback()
             raise e
+        finally:
+            self.session.close()
