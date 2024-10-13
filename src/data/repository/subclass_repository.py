@@ -22,7 +22,6 @@ class SubclassRepository:
         self.sailor_repository.close_session()
         self.session.close()
 
-
     def entries_for_log_id(self, log_id: int) -> [Subclasses]:
         """
         Retrieve all subclass entries for a specific log ID
@@ -33,6 +32,21 @@ class SubclassRepository:
             [Subclasses]: A list of subclass entries
         """
         return self.session.query(Subclasses).filter(Subclasses.log_id == log_id).all()
+
+    def entries_for_log_id_and_target_id(self, log_id: int, target_id: int) -> [Subclasses]:
+        """
+        Retrieve all subclass entries for a specific log ID and target ID
+
+        Args:
+            log_id (int): The ID of the log message
+            target_id (int): The Discord ID of the target user
+        Returns:
+            [Subclasses]: A list of subclass entries
+        """
+        return self.session.query(Subclasses).filter(
+            Subclasses.log_id == log_id,
+            Subclasses.target_id == target_id
+        ).all()
 
     def save_subclass(self, author_id: int, log_id: int, target_id: int, subclass: SubclassType, subclass_count: int = 1, log_time: datetime = datetime.datetime.now()) -> Subclasses or int:
         """
@@ -83,6 +97,33 @@ class SubclassRepository:
             log.error(f"Error saving subclass record: {e}")
             self.session.rollback()
             raise e
+
+    def delete_subclasses_for_target_in_log(self, target_id: int, log_id: int):
+        """
+        Clear all subclass entries for a specific target in a specific log
+
+        Args:
+            target_id (int): The Discord ID of the target user
+            log_id (int): The ID of the log message
+        """
+        try:
+            # Get entries for the log
+            entries = self.entries_for_log_id_and_target_id(log_id, target_id)
+
+            # Remove all subclass counts
+            for entry in entries:
+                self.sailor_repository.decrement_subclass_count_by_discord_id(entry.target_id, entry.subclass, entry.subclass_count)
+
+            # Delete all entries
+            self.session.query(Subclasses).filter(
+                Subclasses.target_id == target_id,
+                Subclasses.log_id == log_id
+            ).delete()
+
+            self.session.commit()
+
+        except Exception as e:
+            log.error(f"Error clearing subclass entries for target {target_id} in log {log_id}: {e}")
 
     def delete_all_subclass_entries_for_log_id(self, log_id: int):
         """

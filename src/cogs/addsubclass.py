@@ -55,6 +55,7 @@ class ConfirmView(discord.ui.View):
         for discord_id, main_subclass, is_surgeon, grenadier_points in self.updates:
             # ensure the sailor exists in the database
             ensure_sailor_exists(discord_id)
+            subclass_repository.delete_subclasses_for_target_in_log(discord_id, self.log_id)
             try:
                 log.debug(f"Adding main subclass {main_subclass} to {discord_id}")
                 subclass_repository.save_subclass(self.author_id, self.log_id, discord_id, main_subclass)
@@ -171,6 +172,7 @@ class AddSubclass(commands.Cog):
             requires_update = False
 
             # Check if any of the subclasses are already in the database
+            print(main_subclass)
             if any(entry.subclass == main_subclass for entry in relative_entries):
                 is_new = False  # Main subclass already exists
 
@@ -186,7 +188,7 @@ class AddSubclass(commands.Cog):
             requires_update = (
                     not any(entry.subclass == main_subclass for entry in relative_entries) or
                     (surgeon and not any(entry.subclass == SubclassType.SURGEON for entry in relative_entries)) or
-                    (grenadier > 0 and not any(entry.subclass == SubclassType.GRENADIER for entry in relative_entries))
+                    (0 < grenadier != sum(entry.subclass_count for entry in relative_entries if entry.subclass == SubclassType.GRENADIER))
             )
 
             # If no update is required, add to duplicates and skip
