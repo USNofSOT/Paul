@@ -7,13 +7,14 @@ from discord.ext import commands
 from discord.ext.commands.parameters import empty
 
 
-def default_embed(title: str = None, description: str = None):
+def default_embed(title: str = None, description: str = None, author: bool  = True) -> discord.Embed:
     """
     Create a default embed.
 
     Args:
         title (str): The title of the embed.
         description (str): The description of the embed.
+        author (bool): Whether to include the author message.
     Returns:
         discord.Embed: The default embed
     """
@@ -22,9 +23,10 @@ def default_embed(title: str = None, description: str = None):
         description=description,
         color=discord.Color.blue(),
     )
-    embed.set_author(
-        name="The United States Navy SoT"
-    )
+    if author:
+        embed.set_author(
+            name="The United States Navy SoT"
+        )
     return embed
 
 def error_embed(title: str = "Error occurred", description: str = "Something went wrong...", exception: Exception = None, footer: bool = True):
