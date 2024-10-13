@@ -21,6 +21,7 @@ class Process_Voyage_Log:
 
         # 1. Check if the log has already been processed
         if check_hosted_log_id_exists(log_id):
+            log.debug(f"[{log_id}] Voyage log has already been processed. Skipping.")
             return  # Skip if the log has already been processed
 
         # 2. If not, process the log. But first, ensure the host is in the Sailor table
