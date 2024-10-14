@@ -18,7 +18,6 @@ class Populater():
 
     async def synchronize(self, limit: int = None):
         session = sessionmaker(bind=engine)()
-        hosted_session = sessionmaker(bind=engine)()
         sailor_session = sessionmaker(bind=engine)()
 
         channel = self.bot.get_channel(VOYAGE_LOGS)
@@ -56,7 +55,7 @@ class Populater():
 
             # Create a Hosted entry
             hosted = Hosted(log_id=log_id, target_id=host_id, log_time=log_time)
-            hosted_session.add(hosted) # We add this to sailor session to ensure it is committed
+            session.add(hosted)
 
             for participant_id in participant_ids:
                 participant = sailor_session.query(Sailor).filter(Sailor.discord_id == participant_id).first()
@@ -70,20 +69,18 @@ class Populater():
                 voyage = Voyages(log_id=log_id, target_id=participant_id, log_time=log_time)
                 session.add(voyage)
 
-            log.info(f"[{log_id}] Saving sailors and hosted data.")
-
+            log.info(f"[{log_id}] Saving sailors")
+            sailor_session.commit()
+            if counter % BATCH_SIZE == 0:
+                log.info(f"[{log_id}] Committing voyage and hosted data.")
+                session.commit()
             await asyncio.sleep(1)
 
-            sailor_session.commit()
-            hosted_session.commit() # We want to ensure the hosted data is committed so we know the points have been added
-            if counter % BATCH_SIZE == 0:
-                log.info(f"Batch saving voyages.")
-                session.commit()
-
         sailor_session.commit()
-        hosted_session.commit()
         session.commit()
+        sailor_session.close()
+        session.close()
 
-        hosted_session.close()
+
         session.close()
         sailor_session.close()
