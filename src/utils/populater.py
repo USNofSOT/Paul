@@ -41,17 +41,17 @@ class Populater():
                 log.info(f"[{log_id}] Skipping voyage log with no participants.")
                 continue
 
+            # If hosted entry already exists, skip
+            if session.query(Hosted).filter(Hosted.log_id == log_id).first():
+                log.info(f"[{log_id}] Skipping voyage log as it has already been processed.")
+                continue
+
             host = sailor_session.query(Sailor).filter(Sailor.discord_id == host_id).first()
             if not host:
                 host = Sailor(discord_id=host_id, hosted_count=1)
             else:
                 host.hosted_count += 1
             sailor_session.add(host)
-
-            # If hosted entry already exists, skip
-            if session.query(Hosted).filter(Hosted.log_id == log_id).first():
-                log.info(f"[{log_id}] Skipping voyage log as it has already been processed.")
-                continue
 
             # Create a Hosted entry
             hosted = Hosted(log_id=log_id, target_id=host_id, log_time=log_time)
