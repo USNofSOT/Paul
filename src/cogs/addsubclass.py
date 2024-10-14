@@ -100,7 +100,6 @@ class ConfirmView(discord.ui.View):
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.gray)
     async def cancel_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         message = await self.interaction.delete_original_response()
-        print(message)
 
     @discord.ui.button(label="Confirm", style=discord.ButtonStyle.success)
     async def confirm_button(self, interaction: discord.Interaction, button: discord.ui.Button):
