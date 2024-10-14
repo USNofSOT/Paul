@@ -76,7 +76,7 @@ class HostedRepository:
         finally:
             self.session.close()
 
-    def get_hosted_by_target_ids_month_count(self, target_ids: list) -> list:
+    def get_hosted_by_target_ids_month_count(self, target_ids: list) -> dict:
         """
         Get count of hosted log entries for target IDs in last 30 days
 
@@ -90,10 +90,12 @@ class HostedRepository:
             # log_time must be within the last 30 days
             thirty_days_ago = datetime.now() - timedelta(days=30)
 
-            return (self.session.query(Hosted.target_id, count(Hosted.target_id))
+            ret = (self.session.query(Hosted.target_id, count(Hosted.target_id))
                 .filter(Hosted.target_id.in_(target_ids), Hosted.log_time >= thirty_days_ago)
                 .group_by(Hosted.target_id)
                 .all())
+
+            return {item[0]: item[1] for item in ret}
         except Exception as e:
             log.error(f"Error getting hosted log entries: {e}")
             raise e
