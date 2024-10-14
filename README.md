@@ -6,6 +6,7 @@ This repository contains the source code for the Discord bot named Paul, used by
 - Disciplinary notes
 
 :heavy_exclamation_mark: **Status** :heavy_exclamation_mark:
+
 The bot is currently under active (re)development by Navy Systems Command.
 It is not yet ready for widespread use.
 
