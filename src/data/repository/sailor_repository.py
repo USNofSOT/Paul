@@ -22,6 +22,22 @@ class SailorRepository:
     def close_session(self):
         self.session.close()
 
+    def check_discord_id_exists(self, target_id: int) -> bool:
+        """
+        Check if a Sailor with a specific discord ID exists
+
+        Args:
+            target_id (int): The Discord ID of the user.
+        Returns:
+            bool: True if a Sailor with the discord ID exists, False otherwise.
+        """
+        try:
+            exists = self.session.query(Sailor.discord_id).filter(Sailor.discord_id == target_id).scalar() is not None
+            return exists
+        except Exception as e:
+            log.error(f"Error checking if discord ID exists: {e}")
+            return False
+
     def increment_subclass_count_by_discord_id(self, target_id: int, subclass: SubclassType, increment: int = 1) -> bool:
         """
         Increment the subclass count for a specific Sailor
@@ -271,21 +287,4 @@ def decrement_voyage_count_by_discord_id(target_id: int) -> bool:
     finally:
         session.close()
 
-def check_discord_id_exists(target_id: int) -> bool:
-    """
-    Check if a Sailor with a specific discord ID exists
 
-    Args:
-        target_id (int): The Discord ID of the user.
-    Returns:
-        bool: True if a Sailor with the discord ID exists, False otherwise.
-    """
-    session = Session()
-    try:
-        exists = session.query(Sailor.discord_id).filter(Sailor.discord_id == target_id).scalar() is not None
-        return exists
-    except Exception as e:
-        log.error(f"Error checking if discord ID exists: {e}")
-        return False
-    finally:
-        session.close()
