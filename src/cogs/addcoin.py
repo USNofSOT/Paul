@@ -43,7 +43,8 @@ class AddCoin(commands.Cog):
                 coin_repo.find_coin_by_target_and_moderator
                     (
                         target_id=target.id,
-                        moderator_id=interaction.user.id
+                        moderator_id=interaction.user.id,
+                        coin_type=coin_type
                     )
             )
             if found_coin:
