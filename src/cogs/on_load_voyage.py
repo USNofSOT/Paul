@@ -3,9 +3,9 @@ from logging import getLogger
 import discord, config, asyncio
 from discord.ext import commands
 from discord import app_commands
-from config import VOYAGE_LOGS
+from src.config import VOYAGE_LOGS
 from sqlalchemy.orm import sessionmaker
-from utils.process_voyage_log import Process_Voyage_Log
+from src.utils.process_voyage_log import Process_Voyage_Log
 
 from src.data import engine
 from src.data.repository.hosted_repository import HostedRepository

@@ -45,7 +45,7 @@ class CoinRepository:
         finally:
             self.session.close()
 
-    def remove_coin(self, target_id: int, coin_type: str, moderator_id: int, old_name: str, coin_time: datetime = datetime.now()) -> Coins:
+    def remove_coin(self, coin: Coins) -> None:
         """
         Remove a coin transaction from the database.
 
@@ -60,10 +60,8 @@ class CoinRepository:
         """
 
         try:
-            coin = Coins(target_id=target_id, coin_type=coin_type, moderator_id=moderator_id, old_name=old_name, coin_time=coin_time)
             self.session.delete(coin)
             self.session.commit()
-            return coin
         except Exception as e:
             log.error(f"Error removing coin: {e}")
             self.session.rollback()
