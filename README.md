@@ -74,7 +74,7 @@ Voyage hosts have access to the following commands:
 - `/addsubclass` Give subclass points to your crew from an official voyage.
 
 
-## Navy Recruit Command
+### Navy Recruit Command
 Members of the Navy Recruiting Command (NRC) have access to the following commands:
 
 - `/addinfo` Add the gamertag and timezone for a recruit.
