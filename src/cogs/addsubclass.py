@@ -54,9 +54,10 @@ def current_entries_embed(bot: commands.Bot, log_id: int, description: str = Non
     """
     current_entries = subclass_repository.entries_for_log_id(log_id)
 
-    result_embed = default_embed(
+    result_embed = discord.Embed(
         title=f"Subclasses for Voyage Log (https://discord.com/channels/{GUILD_ID}/{VOYAGE_LOGS}/{log_id})",
-        description=description or "Displaying all subclasses currently logged for this voyage log"
+        description=description or "Displaying all subclasses currently logged for this voyage log",
+        color=0x00FF00
     )
 
     names, subclasses, counts = zip(*[
@@ -87,7 +88,8 @@ def current_entries_embed(bot: commands.Bot, log_id: int, description: str = Non
     return result_embed
 
 class ConfirmView(discord.ui.View):
-    def __init__(self, bot: commands.Bot, updates : [any], missing_users: [int], author_id: int, log_id: str):
+    def __init__(self, interaction: discord.Interaction, bot: commands.Bot, updates : [any], missing_users: [int], author_id: int, log_id: str):
+        self.interaction = interaction
         self.bot = bot
         self.author_id = author_id
         self.missing_users = missing_users
@@ -95,44 +97,50 @@ class ConfirmView(discord.ui.View):
         self.updates = updates
         super().__init__(timeout=None)
 
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.gray)
+    async def cancel_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        message = await self.interaction.delete_original_response()
+        print(message)
+
     @discord.ui.button(label="Confirm", style=discord.ButtonStyle.success)
     async def confirm_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message(f"Attempting to add subclasses...", ephemeral=True)
-        # Ensure the author exists in the database
-        ensure_sailor_exists(self.author_id)
+        wait = await interaction.response.send_message("This may take a moment, please wait...", ephemeral=True)
 
-        for discord_id in self.missing_users:
-            ensure_sailor_exists(discord_id)
-            subclass_repository.delete_subclasses_for_target_in_log(discord_id, self.log_id)
+        try:
+            # Ensure the author exists in the database
+            ensure_sailor_exists(self.author_id)
+
+            for discord_id in self.missing_users:
+                ensure_sailor_exists(discord_id)
+                subclass_repository.delete_subclasses_for_target_in_log(discord_id, self.log_id)
 
 
-        for discord_id, main_subclass, is_surgeon, grenadier_points in self.updates:
-            # ensure the sailor exists in the database
-            ensure_sailor_exists(discord_id)
-            subclass_repository.delete_subclasses_for_target_in_log(discord_id, self.log_id)
-            try:
-                log.debug(f"Adding main subclass {main_subclass} to {discord_id}")
-                subclass_repository.save_subclass(self.author_id, self.log_id, discord_id, main_subclass)
-                if is_surgeon:
-                    log.debug(f"Adding Surgeon subclass to {discord_id}")
-                    subclass_repository.save_subclass(self.author_id, self.log_id, discord_id, SubclassType.SURGEON)
-                if grenadier_points > 0:
-                    log.debug(f"Adding {grenadier_points} Grenadier subclass to {discord_id}")
-                    subclass_repository.save_subclass(self.author_id, self.log_id, discord_id, SubclassType.GRENADIER, grenadier_points)
-            except Exception as e:
-                log.error(f"Error adding subclass: {e}")
-                return await interaction.followup.send(embed=error_embed(description="An error occurred adding subclasses into the databasse", exception=e), ephemeral=True)
+            for discord_id, main_subclass, is_surgeon, grenadier_points in self.updates:
+                # ensure the sailor exists in the database
+                ensure_sailor_exists(discord_id)
+                subclass_repository.delete_subclasses_for_target_in_log(discord_id, self.log_id)
+                try:
+                    log.debug(f"Adding main subclass {main_subclass} to {discord_id}")
+                    subclass_repository.save_subclass(self.author_id, self.log_id, discord_id, main_subclass)
+                    if is_surgeon:
+                        log.debug(f"Adding Surgeon subclass to {discord_id}")
+                        subclass_repository.save_subclass(self.author_id, self.log_id, discord_id, SubclassType.SURGEON)
+                    if grenadier_points > 0:
+                        log.debug(f"Adding {grenadier_points} Grenadier subclass to {discord_id}")
+                        subclass_repository.save_subclass(self.author_id, self.log_id, discord_id, SubclassType.GRENADIER, grenadier_points)
+                except Exception as e:
+                    log.error(f"Error adding subclass: {e}")
+                    return await interaction.followup.send(embed=error_embed(description="An error occurred adding subclasses into the databasse", exception=e), ephemeral=True)
 
-        current_entries = subclass_repository.entries_for_log_id(
-            int(self.log_id)
-        )
+            result_embed = current_entries_embed(self.bot, int(self.log_id))
 
-        result_embed = current_entries_embed(self.bot, int(self.log_id))
-
-        # End the interaction
-        subclass_repository.close_session()
-        await interaction.followup.send(embed=result_embed, ephemeral=True)
-
+            await interaction.delete_original_response()
+            await self.interaction.edit_original_response(embed=result_embed, view=None)
+        except Exception as e:
+            log.error(f"Error occurred in confirm_button: {e}")
+            await interaction.followup.send(embed=error_embed(description="An error occurred while processing the command", exception=e), ephemeral=True)
+        finally:
+            subclass_repository.close_session()
 
 class AddSubclass(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -307,8 +315,8 @@ class AddSubclass(commands.Cog):
         if len(updates) == 0 and len(missing_users) == 0:
             return await interaction.followup.send(embed=current_entries_embed(self.bot, int(log_id), description="No updates had to be made. Displaying current entries."))
 
-        view = ConfirmView(self.bot, updates, missing_users, author_id, log_id)
-        await interaction.followup.send(embed=embed, view=view)
+        await interaction.followup.send(embed=embed, view=ConfirmView(interaction, self.bot, updates, missing_users, author_id, log_id))
+
 
 
     @addsubclass.error
