@@ -17,7 +17,7 @@ class On_Delete_Voyages(commands.Cog):
         
     @commands.Cog.listener()
     async def on_message_delete(self, message):
-        if message.channel.id == VOYAGE_LOGS:
+        if message.channel.id == VOYAGE_LOGS and not message.author.bot:
                 subclass_repository: SubclassRepository = SubclassRepository()
 
                 log_id = message.id

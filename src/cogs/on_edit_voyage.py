@@ -19,7 +19,7 @@ class On_Edit_Voyages(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
-        if before.channel.id == int(VOYAGE_LOGS):
+        if before.channel.id == int(VOYAGE_LOGS) and not before.author.bot:
             log.info(f"[{before.id}] Message edited in voyage log channel.")
             old_participant_ids = [user.id for user in before.mentions]
             new_participant_ids = [user.id for user in after.mentions]

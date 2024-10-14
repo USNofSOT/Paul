@@ -23,6 +23,9 @@ class Process_Voyage_Log:
         for user in message.mentions:
             participant_ids.append(user.id)
 
+        if len(participant_ids) <= 0:
+            return # Skip if there are no participants
+
         log.info(f"[{log_id}] Processing voyage log for host: {host_id} with {len(participant_ids)} participants.")
 
         # 1. Check if the log has already been processed
