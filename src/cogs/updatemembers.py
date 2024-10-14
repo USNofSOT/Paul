@@ -14,7 +14,7 @@ class UpdateMembers(commands.Cog):
 
     @app_commands.command(name="updatemembers", description="Update the Sailorinfo table with current server members")
     @commands.has_any_role(NSC_ROLE)
-    async def updatemembers(interaction: discord.Interaction):
+    async def updatemembers(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)  # Defer the response for potentially long operation
 
         try:
@@ -24,8 +24,8 @@ class UpdateMembers(commands.Cog):
 
             for member in guild.members:
                 await asyncio.sleep(.1)  # Introduce a .1second delay to prevent blocking
-                if not SailorRepository.discord_id_exists(member.id):
-                    SailorRepository.add_discord_id(member.id)
+                if not self.sailor_repository.check_discord_id_exists(member.id):
+                    self.sailor_repository.update_or_create_sailor_by_discord_id(member.id)
                     member_count += 1
 
             await interaction.followup.send(f"Updated Sailorinfo with {member_count} new members.")
