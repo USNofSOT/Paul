@@ -21,11 +21,11 @@ Users guides for various groups could be auto-generated PDFs, with links put in 
 - Clone this repo
 - Open the repo in Visual Studio Code
 - Create a virtual environment for the repo using Python 3.12 and the requirements listed in [requirements.txt](https://github.com/USNofSOT/Paul/blob/main/requirements.txt).
-- Copy the file content from [Navy Systems Command > engine-room](https://discord.com/channels/971718695602778162/1288304233409548309/1293910688900714518) into a file called `.env` at the top level of the repo
+- Copy the file content from [Navy Systems Command > engine-room](https://discord.com/channels/971718695602778162/1288304233409548309/1293910688900714518) into a file named `.env` at the top level of the repo
 - Include `PYTHONPATH=./src;${PYTHONPATH}` at the top of the `.env` file
 
 
-## GitHub Workflow
+### GitHub Workflow
 Changes to the main branch can only be made by approved pull requests. Regardless of the size of the change or the author, everything is tracked through pull requests with approval.
 
 To make a change, create a new branch from main. You can do this by running `>Git: Create Branch...` from the search bar at the top of the window in Visual Studio Code. To commit your code changes to the branch, you can first click the Source Control icon in the left sidebar then select the plus sign next to the files you changed. Next write a brief summary of the changes in the Message box, then finally click Commit. When you are ready to push the commit(s) to GitHub, click the three dots menu next to Source Control then choose Pull, Push > Push.
@@ -47,11 +47,11 @@ Now you can run commands in the [BOT TESTING > bot-test-command](https://discord
 ### Repository Setup
 Updated Bot setup:
 
-- `src` holds the full Bot
-- `main.py` starts the bot which is located in the core\bot.py file
-- `utils` folder holds utility classes that are imported to the cog based commands as needed.
-- `cogs` folder holds the individual command files the bot runs from.
-- `data` folder holds the database utilites
+- `src` holds the full Bot.
+- `src/main.py` starts the bot which is located in the core\bot.py file.
+- `src/cogs` folder holds the individual command files the bot runs from.
+- `src/data` folder holds the database utilites.
+- `src/utils` folder holds utility classes that are imported to the cog based commands as needed.
 
 
 ## Users Guide
