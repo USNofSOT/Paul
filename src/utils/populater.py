@@ -71,9 +71,7 @@ class Populater():
 
             log.info(f"[{log_id}] Saving sailors")
             sailor_session.commit()
-            if counter % BATCH_SIZE == 0:
-                log.info(f"[{log_id}] Committing voyage and hosted data.")
-                session.commit()
+            session.commit()
             await asyncio.sleep(1)
 
         sailor_session.commit()
