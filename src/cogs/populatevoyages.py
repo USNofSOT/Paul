@@ -1,8 +1,6 @@
 from logging import getLogger
-from tkinter.font import names
 
 from discord.ext import commands
-from sqlalchemy.testing.plugin.plugin_base import logging
 
 from src.config import NSC_ROLE
 from src.utils.populater import Populater
