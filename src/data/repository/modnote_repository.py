@@ -19,12 +19,12 @@ class ModNoteRepository:
     def close_session(self):
         self.session.close()
 
-    def create_modnote(self, target_id : int, moderator_id : int, note : str, note_time : datetime.datetime) -> ModNotes:
+    def create_modnote(self, target_id : int, moderator_id : int, note : str) -> ModNotes | None:
         try:
             modnote = ModNotes(target_id=target_id,
                                moderator_id=moderator_id,
                                note=note,
-                               note_time=note_time)
+                               note_time=datetime.datetime.now())
             self.session.add(modnote)
             self.session.commit()
             return modnote
@@ -33,5 +33,3 @@ class ModNoteRepository:
             log.error(f"Error saving mod note: {e}")
             self.session.rollback()
             raise e
-        finally:
-            self.session.close()
