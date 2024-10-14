@@ -1,10 +1,11 @@
 import logging
 from datetime import datetime
+from datetime import timedelta
 from typing import Type
 
 from sqlalchemy import delete, update
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.sql.functions import coalesce
+from sqlalchemy.sql.functions import coalesce, count
 
 from src.data import Sailor
 from src.data.engine import engine
@@ -74,6 +75,30 @@ class HostedRepository:
             raise e
         finally:
             self.session.close()
+
+    def get_hosted_by_target_ids_month_count(self, target_ids: list) -> dict:
+        """
+        Get count of hosted log entries for target IDs in last 30 days
+
+        Args:
+            target_ids (list): The discord IDs of the target users
+        Returns:
+            Hosted: Number of hosted log entries for the target IDs
+        """
+        self.session = Session()
+        try:
+            # log_time must be within the last 30 days
+            thirty_days_ago = datetime.now() - timedelta(days=30)
+
+            ret = (self.session.query(Hosted.target_id, count(Hosted.target_id))
+                .filter(Hosted.target_id.in_(target_ids), Hosted.log_time >= thirty_days_ago)
+                .group_by(Hosted.target_id)
+                .all())
+
+            return {item[0]: item[1] for item in ret}
+        except Exception as e:
+            log.error(f"Error getting hosted log entries: {e}")
+            raise e
 
 
 def get_hosted_by_target_id(target_id: int) -> list[Type[Hosted]]:
