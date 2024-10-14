@@ -135,7 +135,7 @@ class SquadReport(commands.Cog):
         for member in members:
             memberreport = member_report(member.id)
             if member.display_name in names_hosted:
-                if get_time_difference_past(memberreport.last_hosted).days >= 30:
+                if get_time_difference_past(memberreport.last_hosted).days >= 14:
                     embed.add_field(name=f"{member.display_name}", value=f"Last hosted: {format_time(get_time_difference_past(memberreport.last_hosted))}", inline=True)
 
 
