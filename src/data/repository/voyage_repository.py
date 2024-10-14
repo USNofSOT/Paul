@@ -60,7 +60,7 @@ class VoyageRepository:
             self.session.rollback()
             raise e
 
-    def get_voyages_by_target_id_month_count(self, target_ids: list) -> list:
+    def get_voyages_by_target_id_month_count(self, target_ids: list) -> dict:
         """
         Get count of voyage log entries for a target IDs in last 30 days
 
@@ -74,10 +74,12 @@ class VoyageRepository:
             # log_time must be within the last 30 days
             thirty_days_ago = datetime.now() - timedelta(days=30)
 
-            return (self.session.query(Voyages.target_id, count(Voyages.target_id))
+            ret = (self.session.query(Voyages.target_id, count(Voyages.target_id))
                     .filter(Voyages.target_id.in_(target_ids), Voyages.log_time >= thirty_days_ago)
                     .group_by(Voyages.target_id)
                     .all())
+
+            return {item[0]: item[1] for item in ret}
         except Exception as e:
             log.error(f"Error getting hosted log entries: {e}")
             raise e
