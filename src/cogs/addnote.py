@@ -22,7 +22,6 @@ class AddNote(commands.Cog):
     @app_commands.checks.has_any_role(*SNCO_AND_UP)
     async def addnote(self, interaction: discord.interactions, target: discord.Member = None, note: str = None):
         await interaction.response.defer (ephemeral=True)
-        #modnote_repo = ModNoteRepository()
 
         # Quick exit if no target or note is provided
         if target is None:
@@ -34,16 +33,15 @@ class AddNote(commands.Cog):
 
         # Attempt to add the information to the database
         try:
-            # Create ModNote
             mod_note : ModNotes = ModNoteRepository().create_modnote(target_id=target.id,
                                                                      moderator_id=interaction.user.id,
                                                                      note=note)
-            #modnote_repo.close_session()
-            # return mod_note
+
         except Exception as e:
             await interaction.followup.send(embed=error_embed("Failed to add note. Please try again.", exception=e))
             return
         
+        # Print note or error, as confirmation
         if mod_note:
             note_embed = default_embed(title="Note Added", description=f"Displaying note for {target.mention}")
             note_embed.add_field(name="Moderator", value=interaction.user.mention)
