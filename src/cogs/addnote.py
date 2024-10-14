@@ -5,8 +5,7 @@ from discord import app_commands
 from logging import getLogger
 
 from src.config import SNCO_AND_UP
-from src.data import Sailor, ModNotes
-from src.data.repository.sailor_repository import SailorRepository
+from src.data import ModNotes
 from src.data.repository.modnote_repository import ModNoteRepository
 from src.utils.embeds import error_embed, default_embed
 
