@@ -104,6 +104,16 @@ class ConfirmView(discord.ui.View):
 
     @discord.ui.button(label="Confirm", style=discord.ButtonStyle.success)
     async def confirm_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # Get message for log id
+        guild = self.bot.get_guild(GUILD_ID)
+        logs_channel = guild.get_channel(VOYAGE_LOGS)
+        log_message = await logs_channel.fetch_message(int(self.log_id))
+
+        # Remove emoji send by bot discord py
+        for reaction in log_message.reactions:
+            if reaction.me:
+                await reaction.clear()
+
         wait = await interaction.response.send_message("This may take a moment, please wait...", ephemeral=True)
 
         try:
@@ -136,6 +146,10 @@ class ConfirmView(discord.ui.View):
 
             await interaction.delete_original_response()
             await self.interaction.edit_original_response(embed=result_embed, view=None)
+
+            # Add reaction to the log message
+            await log_message.add_reaction("✅")
+
         except Exception as e:
             log.error(f"Error occurred in confirm_button: {e}")
             await interaction.followup.send(embed=error_embed(description="An error occurred while processing the command", exception=e), ephemeral=True)
