@@ -73,6 +73,11 @@ Voyage hosts have access to the following commands:
 
 - `/addsubclass` Give subclass points to your crew from an official voyage.
 
+### Officers
+Officers (O-1+) have access to the following commands:
+
+- `/addcoin` Give your challenge coin to someone.
+
 
 ### Navy Recruit Command
 Members of the Navy Recruiting Command (NRC) have access to the following commands:
