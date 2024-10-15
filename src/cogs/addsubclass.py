@@ -113,13 +113,13 @@ class ConfirmView(discord.ui.View):
                 ensure_sailor_exists(discord_id)
                 subclass_repository.delete_subclasses_for_target_in_log(discord_id, self.log_id)
                 try:
-                    log.debug(f"Adding main subclass {main_subclass} to {discord_id}")
+                    log.info(f"[{self.log_id}] [Confirm] Adding subclasses for {discord_id}")
                     subclass_repository.save_subclass(self.author_id, self.log_id, discord_id, main_subclass)
                     if is_surgeon:
-                        log.debug(f"Adding Surgeon subclass to {discord_id}")
+                        log.info(f"[{self.log_id}] [Confirm] Adding Surgeon subclass for {discord_id}")
                         subclass_repository.save_subclass(self.author_id, self.log_id, discord_id, SubclassType.SURGEON)
                     if grenadier_points > 0:
-                        log.debug(f"Adding {grenadier_points} Grenadier subclass to {discord_id}")
+                        log.info(f"[{self.log_id}] [Confirm] Adding {grenadier_points} Grenadier subclass for {discord_id}")
                         subclass_repository.save_subclass(self.author_id, self.log_id, discord_id,
                                                           SubclassType.GRENADIER, grenadier_points)
                 except Exception as e:
@@ -154,7 +154,7 @@ class AddSubclass(commands.Cog):
     @app_commands.checks.has_any_role(*NCO_AND_UP)
     async def addsubclass(self, interaction: discord.Interaction, log_id: str):
         try:
-            log.info(f"Received addsubclass command with log_id: {log_id}")
+            log.info(f"--> [{log_id}] addsubclass command received for log by {interaction.user.id}")
             await interaction.response.defer(ephemeral=True)
 
             # Prepare the embed message
@@ -165,6 +165,7 @@ class AddSubclass(commands.Cog):
             try:
                 logs_channel = self.bot.get_channel(VOYAGE_LOGS)
             except discord.NotFound as e:
+                log.error(f"[{log_id}] Unable to find the logs channel")
                 return await interaction.followup.send(
                     embed=error_embed(description="Unable to find the logs channel", exception=e))
 
@@ -172,6 +173,7 @@ class AddSubclass(commands.Cog):
             try:
                 log_message = await logs_channel.fetch_message(int(log_id))
             except discord.NotFound as e:
+                log.warning(f"[{log_id}] Unable to find the specified log")
                 return await interaction.followup.send(
                     embed=error_embed(description="Unable to find the specified log", exception=e))
 
@@ -180,6 +182,8 @@ class AddSubclass(commands.Cog):
             embed.set_author(name="Author: " + get_best_display_name(self.bot, log_author.id))
             embed.add_field(name="\u200b", value="\u200b", inline=False)
             author_id = log_author.id
+
+            log.info(f"[{log_id}] Log author: {author_id}")
 
             # Check if the interaction is from the author or an NSC member
             if author_id != interaction.user.id and NSC_ROLE not in [role.id for role in interaction.user.roles]:
@@ -200,13 +204,17 @@ class AddSubclass(commands.Cog):
             users_found_in_database = [entry.target_id for entry in current_entries]
             users_found_in_processed_lines = []
 
+            log.info(f"[{log_id}] Found {len(to_be_processed_lines)} lines to be processed")
+            log.info(f"[{log_id}] Found {len(users_found_in_database)} entries in the database")
+            log.info(f"[{log_id}] Found {len(users_found_in_processed_lines)} users in the processed lines")
+
             # A duplicate is an update that is fully present in the database, this means every entry of it
             duplicates = []
             # A list of updates to be made
             updates = []
 
             for process_line in to_be_processed_lines:
-                log.debug(f"Processing line: {process_line}")
+                log.info(f"[{log_id}] Processing line: {process_line}")
                 # Retrieve the Discord ID from the line
                 discord_id = retrieve_discord_id_from_process_line(process_line)
 
@@ -217,11 +225,12 @@ class AddSubclass(commands.Cog):
                 main_subclass = None
                 for alias, subclass in subclass_map.items():
                     if alias in process_line.lower():
-                        log.debug(f"Adding {subclass} subclass to {discord_id}")
+                        log.info(f"[{log_id}] Found main subclass {subclass} for {discord_id}")
                         main_subclass = subclass
                         break
 
                 if not main_subclass:
+                    log.warning(f"[{log_id}] No main subclass found for mention, will not be considered for this log")
                     embed.add_field(name=f"{user_name} - :warning:",
                         value="No main subclass found for mention, will not be considered for this log", inline=False, )
                     continue
@@ -229,7 +238,7 @@ class AddSubclass(commands.Cog):
                     users_found_in_processed_lines.append(discord_id)
 
                 if not main_subclass:
-                    log.error(f"Couldn't process the log properly, please ensure the log is formatted correctly")
+                    log.error(f"[{log_id}] No main subclass found for mention, will not be considered for this log")
                     await interaction.followup.send(embed=error_embed(
                         description="Couldn't process the log properly, please ensure the log is formatted correctly"))
                     return
@@ -237,7 +246,7 @@ class AddSubclass(commands.Cog):
                 # Check if the user is Surgeon
                 surgeon = False
                 if any(alias in process_line.lower() for alias in SURGEON_SYNONYMS):
-                    log.debug(f"Adding Surgeon subclass to {discord_id}")
+                    log.info(f"Adding Surgeon subclass to {discord_id}")
                     surgeon = True
 
                 # Check how many times any Grenadier synonym is found in the line
@@ -245,14 +254,19 @@ class AddSubclass(commands.Cog):
                 grenadier = 0
                 for alias in GRENADIER_SYNONYMS:
                     grenadier += process_line.lower().count(alias.lower())
+                log.info(f"[{log_id}] Found {grenadier} amount of Grenadier subclasses for {discord_id}")
 
                 # Get all entries for the current user and log
                 relative_entries = [entry for entry in current_entries if
                                     entry.target_id == discord_id and entry.log_id == int(log_id)]
+                log.info(f"[{log_id}] Found {len(relative_entries)} relative entries for {discord_id}")
 
                 # Keep track of whether the subclass is new or requires an update
                 is_new = True
                 requires_update = False
+                log.info(f"[{log_id}] Checking if subclasses are new or require an update")
+                log.info(f"[{log_id}] Main subclass: {main_subclass}, Surgeon: {surgeon}, Grenadier: {grenadier}")
+                log.info(f"[{log_id}] is_new: {is_new}, requires_update: {requires_update}")
 
                 # Check if any of the subclasses are already in the database
                 if any(entry.subclass == main_subclass for entry in relative_entries):
@@ -283,6 +297,8 @@ class AddSubclass(commands.Cog):
 
                 emoji = ":new:" if is_new else ":repeat:"
 
+                updates.append((discord_id, main_subclass, surgeon, grenadier))
+
                 embed_value = f"Main Subclass: {main_subclass.value}"
                 if surgeon:
                     embed_value += f"\nSurgeon Pts.: {1}"
@@ -293,18 +309,21 @@ class AddSubclass(commands.Cog):
 
             missing_users = {entry.target_id for entry in current_entries if
                              entry.target_id not in users_found_in_processed_lines}
+            log.info(f"[{log_id}] Missing users: {missing_users}")
 
             for missing_users_id in missing_users:
                 user_name = get_best_display_name(self.bot, missing_users_id)
                 embed.add_field(name=f"{user_name} - :x:",
                     value="Sailor no longer in the log, removing on confirmation", inline=False, )
 
+            log.info(f"[{log_id}] duplicates: {duplicates}")
             if duplicates:
                 embed.set_footer(
                     text=f"{len(duplicates)} out of {len(to_be_processed_lines)} entries were duplicates and were removed from this list.")
             if len(duplicates) == len(to_be_processed_lines) and len(missing_users) == 0:
                 return await interaction.followup.send(embed=current_entries_embed(self.bot, int(log_id),
                                                                                    description=f"All entries ({len(duplicates)}) were duplicates. Displaying current entries."))
+            log.info(f"[{log_id}] pending updates: {updates}")
             if len(updates) == 0 and len(missing_users) == 0:
                 return await interaction.followup.send(embed=current_entries_embed(self.bot, int(log_id),
                                                                                    description="No updates had to be made. Displaying current entries."))
