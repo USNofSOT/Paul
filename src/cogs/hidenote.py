@@ -22,6 +22,8 @@ class HideNote(commands.Cog):
     @app_commands.describe(noteid="Enter the ID of the note to hide")
     @app_commands.checks.has_any_role(*SO_AND_UP)
     async def hidenote(self, interaction: discord.interactions, target: discord.Member = None, noteid: int = None):
+        modnote_repository: ModNoteRepository = ModNoteRepository()
+        sailor_repository: SailorRepository = SailorRepository()
         await interaction.response.defer (ephemeral=True)
 
         # Quick exit if no target or note is provided
@@ -35,25 +37,29 @@ class HideNote(commands.Cog):
         # Attempt to update the information in the database
         try:
             # hide note
-            mod_note : ModNotes = ModNoteRepository().hide_modnote(id=noteid,
-                                                                   target_id=target.id,
-                                                                   who_hid_id=interaction.user.id)
+            mod_note : ModNotes = modnote_repository.hide_modnote(id=noteid,target_id=target.id,who_hid_id=interaction.user.id)
 
         except Exception as e:
             await interaction.followup.send(embed=error_embed("Failed to hide note. Please try again.", exception=e))
             return
         
         if mod_note:
-            moderator = self.session.query(Sailor).filter(Sailor.discord_id == mod_note.moderator_id).first()
+            moderator = sailor_repository.get_sailor(interaction.user.id)
+            if not moderator:
+                await interaction.followup.send(embed=error_embed("Failed to get moderator information. Please try again."))
+                return
 
-            note_embed = default_embed(title="Note Hidden", description=f"Hid note {mod_note.id} for {target.mention}")
-            note_embed.add_field(name="Moderator", value=moderator.mention)
+            note_embed = default_embed(title=f"Note Hidden", description=f"Hid note {mod_note.id} for {target.mention}")
+            note_embed.add_field(name="Moderator", value=f"<@{moderator.discord_id}>")
             note_embed.add_field(name="Note", value=mod_note.note)
             note_embed.add_field(name="Note Time", value=mod_note.note_time)
             note_embed.add_field(name="Hidden By", value=interaction.user.mention)
             await interaction.followup.send(embed=note_embed)
         else:
             await interaction.followup.send(embed=error_embed("Failled to hide note, please try again."))
+
+        modnote_repository.close_session()
+        sailor_repository.close_session()
 
 
 async def setup(bot: commands.Bot):
