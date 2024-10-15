@@ -18,7 +18,6 @@ class AddInfo(commands.Cog):
     @app_commands.checks.has_any_role(*SNCO_AND_UP)
     #@app_commands.describe(timezone="Enter the user's timezone manually (e.g., UTC+2) or leave empty to calculate automatically")
     @app_commands.choices(timezone=[
-                                    app_commands.Choice(name="International Date Line West - UTC-12:00 (IDLW)", value="UTC-12:00 (IDLW)"),
                                     app_commands.Choice(name="Niue Time, Samoa Standard Time - UTC-11:00 (NUT)", value="UTC-11:00 (NUT)"),
                                     app_commands.Choice(name="Hawaii-Aleutian Standard Time - UTC-10:00 (HST)", value="UTC-10:00 (HST)"),
                                     app_commands.Choice(name="Alaska Standard Time - UTC-09:00 (AKST)", value="UTC-09:00 (AKST)"),
@@ -42,7 +41,8 @@ class AddInfo(commands.Cog):
                                     app_commands.Choice(name="Japan Standard Time, Korea Standard Time - UTC+09:00 (JST)", value="UTC+09:00 (JST)"),
                                     app_commands.Choice(name="Australian Eastern Standard Time - UTC+10:00 (AEST)", value="UTC+10:00 (AEST)"),
                                     app_commands.Choice(name="Vladivostok Time, Solomon Islands Time - UTC+11:00 (VLAT)", value="UTC+11:00 (VLAT)"),
-                                    app_commands.Choice(name="New Zealand Standard Time, Fiji Time - UTC+12:00 (NZST)", value="UTC+12:00 (NZST)")
+                                    app_commands.Choice(name="New Zealand Standard Time, Fiji Time - UTC+12:00 (NZST)", value="UTC+12:00 (NZST)"),
+                                    app_commands.Choice(name="International Date Line West - UTC-12:00 (IDLW)", value="UTC-12:00 (IDLW)")
                                 ])
     async def addinfo(self, interaction: discord.interactions, target: discord.Member = None, gamertag: str = None, timezone: str = None):
         await interaction.response.defer (ephemeral=True)
