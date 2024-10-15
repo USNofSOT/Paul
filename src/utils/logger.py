@@ -1,10 +1,12 @@
 import glob
 import logging
 import os
+import time
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
 
 LOGS_DIR = './logs'
+MAX_AGE_IN_DAYS = 3
 
 log = logging.getLogger(__name__)
 
@@ -18,9 +20,9 @@ def initialise_logger():
     today = datetime.now().strftime('%Y-%m-%d')
     # General log handler
     general_handler = RotatingFileHandler(
-        filename=f'{LOGS_DIR}/BOT-{today}.log',
+        filename=f'{LOGS_DIR}/BOT-{int(datetime.now().timestamp())}.log',
         maxBytes=5 * 1024 * 1024,  # 5MB
-        backupCount=5,  # Keep 10 backup files
+        backupCount=5,
         encoding='utf-8',
     )
 
@@ -28,7 +30,7 @@ def initialise_logger():
     error_handler = RotatingFileHandler(
         filename=f'{LOGS_DIR}/BOT-ERROR-{int(datetime.now().timestamp())}.log',
         maxBytes=5 * 1024 * 1024,  # 5MB
-        backupCount=5,  # Keep 25 backup files
+        backupCount=5,
     )
     error_handler.setLevel(logging.ERROR)
 
@@ -38,6 +40,7 @@ def initialise_logger():
         format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
     )
     log.info('Logger initialised')
+    clean_logs()
 
 def get_most_recent_log_file():
     log_files = glob.glob(os.path.join(LOGS_DIR, 'BOT-[!ERROR]*.log'))
@@ -52,3 +55,18 @@ def get_most_recent_error_log_file():
         return None
     most_recent_error_log = max(error_log_files, key=os.path.getctime)
     return most_recent_error_log
+
+def clean_logs():
+    log.info('Attempting to clean logs')
+    expiration_date = time.time() - MAX_AGE_IN_DAYS * 86400
+    entries = os.listdir(LOGS_DIR)
+
+    log.info(f'Found {len(entries)} log files')
+    for entry in entries:
+        time_created = os.stat(os.path.join(LOGS_DIR, entry)).st_ctime
+        if time_created < expiration_date:
+            try:
+                log.info('Deleted for exceeding expiration limit : %s' % (LOGS_DIR + '/' + entry))
+                os.remove(LOGS_DIR + '/' + entry)
+            except Exception as e:
+                log.error('%s' % e)
