@@ -3,6 +3,7 @@ import asyncio, discord, os, config
 from logging import getLogger
 
 from src.data import create_tables
+from src.utils.logger import initialise_logger
 
 log= getLogger(__name__)
 from core import Bot
@@ -20,4 +21,5 @@ async def main():
 
 if __name__ == '__main__':
     create_tables()
+    initialise_logger()
     asyncio.run(main())
