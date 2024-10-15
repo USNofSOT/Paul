@@ -116,6 +116,7 @@ def identify_role_index(ctx, member):
     listidentify = ['Squad Leader', 'Chief of Ship', 'First Officer', 'Commanding Officer', 'Fleet Commander',
                     'Master Chief Petty Officer of the Navy', 'Vice Admiral of the Navy', 'Admiral of the Navy']
     identify_role = get_role_in_list(member, listidentify)
+    
 
     if identify_role is None:
         return None
@@ -125,8 +126,6 @@ def identify_role_index(ctx, member):
         role = discord.utils.get(ctx.guild.roles, name=role_name)
         if role in member.roles:
             highest_ranking_role = role
-            break
-
     if highest_ranking_role is None:
         return None
 

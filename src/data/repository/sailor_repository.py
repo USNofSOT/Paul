@@ -22,6 +22,22 @@ class SailorRepository:
     def close_session(self):
         self.session.close()
 
+    def check_discord_id_exists(self, target_id: int) -> bool:
+        """
+        Check if a Sailor with a specific discord ID exists
+
+        Args:
+            target_id (int): The Discord ID of the user.
+        Returns:
+            bool: True if a Sailor with the discord ID exists, False otherwise.
+        """
+        try:
+            exists = self.session.query(Sailor.discord_id).filter(Sailor.discord_id == target_id).scalar() is not None
+            return exists
+        except Exception as e:
+            log.error(f"Error checking if discord ID exists: {e}")
+            return False
+
     def increment_subclass_count_by_discord_id(self, target_id: int, subclass: SubclassType, increment: int = 1) -> bool:
         """
         Increment the subclass count for a specific Sailor
@@ -102,6 +118,33 @@ class SailorRepository:
             return True
         except Exception as e:
             log.error(f"Error incrementing voyage count: {e}")
+            self.session.rollback()
+            return False
+
+    def decrement_subclass_count_by_discord_id(self, target_id, subclass, subclass_count):
+        """
+        Decrement the subclass count for a specific Sailor
+
+        Args:
+            target_id (int): The Discord ID of the user.
+            subclass (SubclassType): The subclass to decrement the count for.
+            subclass_count (int): The amount to decrement the count by.
+        Returns:
+            bool: True if the operation was successful, False otherwise.
+        """
+        column = subclass.value.lower() + "_points"
+        try:
+            self.session.execute(
+                update(Sailor)
+                .where(Sailor.discord_id == target_id)
+                .values({
+                    column: func.greatest(coalesce(getattr(Sailor, column), 0) - subclass_count, 0)
+                })
+            )
+            self.session.commit()
+            return True
+        except Exception as e:
+            log.error(f"Error decrementing subclass count: {e}")
             self.session.rollback()
             return False
 
@@ -244,21 +287,4 @@ def decrement_voyage_count_by_discord_id(target_id: int) -> bool:
     finally:
         session.close()
 
-def check_discord_id_exists(target_id: int) -> bool:
-    """
-    Check if a Sailor with a specific discord ID exists
 
-    Args:
-        target_id (int): The Discord ID of the user.
-    Returns:
-        bool: True if a Sailor with the discord ID exists, False otherwise.
-    """
-    session = Session()
-    try:
-        exists = session.query(Sailor.discord_id).filter(Sailor.discord_id == target_id).scalar() is not None
-        return exists
-    except Exception as e:
-        log.error(f"Error checking if discord ID exists: {e}")
-        return False
-    finally:
-        session.close()
