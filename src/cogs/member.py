@@ -68,14 +68,14 @@ class Member(commands.Cog):
 
 
             # Check if the role contains the word "squad" or "USS"
-            if "squad" not in role.name.lower() and "uss" not in role.name.lower():
-                embed = error_embed(
-                    title="Invalid Role",
-                    description="Please provide a squad or USS role only.",
-                    footer=False
-                )
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-                return
+            # if "squad" not in role.name.lower() and "uss" not in role.name.lower():
+            #     embed = error_embed(
+            #         title="Invalid Role",
+            #         description="Please provide a squad or USS role only.",
+            #         footer=False
+            #     )
+            #     await interaction.response.send_message(embed=embed, ephemeral=True)
+            #     return
 
             await interaction.response.send_message(
                 embed=discord.Embed(
