@@ -2,7 +2,7 @@ from logging import getLogger
 
 from discord.ext import commands
 
-from src.config import NSC_ROLE
+from src.config import NSC_ROLES
 from src.utils.populater import Populater
 
 log = getLogger(__name__)
@@ -12,7 +12,7 @@ class PopulateVoyages(commands.Cog):
         self.bot = bot
 
     @commands.command(name="populate_voyages")
-    @commands.has_role(NSC_ROLE)
+    @commands.has_any_role(*NSC_ROLES)
     async def populate_voyages(self, ctx, arg: int = 1):
         if arg == -1:
             max_voyages = None
