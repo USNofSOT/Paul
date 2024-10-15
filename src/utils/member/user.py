@@ -2,7 +2,7 @@ from warnings import catch_warnings
 
 import discord
 
-from src.config import NCO_AND_UP
+from src.config import NCO_AND_UP, GUILD_OWNER_ID
 from src.data import MemberReport, member_report
 from src.data.repository.sailor_repository import ensure_sailor_exists
 from src.utils.embeds import error_embed, default_embed
@@ -37,7 +37,9 @@ async def get_member_embed(bot, interaction, member: discord.Member) -> discord.
     role_index = identify_role_index(interaction, member)
     next_in_command = process_role_index(interaction, member, role_index)
 
-    if len(next_in_command) == 1:
+    if member.id == GUILD_OWNER_ID:
+        embed.add_field(name="Next in Command", value="Dungeon Master", inline=True)
+    elif len(next_in_command) == 1:
         if next_in_command is None or not isinstance(next_in_command, list):
             embed.add_field(name="Next in Command", value=next_in_command, inline=True)
         else:
