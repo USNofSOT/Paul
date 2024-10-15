@@ -223,7 +223,7 @@ class AddSubclass(commands.Cog):
 
                 if not main_subclass:
                     embed.add_field(name=f"{user_name} - :warning:",
-                        value="No main subclass found, will not be considered for this log", inline=False, )
+                        value="No main subclass found for mention, will not be considered for this log", inline=False, )
                     continue
                 else:
                     users_found_in_processed_lines.append(discord_id)
@@ -283,10 +283,13 @@ class AddSubclass(commands.Cog):
 
                 emoji = ":new:" if is_new else ":repeat:"
 
-                updates.append((discord_id, main_subclass, surgeon, grenadier))
-                embed.add_field(name=f"{user_name} - {emoji}", value=f"Main Subclass: {main_subclass.value}\n"
-                                                                     f"Surgeon Pts.: {1 if surgeon else 0}\n"
-                                                                     f"Grenadier Pts.: {grenadier}", inline=False, )
+                embed_value = f"Main Subclass: {main_subclass.value}"
+                if surgeon:
+                    embed_value += f"\nSurgeon Pts.: {1}"
+                if grenadier > 0:
+                    embed_value += f"\nGrenadier Pts.: {grenadier}"
+
+                embed.add_field(name=f"{user_name} - {emoji}", value=embed_value, inline=False)
 
             missing_users = {entry.target_id for entry in current_entries if
                              entry.target_id not in users_found_in_processed_lines}
