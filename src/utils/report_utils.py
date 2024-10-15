@@ -49,6 +49,13 @@ async def tiered_medals(member: discord.Member) -> str:
         "24 Months Service Stripes",
     ]
 
+    attendance_titles = [
+        "Citation of Attendance",
+        "Legion of Attendance",
+        "Meritorious Attendee Medal",
+        "Admirable Attendee Medal",
+    ]
+
     categories = [
         ("Hosting Titles", hosting_titles),
         ("Voyaging Titles", voyaging_titles),
@@ -56,6 +63,7 @@ async def tiered_medals(member: discord.Member) -> str:
         ("Conduct Titles", conduct_titles),
         ("Time Titles", time_titles),
         ("Training Titles", training_titles),
+        ("Attendance Titles", attendance_titles)
     ]
 
     result = ""
@@ -86,8 +94,6 @@ async def other_medals(member: discord.Member) -> list[str]:
         "Recruitment Ribbon",
         "Career Intelligence Medal",
         "Unit Commendation Medal",
-        "Commanders Challenge Coin",
-        "Challenge Coin",
     ]
     count = 0
 
