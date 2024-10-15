@@ -42,11 +42,14 @@ BOA_ROLE = 933914385099923497 # Board of Admirality
 # Departments
 NRC_ROLE = 944631719456284735 # NRC Department
 NSC_ROLE = 1293725126562680985 # NSC Department
+SPD_NSC_ROLE = 1288866599314395181 # NSC Department in SPD server
+
+NSC_ROLES = NSC_ROLE, SPD_NSC_ROLE
 
 # Subclass Synonyms
 CARPENTER_SYNONYMS = ['carpenter', 'carp', 'bilge']
 FLEX_SYNONYMS = ['flex', 'flexer', 'boarder']
-CANNONEER_SYNONYMS = ['cannoneer', 'cannon', 'gunner', 'canonneer', 'cannons']
+CANNONEER_SYNONYMS = ['cannoneer', 'cannon', 'gunner', 'canonneer', 'cannons', 'mc']
 HELM_SYNONYMS = ['helm', 'helmsman', 'navigator']
 SURGEON_SYNONYMS = ['surgeon', 'doc', 'medic', 'field surgeon']
 GRENADIER_SYNONYMS = ['grenadier', 'kegger', 'bomber']
