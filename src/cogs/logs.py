@@ -3,7 +3,7 @@ from logging import getLogger
 import discord
 from discord.ext import commands
 
-from src.config import NSC_ROLE
+from src.config import NSC_ROLES
 from src.utils.logger import get_most_recent_log_file, get_most_recent_error_log_file
 
 log = getLogger(__name__)
@@ -13,7 +13,7 @@ class Logs(commands.Cog):
         self.bot = bot
 
     @commands.command(name="logs")
-    @commands.has_role(NSC_ROLE)
+    @commands.has_any_role(*NSC_ROLES)
     async def populate_voyages(self, ctx):
         log_file = get_most_recent_log_file()
         error_log_file = get_most_recent_error_log_file()
