@@ -22,6 +22,13 @@ class SailorRepository:
     def close_session(self):
         self.session.close()
 
+    def get_sailor(self, target_id: int) -> Sailor | None:
+        try:
+            return self.session.query(Sailor).filter(Sailor.discord_id == target_id).first()
+        except Exception as e:
+            log.error(f"Error retrieving Sailor: {e}")
+            return None
+
     def check_discord_id_exists(self, target_id: int) -> bool:
         """
         Check if a Sailor with a specific discord ID exists

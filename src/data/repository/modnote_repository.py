@@ -50,10 +50,12 @@ class ModNoteRepository:
             modnote.hide_time = datetime.datetime.now()
         else:
             pass #TODO: Consider wiping who_hid and hide_time if the note is un-hidden
+
+        return modnote
         
     def hide_modnote(self, id : int, target_id : int, who_hid_id : int) -> ModNotes | None:
         try:
-            return self._toggle_modnotes(id=id, target_id=target_id, who_hid_id=who_hid_id, hidden=True)
+            return self._toggle_modnote(id=id, target_id=target_id, who_hid_id=who_hid_id, hidden=True)
         except Exception as e:
             log.error(f"Error hiding note: {e}")
             self.session.rollback()
@@ -61,7 +63,7 @@ class ModNoteRepository:
         
     def unhide_modnote(self, id : int, target_id : int, who_hid_id : int) -> ModNotes | None:
         try:
-            return self._toggle_modnotes(id=id, target_id=target_id, who_hid_id=who_hid_id, hidden=False)
+            return self._toggle_modnote(id=id, target_id=target_id, who_hid_id=who_hid_id, hidden=False)
         except Exception as e:
             log.error(f"Error unhiding note: {e}")
             self.session.rollback()
