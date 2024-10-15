@@ -1,9 +1,11 @@
 import logging
 from datetime import datetime
+from datetime import timedelta
 from typing import Type
 
 from sqlalchemy import delete
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.sql.functions import count
 
 from src.data import Sailor
 from src.data.engine import engine
@@ -57,7 +59,37 @@ class VoyageRepository:
             log.error(f"Error checking if voyage log ID exists: {e}")
             self.session.rollback()
             raise e
+        
+    def get_sailors_by_log_id(self, log_id: int) -> list[Type[Sailor]]:
+        try:
+            return self.session.query(Sailor).join(Voyages).filter(Voyages.log_id == log_id).all()
+        except Exception as e:
+            log.error(f"Error getting sailors by log ID: {e}")
+            raise e
 
+    def get_voyages_by_target_id_month_count(self, target_ids: list) -> dict:
+        """
+        Get count of voyage log entries for a target IDs in last 30 days
+
+        Args:
+            target_ids (list): The discord IDs of the target users
+        Returns:
+            Voyages: Count of all voyage log entries for the target IDs
+        """
+        self.session = Session()
+        try:
+            # log_time must be within the last 30 days
+            thirty_days_ago = datetime.now() - timedelta(days=30)
+
+            ret = (self.session.query(Voyages.target_id, count(Voyages.target_id))
+                    .filter(Voyages.target_id.in_(target_ids), Voyages.log_time >= thirty_days_ago)
+                    .group_by(Voyages.target_id)
+                    .all())
+
+            return {item[0]: item[1] for item in ret}
+        except Exception as e:
+            log.error(f"Error getting hosted log entries: {e}")
+            raise e
 
 def check_voyage_log_id_with_target_id_exists(log_id: int, target_id: int) -> bool:
     """

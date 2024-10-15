@@ -26,11 +26,11 @@ class On_Message_Process_voyage(commands.Cog):
         hosted_repository = HostedRepository()
         sailor_repository = SailorRepository()
         # Voyage Channel Work
-        if message.channel.id == int(VOYAGE_LOGS):
+        if message.channel.id == int(VOYAGE_LOGS) and not message.author.bot:
             try:
                 await Process_Voyage_Log.process_voyage_log(message, voyage_repository, hosted_repository,
                                                             sailor_repository)
-                log.info(f"[{message.id}] Voyage log processed.")
+                log.debug(f"[{message.id}] Voyage log processed.")
             except Exception as e:
                 log.error(f"Error processing voyage log: {e}")
             finally:
