@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
 
-LOGS_DIR = '../logs'
+LOGS_DIR = './logs'
 
 log = logging.getLogger(__name__)
 
