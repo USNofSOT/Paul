@@ -40,6 +40,6 @@ class Bot(discord.ext.commands.Bot):
             log.info(f"Loading {extension}")
             await self.load_extension(extension)
         log.info("All extentions loaded")
-        await self.tree.sync()
+        # await self.tree.sync()
         log.info("Tree Synced")
 
