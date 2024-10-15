@@ -10,7 +10,7 @@ LOGS_DIR = './logs'
 # # 1 for True, 0 for False
 LOGS_PERSISTENCE : bool = bool(int(os.getenv('LOGS_PERSISTENCE', 1)))
 # int value in days
-LOGS_MAX_AGE_IN_DAYS : int = int(os.getenv('MAX_AGE_IN_DAYS', 7))
+LOGS_MAX_AGE_IN_DAYS : int = int(os.getenv('LOGS_MAX_AGE_IN_DAYS', 7))
 
 log = logging.getLogger(__name__)
 
