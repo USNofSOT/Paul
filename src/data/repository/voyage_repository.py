@@ -59,6 +59,13 @@ class VoyageRepository:
             log.error(f"Error checking if voyage log ID exists: {e}")
             self.session.rollback()
             raise e
+        
+    def get_sailors_by_log_id(self, log_id: int) -> list[Type[Sailor]]:
+        try:
+            return self.session.query(Sailor).join(Voyages).filter(Voyages.log_id == log_id).all()
+        except Exception as e:
+            log.error(f"Error getting sailors by log ID: {e}")
+            raise e
 
     def get_voyages_by_target_id_month_count(self, target_ids: list) -> dict:
         """
