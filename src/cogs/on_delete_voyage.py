@@ -23,33 +23,40 @@ class On_Delete_Voyages(commands.Cog):
         self.hosted_repository = HostedRepository()
         self.voyage_repository = VoyageRepository()
         if payload.channel_id == VOYAGE_LOGS:
-            log_id = payload.message_id                 
-            host = self.hosted_repository.get_host_by_log_id(log_id)
-            if host:
-                host_id = host.discord_id
-            else:
-                log.info(f"Voyage:{log_id} was not logged before.")
-                return
-            participant_ids = [user.discord_id for  user in self.voyage_repository.get_sailors_by_log_id(log_id)]
-            
-            log.info(f"[{log_id}] Message deleted in voyage log channel.")
+            log_id = payload.message_id
+            try:                 
+                host = self.hosted_repository.get_host_by_log_id(log_id)
+                if host:
+                    host_id = host.discord_id
+                else:
+                    log.info(f"Voyage:{log_id} was not logged before.")
+                    return
+                participant_ids = [user.discord_id for  user in self.voyage_repository.get_sailors_by_log_id(log_id)]
+                
+                log.info(f"[{log_id}] Message deleted in voyage log channel.")
 
-            # Decrement hosted count
-            decrement_hosted_count_by_discord_id(host_id)
-            remove_hosted_entry_by_log_id(log_id)
-            log.info(f"[{log_id}] Removed hosted entry for: {host_id}")
+                # Decrement hosted count
+                decrement_hosted_count_by_discord_id(host_id)
+                remove_hosted_entry_by_log_id(log_id)
+                log.info(f"[{log_id}] Removed hosted entry for: {host_id}")
 
-            # Remove subclass entries
-            subclass_entries = self.subclass_repository.delete_all_subclass_entries_for_log_id(log_id)
+                # Remove subclass entries
+                subclass_entries = self.subclass_repository.delete_all_subclass_entries_for_log_id(log_id)
 
-            # Decrement voyage counts for participants
-            for participant_id in participant_ids:
-                decrement_voyage_count_by_discord_id(participant_id)
-                log.info(f"[{log_id}] Voyage log entry removed for participant: {participant_id}")
+                # Decrement voyage counts for participants
+                for participant_id in participant_ids:
+                    decrement_voyage_count_by_discord_id(participant_id)
+                    log.info(f"[{log_id}] Voyage log entry removed for participant: {participant_id}")
 
-            # Remove entries from VoyageLog table (if necessary)
-            remove_voyage_log_entries(log_id)
-            log.info(f"[{log_id}] Voyage log entries removed.")
+                # Remove entries from VoyageLog table (if necessary)
+                remove_voyage_log_entries(log_id)
+                log.info(f"[{log_id}] Voyage log entries removed.")
+            except AttributeError as e:
+                log.info(f"[{log_id}] Was never in Database to remove.")
+                log.warning(f"[{log_id}], {e}")
+            except Exception as e:
+                log.error(e)
+                raise e
 
         self.subclass_repository.close_session()
         self.hosted_repository.close_session()
