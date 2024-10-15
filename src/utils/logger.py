@@ -6,7 +6,7 @@ from datetime import datetime
 from logging.handlers import RotatingFileHandler
 
 LOGS_DIR = './logs'
-MAX_AGE_IN_DAYS = 3
+MAX_AGE_IN_DAYS = int(os.getenv('MAX_AGE_IN_DAYS', 7))
 
 log = logging.getLogger(__name__)
 
@@ -57,7 +57,7 @@ def get_most_recent_error_log_file():
     return most_recent_error_log
 
 def clean_logs():
-    log.info('Attempting to clean logs')
+    log.info('Attempting to clean logs with expiration date of %s days' % MAX_AGE_IN_DAYS)
     expiration_date = time.time() - MAX_AGE_IN_DAYS * 86400
     entries = os.listdir(LOGS_DIR)
 
