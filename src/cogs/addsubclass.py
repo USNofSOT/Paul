@@ -134,7 +134,7 @@ class ConfirmView(discord.ui.View):
             await self.interaction.edit_original_response(embed=result_embed, view=None)
 
             # Add reaction to the log message
-            await log_message.add_reaction("✅")
+            await log_message.add_reaction("<:Paul:1295457522102304820>")
 
         except Exception as e:
             log.error(f"Error occurred in confirm_button: {e}")
