@@ -165,12 +165,12 @@ async def get_member_embed(bot, interaction, member: discord.Member) -> discord.
 
     embed.add_field(
         name="Subclasses",
-        value=f"{carpenter_emoji} Carpenters: {carpenter_points} \n"
+        value=f"{carpenter_emoji} Carpenter: {carpenter_points} \n"
               f"{flex_emoji} Flex: {flex_points} \n"
-              f"{cannoneer_emoji} Cannoneers: {cannoneer_points} \n"
+              f"{cannoneer_emoji} Cannoneer: {cannoneer_points} \n"
               f"{helm_emoji} Helm: {helm_points} \n"
-              f"{grenadier_emoji} Grenadiers: {grenadier_points} \n"
-              f"{surgeon_emoji} Surgeons: {surgeon_points}",
+              f"{grenadier_emoji} Grenadier: {grenadier_points} \n"
+              f"{surgeon_emoji} Surgeon: {surgeon_points}",
         inline=True
     )
 
