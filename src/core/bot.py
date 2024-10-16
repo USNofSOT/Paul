@@ -55,4 +55,3 @@ class Bot(discord.ext.commands.Bot):
         log.info("All extentions loaded")
         # await self.tree.sync()
         log.info("Tree Synced")
-
