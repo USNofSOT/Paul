@@ -189,7 +189,7 @@ async def get_member_embed(bot, interaction, member: discord.Member) -> discord.
 
     embed.add_field(
         name="Regular Challenge Coins",
-        value="\n".join([str(coin.old_name+ "'s "+coin.coin_type) for coin in regular_coins]) or "None",  # Display regular_coins
+        value="\n".join([str(coin.old_name+ "'s Challenge Coin") for coin in regular_coins]) or "None",  # Display regular_coins
         inline=True
     )
     coin_repository.close_session()
