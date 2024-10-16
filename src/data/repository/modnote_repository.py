@@ -50,7 +50,7 @@ class ModNoteRepository:
             modnote.hide_time = datetime.datetime.now()
         else:
             pass #TODO: Consider wiping who_hid and hide_time if the note is un-hidden
-
+        self.session.commit()
         return modnote
         
     def hide_modnote(self, id : int, target_id : int, who_hid_id : int) -> ModNotes | None:
