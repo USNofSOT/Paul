@@ -30,7 +30,7 @@ class ForceAdd(commands.Cog):
     async def forceadd(self, interaction: discord.Interaction, target: discord.Member = None,
                        voyages: int = 0, hosted: int = 0,
                        carpenter: int = 0, cannoneer: int = 0, flex: int = 0, helm: int = 0,
-                       surgeon: int = 0, grenardier: int = 0):
+                       surgeon: int = 0, grenadier: int = 0):
         await interaction.response.defer (ephemeral=True)
 
         # Quick exit if no target or note is provided
@@ -50,7 +50,7 @@ class ForceAdd(commands.Cog):
             sailor_repo.increment_force_subclass_by_discord_id(tgt_id,SubclassType.FLEX, flex)
             sailor_repo.increment_force_subclass_by_discord_id(tgt_id,SubclassType.HELM, helm)
             sailor_repo.increment_force_subclass_by_discord_id(tgt_id,SubclassType.SURGEON, surgeon)
-            sailor_repo.increment_force_subclass_by_discord_id(tgt_id,SubclassType.GRENADIER, grenardier)
+            sailor_repo.increment_force_subclass_by_discord_id(tgt_id, SubclassType.GRENADIER, grenadier)
 
             # Print applied values
             tgt = sailor_repo.get_sailor(target.id)
