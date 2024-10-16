@@ -35,7 +35,9 @@ class ForceAdd(commands.Cog):
 
         # Quick exit if no target or note is provided
         if target is None:
-            await interaction.followup.send("You didn't add a target.")
+            await interaction.followup.send(error_embed(
+                "Please select a user to force add to.")
+            )
             return
         
         
