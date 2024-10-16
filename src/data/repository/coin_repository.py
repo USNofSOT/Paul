@@ -107,9 +107,9 @@ class CoinRepository:
             with Session() as session:
                 coins = session.query(Coins).filter(Coins.target_id == target_id).all()
                 for coin in coins:
-                    if coin.type == "Regular Challenge Coin":
+                    if coin.coin_type == "Regular Challenge Coin":
                         regular_coins.append(coin)
-                    elif coin.type == "Commander's Challenge Coin":
+                    elif coin.coin_type == "Commander's Challenge Coin":
                         commander_coins.append(coin)
 
             return regular_coins, commander_coins
