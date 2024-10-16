@@ -1,11 +1,11 @@
-from asyncio import timeout
-
 import discord
 from discord.ext import commands
 from discord import app_commands
 
 from src.config import BOA_NSC
-from src.data.repository.sailor_repository import SailorRepository
+from src.data import SubclassType
+from src.data.repository.sailor_repository import SailorRepository, save_sailor
+from src.utils.embeds import error_embed, default_embed
 from logging import getLogger
 
 log = getLogger(__name__)
@@ -31,6 +31,8 @@ class ForceAdd(commands.Cog):
                        voyages: int = 0, hosted: int = 0,
                        carpenter: int = 0, cannoneer: int = 0, flex: int = 0, helm: int = 0,
                        surgeon: int = 0, grenardier: int = 0):
+        await interaction.response.defer (ephemeral=True)
+
         # Quick exit if no target or note is provided
         if target is None:
             await interaction.followup.send("You didn't add a target.")
@@ -39,20 +41,31 @@ class ForceAdd(commands.Cog):
         
         sailor_repo = SailorRepository()
         try:
-            # Get sailor
-            tgt = sailor_repo.get_sailor(target.id)
-
             # Apply force values
-            tgt.force_voyage_count += voyages
-            tgt.force_hosted_count += hosted
-            tgt.force_carpenter_points += carpenter
-            tgt.force_carpenter_points += cannoneer
-            tgt.force_flex_points += flex
-            tgt.force_helm_points += helm
-            tgt.force_surgeon_points += surgeon
-            tgt.force_grenadier_points += grenardier
+            tgt_id = target.id
+            sailor_repo.increment_force_voyage_by_discord_id(tgt_id, voyages)
+            sailor_repo.increment_force_hosted_by_discord_id(tgt_id, hosted)
+            sailor_repo.increment_force_subclass_by_discord_id(tgt_id,SubclassType.CARPENTER, carpenter)
+            sailor_repo.increment_force_subclass_by_discord_id(tgt_id,SubclassType.CANNONEER, cannoneer)
+            sailor_repo.increment_force_subclass_by_discord_id(tgt_id,SubclassType.FLEX, flex)
+            sailor_repo.increment_force_subclass_by_discord_id(tgt_id,SubclassType.HELM, helm)
+            sailor_repo.increment_force_subclass_by_discord_id(tgt_id,SubclassType.SURGEON, surgeon)
+            sailor_repo.increment_force_subclass_by_discord_id(tgt_id,SubclassType.GRENADIER, grenardier)
+
+            # Print applied values
+            tgt = sailor_repo.get_sailor(target.id)
+            force_embed = default_embed(title="Force Added Values", description=f"Displaying current force values for {target.mention}")
+            force_embed.add_field(name="Voyages", value=tgt.force_voyage_count)
+            force_embed.add_field(name="Hosted", value=tgt.force_hosted_count)
+            force_embed.add_field(name="Carpenter", value=tgt.force_carpenter_points)
+            force_embed.add_field(name="Cannoneer", value=tgt.force_cannoneer_points)
+            force_embed.add_field(name="Flex", value=tgt.force_flex_points)
+            force_embed.add_field(name="Helm", value=tgt.force_helm_points)
+            force_embed.add_field(name="Surgeon", value=tgt.force_surgeon_points)
+            force_embed.add_field(name="Grenardier", value=tgt.force_grenadier_points)
+            await interaction.followup.send(embed=force_embed)
         except Exception as e:
-            await interaction.response.send_message("An error occurred while force adding. Please try again later.", ephemeral=True)
+            await interaction.followup.send(embed=error_embed("Failed to force add. Please try again."))
             log.error(f"Failed to force add: {e}")
         finally:
             sailor_repo.close_session()
