@@ -1,7 +1,7 @@
 import discord
 import logging
 from discord.ext import commands
-from src.config import NCO_COMMS, ENGINE_ROOM, GUILD_ID, SPD_ID, NSC_ROLES
+from src.config import BOT_STATUS, GUILD_ID, SPD_ID, NSC_ROLES
 
 log = logging.getLogger(__name__)
 
@@ -17,11 +17,11 @@ class BotUp(commands.Cog):
         spd_guild = SPD_ID
         
         if main_guild:
-            nco_coms_channel = main_guild.get_channel(NCO_COMMS)
+            nco_coms_channel = main_guild.get_channel(BOT_STATUS)
             if nco_coms_channel:
                 await nco_coms_channel.send("I'm Back from LOA")
             else:
-                log.error(f"Error: Channel with ID {NCO_COMMS} not found in Main Guild.")
+                log.error(f"Error: Channel with ID {BOT_STATUS} not found in Main Guild.")
         else:
             log.error(f"Error: Guild with ID {GUILD_ID} not found.")
 
