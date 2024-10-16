@@ -48,7 +48,7 @@ class SubclassRepository:
             Subclasses.target_id == target_id
         ).all()
 
-    def save_subclass(self, author_id: int, log_id: int, target_id: int, subclass: SubclassType, subclass_count: int = 1, log_time: datetime = datetime.datetime.now()) -> Subclasses or int:
+    def save_subclass(self, author_id: int, log_id: int, target_id: int, subclass: SubclassType, subclass_count: int = 1, log_time: datetime = None) -> Subclasses or int:
         """
         Save a subclass record to the database
 
@@ -63,7 +63,7 @@ class SubclassRepository:
             Subclasses: The subclass record that was saved
             -1: If a duplicate record is found
         """
-
+        log_time = log_time or datetime.datetime.now()
         try:
             # Check if a record with the same target_id, subclass, and log_id already exists
             existing = self.session.query(Subclasses).filter(
