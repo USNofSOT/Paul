@@ -1,16 +1,17 @@
 from __future__ import annotations
 
-from datetime import datetime
-from logging import getLogger
 from typing import Optional
-
 from discord.ext import commands
+from logging import getLogger
+
+from discord.ext.commands import ExtensionNotFound, NoEntryPointError, ExtensionFailed
 
 from src.cogs import EXTENTIONS
-from src.config import SPD_GUID_ID, ENGINE_ROOM
+from src.config import ENGINE_ROOM, SPD_ID
 
 log= getLogger(__name__)
-import discord
+import discord, os
+
 
 __all__ = (
     "Bot",
@@ -22,22 +23,22 @@ class Bot(discord.ext.commands.Bot):
             command_prefix="!",
             intents=discord.Intents.all(),
         )
-
     async def on_ready(self) -> None:
         log.info(f"logged in as {self.user}")
-        embed = discord.Embed(
-            title=":white_check_mark: Bot is now online",
-            description="Bot is now online",
-            color=discord.Color.green()
-        )
-        embed.set_footer(text=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    '''
         try:
-            guild = self.get_guild(SPD_GUID_ID)
-            channel = guild.get_channel(ENGINE_ROOM)
-            await channel.send(embed=embed)
-        except (AttributeError, discord.HTTPException, discord.NotFound):
-            log.warning("Could not find the guild or channel for sending the online message")
-
+            spd_guild = self.get_guild(SPD_ID)
+            if spd_guild:
+                engine_room_channel = spd_guild.get_channel(ENGINE_ROOM)
+                if engine_room_channel:
+                    await engine_room_channel.send("I'm back from LOA")
+                else:
+                    log.error(f"Error: Channel with ID {ENGINE_ROOM} not found in SPD Guild.")
+            else:
+                log.error(f"Error: Guild with ID {SPD_ID} not found.")
+        except Exception as e:
+            log.error(f"Error: Startup Engine room error: {e}")
+    '''
 
     async def success(self, content: str, interaction: discord.Interaction, ephemeral: Optional[bool]):
         """Sending success Message"""
@@ -54,4 +55,3 @@ class Bot(discord.ext.commands.Bot):
         log.info("All extentions loaded")
         # await self.tree.sync()
         log.info("Tree Synced")
-
