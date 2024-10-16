@@ -1,7 +1,7 @@
 import discord
 import logging
 from discord.ext import commands
-from src.config import NCO_COMMS, ENGINE_ROOM, GUILD_ID, SPD_ID
+from src.config import NCO_COMMS, ENGINE_ROOM, GUILD_ID, SPD_ID, NSC_ROLES
 
 log = logging.getLogger(__name__)
 
@@ -10,6 +10,7 @@ class BotDown(commands.Cog):
         self.bot = bot
 
     @commands.command(name="botdown")
+    @commands.has_any_role(NSC_ROLES)
     async def botdown(self, ctx):
         """Sends an LOA notification to the specified channels."""
         main_guild = GUILD_ID
