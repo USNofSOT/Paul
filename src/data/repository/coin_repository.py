@@ -114,6 +114,6 @@ class CoinRepository:
 
             return regular_coins, commander_coins
         except Exception as e:
-            log.error(f"Error retriving coins: {e}")
+            log.error(f"Error retriving coins by user: {e}")
         finally:
             self.session.close()
