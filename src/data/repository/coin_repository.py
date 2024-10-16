@@ -88,3 +88,32 @@ class CoinRepository:
             raise e
         finally:
             self.session.close()
+
+    def get_coins_by_target(self, target_id):
+        """
+        Fetches and categorizes coins for a target.
+
+        Args:
+            target_id: The ID of the target.
+
+        Returns:
+            A tuple containing two lists: regular_coins and commander_coins.
+        """
+        
+        try:
+            regular_coins = []
+            commander_coins = []
+
+            with Session() as session:
+                coins = session.query(Coins).filter(Coins.target_id == target_id).all()
+                for coin in coins:
+                    if coin.coin_type == "Regular Challenge Coin":
+                        regular_coins.append(coin)
+                    elif coin.coin_type == "Commander's Challenge Coin":
+                        commander_coins.append(coin)
+
+            return regular_coins, commander_coins
+        except Exception as e:
+            log.error(f"Error retriving coins by user: {e}")
+        finally:
+            self.session.close()
