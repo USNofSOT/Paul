@@ -2,12 +2,14 @@ from warnings import catch_warnings
 
 import discord
 
+from src.data.repository.coin_repository import CoinRepository
 from src.config import NCO_AND_UP, GUILD_OWNER_ID
 from src.data import MemberReport, member_report
 from src.data.repository.sailor_repository import ensure_sailor_exists
 from src.utils.embeds import error_embed, default_embed
 from src.utils.report_utils import tiered_medals, other_medals, identify_role_index, process_role_index
 from src.utils.time_utils import get_time_difference_past, format_time
+
 
 def modify_points(base_points: int, force_points: int) -> int:
     return base_points + force_points
@@ -175,17 +177,20 @@ async def get_member_embed(bot, interaction, member: discord.Member) -> discord.
               f"{surgeon_emoji} Surgeon: {surgeon_points}",
         inline=True
     )
+    coin_repository = CoinRepository()
+    # Get coins 
+    regular_coins, commander_coins = coin_repository.get_coins_by_target(member.id)
 
     embed.add_field(
         name="Commander's Challenge Coins",
-        value="Coming soon...",  # TODO
+        value="\n".join([str(coin.old_name+ "'s "+coin.coin_type) for coin in commander_coins]) or "None",  # Display commander_coins
         inline=True
     )
 
     embed.add_field(
         name="Regular Challenge Coins",
-        value="Coming soon...",  # TODO
+        value="\n".join([str(coin.old_name+ "'s Challenge Coin") for coin in regular_coins]) or "None",  # Display regular_coins
         inline=True
     )
-
+    coin_repository.close_session()
     return embed
