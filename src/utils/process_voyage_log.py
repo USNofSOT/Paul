@@ -20,10 +20,12 @@ class Process_Voyage_Log:
         host_id = message.author.id
         log_time = message.created_at
         participant_ids = []
+        log.info(f"[{log_id}] [PROCESS] Voyage log message received.")
         for user in message.mentions:
             participant_ids.append(user.id)
 
         if len(participant_ids) <= 0:
+            log.info(f"[{log_id}] No participants found in voyage log. Skipping.")
             return # Skip if there are no participants
 
         log.info(f"[{log_id}] Processing voyage log for host: {host_id} with {len(participant_ids)} participants.")
