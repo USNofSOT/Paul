@@ -6,7 +6,6 @@ from discord import app_commands
 
 from logging import getLogger
 
-from src.data.repository.sailor_repository import SailorRepository
 from src.data.repository.voyage_repository import VoyageRepository
 from src.data.repository.hosted_repository import HostedRepository
 from src.config import NCO_AND_UP
@@ -58,12 +57,14 @@ class SquadReport(commands.Cog):
             total_voyage_count = sum([voyage for voyage in member_voyages])
             total_hosted_count = sum([hosted for hosted in member_hosted])
 
-            await self.send_embed(squad.name, interaction, total_voyage_count, total_hosted_count, members, names_hosted)
+            embed1 = self.report(squad.name, total_voyage_count, total_hosted_count, members, names_hosted)
 
-            await self.send_voyage_graph(interaction, names_voyage, member_voyages, total_voyage_count)
-            await self.send_hosted_graph(interaction, names_hosted, member_hosted, total_hosted_count)
+            embed2, voyage_graph = self.send_voyage_graph(names_voyage, member_voyages, total_voyage_count)
+            embed3, hosted_graph = self.send_hosted_graph(names_hosted, member_hosted, total_hosted_count)
+            await interaction.followup.send(embeds=[embed1,embed2,embed3], files=[voyage_graph, hosted_graph],  ephemeral=True)
 
-
+            os.remove("./voyage_pie_chart.png")
+            os.remove("./hosted_pie_chart.png")
         except Exception as e:
             log.error(f"Error getting squad report: {e}")
             await interaction.followup.send("Error getting squad report", ephemeral=True)
@@ -71,7 +72,8 @@ class SquadReport(commands.Cog):
             voyage_repo.close_session()
             hosted_repo.close_session()
 
-    async def send_voyage_graph(self, interaction: discord.Interaction, names: list, member_voyages: list, total_voyage_count: int):
+    def send_voyage_graph(self, names: list, member_voyages: list, total_voyage_count: int):
+        embed = discord.Embed(title="", color=discord.Color.green())
         # Create a pie chart
         plt.figure(figsize=(10, 8))
         plt.pie(member_voyages, labels=names, autopct=lambda pct: self.avg(pct, total_voyage_count),
@@ -82,19 +84,19 @@ class SquadReport(commands.Cog):
             f'Attended voyages from: {(datetime.now() - timedelta(days=30)).date()} to: {datetime.now().date()} - Total: {total_voyage_count}')
 
         # Save the pie chart to a file
-        file_path = "./squadreport_pie_chart.png"
+        file_path = "./voyage_pie_chart.png"
         plt.savefig(file_path)
         plt.close()
 
         # Send the plot image back to the user
         with open(file_path, 'rb') as file:
-            await interaction.followup.send(file=discord.File(file, filename="squadreport_pie_chart.png"),
-                                            ephemeral=True)
+            discord_file = discord.File(file)
+            embed.set_image(url="attachment://voyage_pie_chart.png")
 
-        # Delete the file
-        os.remove(file_path)
+        return embed, discord_file
 
-    async def send_hosted_graph(self, interaction: discord.Interaction, names: list, member_hosted: list, total_hosted_count: int):
+    def send_hosted_graph(self, names: list, member_hosted: list, total_hosted_count: int):
+        embed = discord.Embed(title="", color=discord.Color.green())
         # Create a pie chart
         plt.figure(figsize=(10, 8))
         plt.pie(member_hosted, labels=names, autopct=lambda pct: self.avg(pct, total_hosted_count),
@@ -105,41 +107,58 @@ class SquadReport(commands.Cog):
             f'Hosted voyages from: {(datetime.now() - timedelta(days=30)).date()} to: {datetime.now().date()} - Total: {total_hosted_count}')
 
         # Save the pie chart to a file
-        file_path = "./squadreport_pie_chart.png"
+        file_path = "./hosted_pie_chart.png"
         plt.savefig(file_path)
         plt.close()
 
         # Send the plot image back to the user
         with open(file_path, 'rb') as file:
-            await interaction.followup.send(file=discord.File(file, filename="squadreport_pie_chart.png"),
-                                            ephemeral=True)
+            discord_file = discord.File(file)
+            embed.set_image(url="attachment://hosted_pie_chart.png")
 
-        # Delete the file
-        os.remove(file_path)
+        return embed, discord_file
 
-    async def send_embed(self, squad_name: str, interaction: discord.Interaction, total_voyage_count: int, total_hosted_count: int, members: list, names_hosted: list):
+    def report(self, squad_name: str, total_voyage_count: int, total_hosted_count: int, members: list, names_hosted: list):
         embed = discord.Embed(title=f"Squad Report for {squad_name}", color=discord.Color.green())
         embed.add_field(name="Attended voyages", value=f"Total: {total_voyage_count}", inline=True)
         embed.add_field(name="Hosted voyages", value=f"Total: {total_hosted_count}", inline=True)
 
-        embed.add_field(name="Members missing monthly voyage requirement :prohibited:", value="None", inline=False)
+        embed.add_field(name="Members missing monthly voyage requirement :prohibited:", value="", inline=False)
+
+        no_members = True
         for member in members:
-            memberreport = member_report(member.id)
+            try:
+                memberreport = member_report(member.id)
+                if memberreport is None:
+                    embed.add_field(name="", value=f"{member.display_name} - Last voyage: N/A", inline=False)
+                    no_members = False
+                    continue
+                if get_time_difference_past(memberreport.last_voyage).days >= 30:
+                    embed.add_field(name="", value=f"{member.display_name} - Last voyage: {format_time(get_time_difference_past(memberreport.last_voyage))}", inline=False)
+                    no_members = False
+            except Exception as e:
+                log.error(f"Error getting member report: {e}")
 
-            if memberreport.last_voyage is None:
-                embed.add_field(name=f"{member.display_name}", value="Last voyage: N/A", inline=True)
-            if get_time_difference_past(memberreport.last_voyage).days >= 30:
-                embed.add_field(name=f"{member.display_name}", value=f"Last voyage: {format_time(get_time_difference_past(memberreport.last_voyage))}", inline=True)
+        if no_members:
+            embed.add_field(name="", value="All members have voyaged :white_check_mark:", inline=False)
 
-        embed.add_field(name="Members missing biweekly hosting requirement :prohibited:", value="None", inline=False)
+        embed.add_field(name="Members missing biweekly hosting requirement :prohibited:", value="", inline=False)
+
+        no_members = True
         for member in members:
-            memberreport = member_report(member.id)
-            if member.display_name in names_hosted:
-                if get_time_difference_past(memberreport.last_hosted).days >= 14:
-                    embed.add_field(name=f"{member.display_name}", value=f"Last hosted: {format_time(get_time_difference_past(memberreport.last_hosted))}", inline=True)
+            try:
+                memberreport = member_report(member.id)
+                if member.display_name in names_hosted:
+                    if get_time_difference_past(memberreport.last_hosted).days >= 14:
+                        embed.add_field(name="", value=f"{member.display_name} - Last hosted: {format_time(get_time_difference_past(memberreport.last_hosted))}", inline=False)
+                        no_members = False
+            except Exception as e:
+                log.error(f"Error getting member report: {e}")
 
+        if no_members:
+            embed.add_field(name="", value="All members have hosted :white_check_mark:", inline=False)
 
-        await interaction.followup.send(embed=embed, ephemeral=True)
+        return embed
 
     def avg(self, pct, total):
         absolute = round(pct / 100. * total)
