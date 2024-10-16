@@ -23,6 +23,7 @@ class On_Delete_Voyages(commands.Cog):
         self.hosted_repository = HostedRepository()
         self.voyage_repository = VoyageRepository()
         if payload.channel_id == VOYAGE_LOGS:
+            log.info(f"[{payload.message_id}] [ON_DELETE] Voyage log message deleted.")
             log_id = payload.message_id
             try:                 
                 host = self.hosted_repository.get_host_by_log_id(log_id)
