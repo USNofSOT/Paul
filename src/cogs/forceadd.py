@@ -87,7 +87,7 @@ class ForceAdd(commands.Cog):
     async def forceadd(self, interaction: discord.Interaction, target: discord.Member = None, voyages: int = None,
                        hosted: int = None, carpenter: int = None, cannoneer: int = None, flex: int = None,
                        helm: int = None, surgeon: int = None, grenadier: int = None):
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.defer(ephemeral=False)
 
         # Quick exit if no target or note is provided
         if target is None:
