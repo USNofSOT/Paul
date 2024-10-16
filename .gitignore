@@ -5,3 +5,4 @@
 __pycache__/
 .venv/
 **/__pycache__/
+status_message_id.json
