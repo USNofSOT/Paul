@@ -11,6 +11,7 @@ It is important to understand that these are 2 separate concepts
 > The completion of training for a user. This is used for example for eligibility for promotions.
 
 # Files
+Following is a list of files that are part of the training system. This excludes generic files like `config.py` and `models.py`.
 
 | Filename                                        | Description                                                                   | Status |
 |-------------------------------------------------|-------------------------------------------------------------------------------|--------|
