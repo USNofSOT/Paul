@@ -20,7 +20,7 @@ It is important to understand that these are 2 separate concepts
 | /cogs/on_member_update_training.py              | The on_member_update event listener for trained completion.                   | TODO   |
 | /cogs/populate_training_records.py              | The populate_training_records command.                                        | TODO   |
 | /cogs/training_records.py                       | The training_records command.                                                 | TODO   |
-| /utils/training_utils.py                        | The utility functions for training recprds                                    | TODO   |
+| /utils/training_utils.py                        | The utility functions for training records                                    | TODO   |
 
 # Abbreviations
 The following abbreviations are used in this document:
