@@ -19,7 +19,7 @@ class CoinRepository:
     def close_session(self):
         self.session.close()
 
-    def save_coin(self, target_id: int, coin_type: str, moderator_id: int, old_name: str, coin_time: datetime = datetime.now()) -> Coins:
+    def save_coin(self, target_id: int, coin_type: str, moderator_id: int, old_name: str, coin_time: datetime = None) -> Coins:
         """
         Save a coin transaction to the database.
 
@@ -32,6 +32,7 @@ class CoinRepository:
         Returns:
             Coins: The Coins object
         """
+        coin_time = coin_time or datetime.now()
 
         try:
             coin = Coins(target_id=target_id, coin_type=coin_type, moderator_id=moderator_id, old_name=old_name, coin_time=coin_time)
