@@ -19,26 +19,27 @@ import matplotlib.pyplot as plt
 log = getLogger(__name__)
 
 
-class SquadReport(commands.Cog):
+class CrewReport(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
-    @app_commands.command(name="squadreport", description="Get a report of a squad from the last 30 days")
-    @app_commands.describe(squad="Mention the squad to get a report of")
+    @app_commands.command(name="crewreport", description="Get a report of a squad or a ship from the last 30 days")
+    @app_commands.describe(crew="Mention the squad or ship to get a report of")
     @app_commands.checks.has_any_role(*NCO_AND_UP)
-    async def squadreport(self, interaction: discord.Interaction, squad:discord.Role):
-        await interaction.response.defer()
+    @app_commands.g
+    async def crewreport(self, interaction: discord.Interaction, crew:discord.Role):
+        await interaction.response.defer(ephemeral=True)
         # Check if squad is present in the role
-        if squad is None:
-            await interaction.response.send_message("Please mention a squad", ephemeral=True)
+        if crew is None:
+            await interaction.response.send_message("Please mention a squad or a ship", ephemeral=True)
             return
 
-        if not squad.name.endswith("Squad"):
-            await interaction.response.send_message("Please mention a squad", ephemeral=True)
+        if not crew.name.endswith("Squad") or not crew.name.startswith("USS"):
+            await interaction.response.send_message("Please mention a squad or a ship", ephemeral=True)
             return
 
         # Get the members of the squad
-        members = squad.members
+        members = crew.members
 
         # Get the repositories
         voyage_repo = VoyageRepository()
@@ -54,14 +55,14 @@ class SquadReport(commands.Cog):
             member_voyages = [member_voyages_dict[id] for id in member_voyages_dict.keys()]
             member_hosted = [member_hosted_dict[id] for id in member_hosted_dict.keys()]
 
-            total_voyage_count = sum([voyage for voyage in member_voyages])
-            total_hosted_count = sum([hosted for hosted in member_hosted])
+            total_voyage_count = sum(member_voyages)
+            total_hosted_count = sum(member_hosted)
 
-            embed1 = self.report(squad.name, total_voyage_count, total_hosted_count, members, names_hosted)
+            embed1 = self.report(crew.name, total_voyage_count, total_hosted_count, members, names_hosted)
 
             embed2, voyage_graph = self.send_voyage_graph(names_voyage, member_voyages, total_voyage_count)
             embed3, hosted_graph = self.send_hosted_graph(names_hosted, member_hosted, total_hosted_count)
-            await interaction.followup.send(embeds=[embed1,embed2,embed3], files=[voyage_graph, hosted_graph],  ephemeral=True)
+            await interaction.followup.send(embeds=[embed1,embed2,embed3], files=[voyage_graph, hosted_graph])
 
             os.remove("./voyage_pie_chart.png")
             os.remove("./hosted_pie_chart.png")
@@ -76,7 +77,7 @@ class SquadReport(commands.Cog):
         embed = discord.Embed(title="", color=discord.Color.green())
         # Create a pie chart
         plt.figure(figsize=(10, 8))
-        plt.pie(member_voyages, labels=names, autopct=lambda pct: self.avg(pct, total_voyage_count),
+        plt.pie(member_voyages, labels=names, autopct=lambda pct: self.percentage(pct, total_voyage_count),
                 startangle=140, colors=plt.cm.Paired(range(len(names))))
 
         # Add a title
@@ -99,7 +100,7 @@ class SquadReport(commands.Cog):
         embed = discord.Embed(title="", color=discord.Color.green())
         # Create a pie chart
         plt.figure(figsize=(10, 8))
-        plt.pie(member_hosted, labels=names, autopct=lambda pct: self.avg(pct, total_hosted_count),
+        plt.pie(member_hosted, labels=names, autopct=lambda pct: self.percentage(pct, total_hosted_count),
                 startangle=140, colors=plt.cm.Paired(range(len(names))))
 
         # Add a title
@@ -118,8 +119,8 @@ class SquadReport(commands.Cog):
 
         return embed, discord_file
 
-    def report(self, squad_name: str, total_voyage_count: int, total_hosted_count: int, members: list, names_hosted: list):
-        embed = discord.Embed(title=f"Squad Report for {squad_name}", color=discord.Color.green())
+    def report(self, crew_name: str, total_voyage_count: int, total_hosted_count: int, members: list, names_hosted: list):
+        embed = discord.Embed(title=f"Crew Report for {crew_name}", color=discord.Color.green())
         embed.add_field(name="Attended voyages", value=f"Total: {total_voyage_count}", inline=True)
         embed.add_field(name="Hosted voyages", value=f"Total: {total_hosted_count}", inline=True)
 
@@ -160,10 +161,10 @@ class SquadReport(commands.Cog):
 
         return embed
 
-    def avg(self, pct, total):
+    def percentage(self, pct, total):
         absolute = round(pct / 100. * total)
         return f'{absolute} ({pct:.1f}%)'
 
 
 async def setup(bot: commands.Bot):
-    await bot.add_cog(SquadReport(bot))
+    await bot.add_cog(CrewReport(bot))
