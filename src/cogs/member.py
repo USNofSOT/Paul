@@ -110,7 +110,6 @@ class Member(commands.Cog):
             await interaction.response.send_message(embed=embed, ephemeral=True)
         else:
             embed = error_embed(exception=error)
-            await interaction.response.send_message(embed=embed, ephemeral=True)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Member(bot))
