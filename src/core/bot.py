@@ -46,7 +46,13 @@ class Bot(discord.ext.commands.Bot):
 
     async def on_interaction(self, interaction: discord.Interaction):
         if interaction.type == discord.InteractionType.application_command:
-            log.info(f" > [INTERACTION] by {interaction.user} in {interaction.channel} : {interaction.data}")
+            log.info(f"[INTERACTION] [{interaction.id}] Received Interaction:")
+            log.info(f"[INTERACTION] [{interaction.id}] > Guild: {interaction.guild or 'None'}")
+            log.info(f"[INTERACTION] [{interaction.id}] > Channel: {interaction.channel or 'None'}")
+            log.info(f"[INTERACTION] [{interaction.id}] > User: {interaction.user or 'None'}")
+
+            log.info(f"[INTERACTION] [{interaction.id}] > Command: {interaction.data['name'] or 'None'}")
+            log.info(f"[INTERACTION] [{interaction.id}] > > Options: {interaction.data.get('options', [])}")
 
     async def setup_hook(self):
         log.info(f"Loading {len(EXTENTIONS)} extensions")
