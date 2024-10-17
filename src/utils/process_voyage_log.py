@@ -24,8 +24,8 @@ class Process_Voyage_Log:
         for user in message.mentions:
             participant_ids.append(user.id)
 
-        if len(participant_ids) <= 0:
-            log.info(f"[{log_id}] No participants found in voyage log. Skipping.")
+        if len(participant_ids) <= 1:
+            log.info(f"[{log_id}] Not enough participants found in voyage log. Skipping.")
             return # Skip if there are no participants
 
         log.info(f"[{log_id}] Processing voyage log for host: {host_id} with {len(participant_ids)} participants.")
