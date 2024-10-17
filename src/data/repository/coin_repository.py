@@ -109,7 +109,7 @@ class CoinRepository:
                 for coin in coins:
                     if coin.coin_type == "Regular Challenge Coin":
                         regular_coins.append(coin)
-                    elif coin.coin_type == "Commander's Challenge Coin":
+                    elif coin.coin_type == "Commanders Challenge Coin":
                         commander_coins.append(coin)
 
             return regular_coins, commander_coins
