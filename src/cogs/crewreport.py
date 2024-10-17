@@ -182,10 +182,6 @@ class CrewReport(commands.Cog):
 
         return embed
 
-    def percentage(self, pct, total):
-        absolute = round(pct / 100. * total)
-        return f'{absolute} ({pct:.1f}%)'
-
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(CrewReport(bot))
