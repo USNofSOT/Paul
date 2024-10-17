@@ -31,7 +31,7 @@ async def tiered_medals(member: discord.Member) -> str:
         "Meritorious Combat Action",
         "Honorable Combat Action",
         "Legion of Combat",
-        "Citation Of Combat",
+        "Citation of Combat",
     ]
 
     training_titles = [
@@ -69,7 +69,9 @@ async def tiered_medals(member: discord.Member) -> str:
     result = ""
 
     for category_name, titles in categories:
+        print(titles)
         for role in member.roles:
+            print(role.name + " - " + str(role.name in titles))
             if role.name in titles:
                 result += f"<@&{role.id}>\n"
                 break
