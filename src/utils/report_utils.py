@@ -31,7 +31,7 @@ async def tiered_medals(member: discord.Member) -> str:
         "Meritorious Combat Action",
         "Honorable Combat Action",
         "Legion of Combat",
-        "Citation Of Combat",
+        "Citation of Combat",
     ]
 
     training_titles = [

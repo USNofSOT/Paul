@@ -54,7 +54,7 @@ def current_entries_embed(bot: commands.Bot, log_id: int, description: str = Non
     current_entries = subclass_repository.entries_for_log_id(log_id)
 
     if not current_entries:
-        return error_embed(description="No entries found for this voyage log")
+        return error_embed(description="No subclass entries found for this voyage log")
 
     result_embed = discord.Embed(
         title=f"Subclasses for Voyage Log (https://discord.com/channels/{GUILD_ID}/{VOYAGE_LOGS}/{log_id})",
