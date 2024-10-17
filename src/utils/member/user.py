@@ -183,7 +183,7 @@ async def get_member_embed(bot, interaction, member: discord.Member) -> discord.
 
     embed.add_field(
         name="Commander's Challenge Coins",
-        value="\n".join([str(coin.old_name+ "'s "+coin.coin_type) for coin in commander_coins]) or "None",  # Display commander_coins
+        value="\n".join([str(coin.old_name+ "'s Commander Coin") for coin in commander_coins]) or "None",  # Display commander_coins
         inline=True
     )
 

@@ -48,7 +48,7 @@ def error_embed(title: str = "Error occurred", description: str = "Something wen
     )
 
     if footer:
-        embed.set_footer(text="If this issue persists, please contact the NCS Department.")
+        embed.set_footer(text="If this issue persists, please contact the NSC Department.")
 
     if exception:
         embed.add_field(name="Error Type", value=exception.__class__.__name__)

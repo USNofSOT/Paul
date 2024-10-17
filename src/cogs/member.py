@@ -1,15 +1,14 @@
 import asyncio
-from logging import getLogger, exception
+from logging import getLogger
 from typing import Union
 
 import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.utils.member.user import get_member_embed
-from src.config import JE_AND_UP, GUILD_ID, NCO_AND_UP
+from src.config import JE_AND_UP
 from src.utils.embeds import error_embed
-
+from src.utils.member.user import get_member_embed
 
 log = getLogger(__name__)
 
@@ -51,7 +50,6 @@ class Member(commands.Cog):
         if isinstance(target, discord.Role):
             role = target
             members = role.members
-            channel = self.bot.get_guild(GUILD_ID).get_channel(interaction.channel_id)
 
             interaction_user_roles = [role.id for role in interaction.user.roles]
             if not any(role in interaction_user_roles for role in JE_AND_UP):
@@ -88,9 +86,8 @@ class Member(commands.Cog):
             for member in members:
                 embed = await get_member_embed(self.bot, interaction, member)
                 log.info(f"Member information requested for {member.display_name or member.name} with role {role.name}")
-                await channel.send(embed=embed)
-                await asyncio.sleep(0.25)
-
+                await interaction.channel.send(embed=embed)
+                await asyncio.sleep(0.5)
             return
 
         # In case nothing is found return an error
@@ -103,7 +100,7 @@ class Member(commands.Cog):
 
     @addinfo.error
     async def addinfo_error(self, interaction: discord.Interaction, error: commands.CommandError):
-        log.error(f"Error occurred in addsubclass command: {error}")
+        log.error(f"Error occurred in member command: {error}")
         if isinstance(error, app_commands.errors.MissingAnyRole):
             embed = error_embed(
                 title="Missing Permissions",

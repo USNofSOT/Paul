@@ -20,7 +20,7 @@ class Process_Voyage_Log:
         host_id = message.author.id
         log_time = message.created_at
         participant_ids = []
-        log.info(f"[{log_id}] [PROCESS] Voyage log message received.")
+        log.info(f"[{log_id}] Voyage log message received:")
         for user in message.mentions:
             participant_ids.append(user.id)
 
