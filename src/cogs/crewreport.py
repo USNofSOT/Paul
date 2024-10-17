@@ -9,7 +9,6 @@ from logging import getLogger
 from src.data.repository.voyage_repository import VoyageRepository
 from src.data.repository.hosted_repository import HostedRepository
 from src.config import NCO_AND_UP
-from src.data import MemberReport, member_report
 from src.utils.time_utils import get_time_difference_past, format_time
 
 import os
@@ -26,28 +25,34 @@ class CrewReport(commands.Cog):
     @app_commands.command(name="crewreport", description="Get a report of a squad or a ship from the last 30 days")
     @app_commands.describe(crew="Mention the squad or ship to get a report of")
     @app_commands.checks.has_any_role(*NCO_AND_UP)
-    @app_commands.g
     async def crewreport(self, interaction: discord.Interaction, crew:discord.Role):
         await interaction.response.defer(ephemeral=True)
         # Check if squad is present in the role
         if crew is None:
-            await interaction.response.send_message("Please mention a squad or a ship", ephemeral=True)
+            log.warning("No squad or ship mentioned")
+            await interaction.followup.send("Please mention a squad or a ship", ephemeral=True)
             return
 
-        if not crew.name.endswith("Squad") or not crew.name.startswith("USS"):
-            await interaction.response.send_message("Please mention a squad or a ship", ephemeral=True)
+        if not crew.name.endswith("Squad") and not crew.name.startswith("USS"):
+            log.warning("Invalid squad or ship mentioned")
+            await interaction.followup.send("Please mention a squad or a ship", ephemeral=True)
             return
 
         # Get the members of the squad
         members = crew.members
 
+        log.info(f"Generating crew report for {crew.name} with {len(members)} members")
+
         # Get the repositories
-        voyage_repo = VoyageRepository()
-        hosted_repo = HostedRepository()
+        self.voyage_repo = VoyageRepository()
+        self.hosted_repo = HostedRepository()
 
         try:
-            member_voyages_dict = voyage_repo.get_voyages_by_target_id_month_count([member.id for member in members])
-            member_hosted_dict = hosted_repo.get_hosted_by_target_ids_month_count([member.id for member in members])
+            member_voyages_dict = self.voyage_repo.get_voyages_by_target_id_month_count([member.id for member in members])
+            member_hosted_dict = self.hosted_repo.get_hosted_by_target_ids_month_count([member.id for member in members])
+
+            member_voyages_dict = dict(sorted(member_voyages_dict.items(), key=lambda item: item[1], reverse=True))
+            member_hosted_dict = dict(sorted(member_hosted_dict.items(), key=lambda item: item[1], reverse=True))
 
             names_voyage = [member.display_name for id in member_voyages_dict.keys() for member in members if member.id == id]
             names_hosted = [member.display_name for id in member_hosted_dict.keys() for member in members if member.id == id]
@@ -70,19 +75,30 @@ class CrewReport(commands.Cog):
             log.error(f"Error getting squad report: {e}")
             await interaction.followup.send("Error getting squad report", ephemeral=True)
         finally:
-            voyage_repo.close_session()
-            hosted_repo.close_session()
+            self.voyage_repo.close_session()
+            self.hosted_repo.close_session()
 
     def send_voyage_graph(self, names: list, member_voyages: list, total_voyage_count: int):
         embed = discord.Embed(title="", color=discord.Color.green())
-        # Create a pie chart
-        plt.figure(figsize=(10, 8))
-        plt.pie(member_voyages, labels=names, autopct=lambda pct: self.percentage(pct, total_voyage_count),
-                startangle=140, colors=plt.cm.Paired(range(len(names))))
+
+        colors = plt.cm.tab20(range(len(names)))
+
+        # Create a bar graph
+        plt.figure(figsize=(15, 12))
+        max_value = max(member_voyages)
+        plt.ylim(0, max_value + 2)
+        plt.bar(names, member_voyages, color=colors)
+        plt.xticks(rotation=45, ha='right')
+        for i, v in enumerate(member_voyages):
+            plt.text(i, v + 0.5, str(v), color='black', ha='center')
+
 
         # Add a title
         plt.title(
             f'Attended voyages from: {(datetime.now() - timedelta(days=30)).date()} to: {datetime.now().date()} - Total: {total_voyage_count}')
+
+        plt.margins(0.05)
+        plt.tight_layout()
 
         # Save the pie chart to a file
         file_path = "./voyage_pie_chart.png"
@@ -98,14 +114,24 @@ class CrewReport(commands.Cog):
 
     def send_hosted_graph(self, names: list, member_hosted: list, total_hosted_count: int):
         embed = discord.Embed(title="", color=discord.Color.green())
-        # Create a pie chart
-        plt.figure(figsize=(10, 8))
-        plt.pie(member_hosted, labels=names, autopct=lambda pct: self.percentage(pct, total_hosted_count),
-                startangle=140, colors=plt.cm.Paired(range(len(names))))
+
+        colors = plt.cm.tab20(range(len(names)))
+
+        # Create a bar graph
+        plt.figure(figsize=(15, 12))
+        max_value = max(member_hosted)
+        plt.ylim(0, max_value + 2)
+        plt.bar(names, member_hosted, color=colors)
+        plt.xticks(rotation=45, ha='right')
+        for i, v in enumerate(member_hosted):
+            plt.text(i, v + 0.1, str(v), color='black', ha='center')
 
         # Add a title
         plt.title(
             f'Hosted voyages from: {(datetime.now() - timedelta(days=30)).date()} to: {datetime.now().date()} - Total: {total_hosted_count}')
+
+        plt.margins(0.05)
+        plt.tight_layout()
 
         # Save the pie chart to a file
         file_path = "./hosted_pie_chart.png"
@@ -126,35 +152,30 @@ class CrewReport(commands.Cog):
 
         embed.add_field(name="Members missing monthly voyage requirement :prohibited:", value="", inline=False)
 
+        last_voyages = self.voyage_repo.get_last_voyage_by_target_ids([member.id for member in members])
+
         no_members = True
         for member in members:
-            try:
-                memberreport = member_report(member.id)
-                if memberreport is None:
-                    embed.add_field(name="", value=f"{member.display_name} - Last voyage: N/A", inline=False)
-                    no_members = False
-                    continue
-                if get_time_difference_past(memberreport.last_voyage).days >= 30:
-                    embed.add_field(name="", value=f"{member.display_name} - Last voyage: {format_time(get_time_difference_past(memberreport.last_voyage))}", inline=False)
-                    no_members = False
-            except Exception as e:
-                log.error(f"Error getting member report: {e}")
+            if member.id not in last_voyages:
+                embed.add_field(name="", value=f"{member.display_name} - Last voyage: N/A", inline=False)
+                no_members = False
+            elif get_time_difference_past(last_voyages.get(member.id)).days >= 30:
+                embed.add_field(name="", value=f"{member.display_name} - Last voyage: {format_time(get_time_difference_past(last_voyages.get(member.id)))}", inline=False)
+                no_members = False
 
         if no_members:
             embed.add_field(name="", value="All members have voyaged :white_check_mark:", inline=False)
 
         embed.add_field(name="Members missing biweekly hosting requirement :prohibited:", value="", inline=False)
 
+        last_hosted = self.hosted_repo.get_last_hosted_by_target_ids([member.id for member in members])
+
         no_members = True
         for member in members:
-            try:
-                memberreport = member_report(member.id)
-                if member.display_name in names_hosted:
-                    if get_time_difference_past(memberreport.last_hosted).days >= 14:
-                        embed.add_field(name="", value=f"{member.display_name} - Last hosted: {format_time(get_time_difference_past(memberreport.last_hosted))}", inline=False)
-                        no_members = False
-            except Exception as e:
-                log.error(f"Error getting member report: {e}")
+            if member.display_name in names_hosted:
+                if get_time_difference_past(last_hosted.get(member.id)).days >= 14:
+                    embed.add_field(name="", value=f"{member.display_name} - Last hosted: {format_time(get_time_difference_past(last_hosted.get(member.id)))}", inline=False)
+                    no_members = False
 
         if no_members:
             embed.add_field(name="", value="All members have hosted :white_check_mark:", inline=False)
