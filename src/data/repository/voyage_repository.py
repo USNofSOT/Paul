@@ -91,6 +91,27 @@ class VoyageRepository:
             log.error(f"Error getting hosted log entries: {e}")
             raise e
 
+    def get_last_voyage_by_target_ids(self, target_ids: list) -> dict:
+        """
+        Get the last voyage log entry for a list of target IDs
+
+        Args:
+            target_ids (list): The discord IDs of the target users
+        Returns:
+            Voyages: The last voyage log entry for the target IDs
+        """
+        self.session = Session()
+        try:
+            ret = (self.session.query(Voyages.target_id, Voyages.log_time)
+                    .filter(Voyages.target_id.in_(target_ids))
+                    .order_by(Voyages.log_time.asc())
+                    .all())
+
+            return {item[0]: item[1] for item in ret}
+        except Exception as e:
+            log.error(f"Error getting hosted log entries: {e}")
+            raise e
+
 def check_voyage_log_id_with_target_id_exists(log_id: int, target_id: int) -> bool:
     """
     Check if the voyage log ID exists for a specific target ID
