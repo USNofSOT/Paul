@@ -113,7 +113,6 @@ class Subclasses(Base):
     subclass_count = Column(Integer, server_default="1")
     log_time = Column(DATETIME)
 
-
 class Voyages(Base):
     __tablename__ = "voyages"
 
@@ -121,6 +120,25 @@ class Voyages(Base):
     target_id = mapped_column(ForeignKey("sailor.discord_id"), primary_key=True)
     # amount = Column(Integer, server_default="1") Note: no longer needed
     log_time = Column(DATETIME)
+
+class TrainingRecord(Base):
+    __tablename__ = "training_records"
+
+    target_id = mapped_column(BIGINT, ForeignKey("sailor.discord_id"), primary_key=True)
+    nrc_training_points = Column(Integer, nullable=False, default=0)
+    netc_training_points = Column(Integer, nullable=False, default=0)
+    jla_graduation_date = Column(DATETIME, nullable=True, default=None)
+    snla_graduation_date = Column(DATETIME, nullable=True, default=None)
+    ocs_graduation_date = Column(DATETIME, nullable=True, default=None)
+    socs_graduation_date = Column(DATETIME, nullable=True, default=None)
+
+class Training(Base):
+    __tablename__ = "training"
+
+    log_id = Column(BIGINT, primary_key=True, autoincrement=True)
+    target_id = mapped_column(BIGINT, ForeignKey("sailor.discord_id"))
+    log_channel_id = Column(BIGINT, nullable=False)
+    log_time = Column(DATETIME, nullable=False)
 
 # Nifty function to create all tables
 def create_tables():
