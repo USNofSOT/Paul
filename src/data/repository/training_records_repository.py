@@ -28,12 +28,16 @@ class TrainingRecordsRepository:
             training_record: TrainingRecord = self.get_or_create_training_record(target_id)
             if role_id == SNLA_GRADUATE_ROLE:
                 training_record.snla_graduation_date = timestamp
+                log.info(f"Set SNLA graduation for {target_id} to {timestamp}")
             elif role_id == JLA_GRADUATE_ROLE:
                 training_record.jla_graduation_date = timestamp
+                log.info(f"Set JLA graduation for {target_id} to {timestamp}")
             elif role_id == OCS_GRADUATE_ROLE:
                 training_record.ocs_graduation_date = timestamp
+                log.info(f"Set OCS graduation for {target_id} to {timestamp}")
             elif role_id == SOCS_GRADUATE_ROLE:
                 training_record.socs_graduation_date = timestamp
+                log.info(f"Set SOCS graduation for {target_id} to {timestamp}")
             self.session.commit()
             return training_record
         except Exception as e:
