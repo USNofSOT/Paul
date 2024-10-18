@@ -125,12 +125,12 @@ class TrainingRecord(Base):
     __tablename__ = "training_records"
 
     target_id = mapped_column(BIGINT, ForeignKey("sailor.discord_id"), primary_key=True)
-    nrc_training_points = Column(Integer, nullable=False, default=0)
-    netc_training_points = Column(Integer, nullable=False, default=0)
-    jla_graduation_date = Column(DATETIME, nullable=True, default=None)
-    snla_graduation_date = Column(DATETIME, nullable=True, default=None)
-    ocs_graduation_date = Column(DATETIME, nullable=True, default=None)
-    socs_graduation_date = Column(DATETIME, nullable=True, default=None)
+    nrc_training_points = Column(Integer, nullable=False, server_default="0")
+    netc_training_points = Column(Integer, nullable=False, server_default="0")
+    jla_graduation_date = Column(DATETIME, nullable=True, server_default=None)
+    snla_graduation_date = Column(DATETIME, nullable=True, server_default=None)
+    ocs_graduation_date = Column(DATETIME, nullable=True, server_default=None)
+    socs_graduation_date = Column(DATETIME, nullable=True, server_default=None)
 
 class Training(Base):
     __tablename__ = "training"
