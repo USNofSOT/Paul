@@ -18,7 +18,7 @@ Following is a list of files that are part of the training system. This excludes
 | /data/repository/training_records_repository.py | The main database facade/repository for anything related to training records. | DONE   |
 | /cogs/on_message_training.py                    | The on_message event listener for training points.                            | DONE   |
 | /cogs/on_delete_training.py                     | The on_delete event listener for training points.                             | DONE   |
-| /cogs/on_member_update_training.py              | The on_member_update event listener for trained completion.                   | TODO   |
+| /cogs/on_member_update_training.py              | The on_member_update event listener for trained completion.                   | DONE   |
 | /cogs/populate_training_records.py              | The populate_training_records command.                                        | DONE   |
 | /utils/training_utils.py                        | The utility functions for training records                                    | DONE   |
 
