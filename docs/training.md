@@ -20,6 +20,7 @@ Following is a list of files that are part of the training system. This excludes
 | /cogs/on_delete_training.py                     | The on_delete event listener for training points.                             | DONE   |
 | /cogs/on_member_update_training.py              | The on_member_update event listener for trained completion.                   | DONE   |
 | /cogs/populate_training_records.py              | The populate_training_records command.                                        | DONE   |
+| /cogs/training_records.py                       | The training_records command.                                                 | DONE   |
 | /utils/training_utils.py                        | The utility functions for training records                                    | DONE   |
 
 # Abbreviations
