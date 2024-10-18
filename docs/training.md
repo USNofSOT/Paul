@@ -42,11 +42,19 @@ So they know if everything is being added correctly. And they can alert us if so
 |-----------------------|--------------------------------------------------------------------------------------------------------|----------|----------|---------|---------|
 | target_id (`PK`/`FK`) | The discord ID of the target                                                                           | BIGINT   | FALSE    |         |         |
 | NRC_training_points   | The number of New Recruit Command (NRC) trained points                                                 | INT      | FALSE    | 0       | Trainer |
-| NETC_training_points  | The number of Naval Education and Training Command (NETC) trained points                               | INT      | FALSE    | 0       | Trainer |
+| NETC_training_points  | The number of Naval Education and Training Command (NETC) trained points.                              | INT      | FALSE    | 0       | Trainer |
+| JLA_training_points   | The number of Junior Leadership Academy (JLA) trained points                                           | INT      | FALSE    | 0       | Trainer |
 | JLA_graduation_date   | The date of when the target was trained Junior Leadership Academy (JLA). None if not trained           | DATETIME | TRUE     | None    | Trainee |
+| SNLA_training_points  | The number of Senior non-commissioned officer (SNLA) trained points                                    | INT      | FALSE    | 0       | Trainer |
 | SNLA_graduation_date  | The date of when the target was trained as Senior non-commissioned officer (SNLA). None if not trained | DATETIME | TRUE     | None    | Trainee |
+| OCS_training_points   | The number of Officer Candidate School (OCS) trained points                                            | INT      | FALSE    | 0       | Trainer |
 | OCS_graduation_date   | The date of when the target was trained as Officer Candidate School (OCS). None if not trained         | DATETIME | TRUE     | None    | Trainee |
+| SOCS_training_points  | The number of Senior Officer Candidate School (SOCS) trained points                                    | INT      | FALSE    | 0       | Trainer |
 | SOCS_graduation_date  | The date of when the target was trained as Senior Officer Candidate School (SOCS). None if not trained | DATETIME | TRUE     | None    | Trainee |
+
+> NETC points are a combination of JLA, SNLA, OCS, and SOCS points.
+> NRC points are separate from NETC points.
+
 ## training
 | Field             | Description                                                            | Type     | Optional | Default | Context |
 |-------------------|------------------------------------------------------------------------|----------|----------|---------|---------|
@@ -62,11 +70,15 @@ So they know if everything is being added correctly. And they can alert us if so
 erDiagram
     TrainingRecord {
         BIGINT target_id
-        NRC_TrainingPoints nrc_training_points
-        NETC_TrainingPoints netc_training_points
+        INT nrc_training_points
+        INT netc_training_points
+        INT jla_training_points
         DATETIME jla_graduation_date
+        INT snla_training_points
         DATETIME snla_graduation_date
+        INT ocs_training_points
         DATETIME ocs_graduation_date
+        INT socs_training_points
         DATETIME socs_graduation_date
     }
     
