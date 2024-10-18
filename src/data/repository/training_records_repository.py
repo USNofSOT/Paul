@@ -5,7 +5,8 @@ from typing import Type
 from sqlalchemy.orm import sessionmaker
 
 from src.config import NETC_RECORDS_CHANNELS, SNLA_RECORDS_CHANNEL, JLA_RECORDS_CHANNEL, \
-    SOCS_RECORDS_CHANNEL, OCS_RECORDS_CHANNEL, NRC_RECORDS_CHANNEL
+    SOCS_RECORDS_CHANNEL, OCS_RECORDS_CHANNEL, NRC_RECORDS_CHANNEL, SNLA_GRADUATE_ROLE, JLA_GRADUATE_ROLE, \
+    OCS_GRADUATE_ROLE, SOCS_GRADUATE_ROLE
 from src.data import engine, TrainingRecord, Sailor, Training, TraingType, TrainingCategory
 
 log = logging.getLogger(__name__)
@@ -20,6 +21,41 @@ class TrainingRecordsRepository:
 
     def close_session(self):
         self.session.close()
+
+    def set_graduation(self, target_id: int, role_id: int) -> TrainingRecord:
+        timestamp = datetime.now()
+        try:
+            training_record: TrainingRecord = self.get_or_create_training_record(target_id)
+            if role_id == SNLA_GRADUATE_ROLE:
+                training_record.snla_graduation_date = timestamp
+            elif role_id == JLA_GRADUATE_ROLE:
+                training_record.jla_graduation_date = timestamp
+            elif role_id == OCS_GRADUATE_ROLE:
+                training_record.ocs_graduation_date = timestamp
+            elif role_id == SOCS_GRADUATE_ROLE:
+                training_record.socs_graduation_date = timestamp
+            self.session.commit()
+            return training_record
+        except Exception as e:
+            log.error(f"Failed to set graduation: {e}")
+            raise e
+
+    def remove_graduation(self, target_id: int, role_id: int):
+        try:
+            training_record: TrainingRecord = self.get_or_create_training_record(target_id)
+            if role_id == SNLA_GRADUATE_ROLE:
+                training_record.snla_graduation_date = None
+            elif role_id == JLA_GRADUATE_ROLE:
+                training_record.jla_graduation_date = None
+            elif role_id == OCS_GRADUATE_ROLE:
+                training_record.ocs_graduation_date = None
+            elif role_id == SOCS_GRADUATE_ROLE:
+                training_record.socs_graduation_date = None
+            self.session.commit()
+            return training_record
+        except Exception as e:
+            log.error(f"Failed to remove graduation: {e}")
+            raise e
 
     def get_or_create_training_record(self, target_id: int) -> TrainingRecord:
         try:
@@ -169,13 +205,5 @@ class TrainingRecordsRepository:
 
 if __name__ == '__main__':
     repo = TrainingRecordsRepository()
-    repo.save_training(
-        log_id=5,
-        target_id=1,
-        log_channel_id=SOCS_RECORDS_CHANNEL
-    )
-    repo.delete_training(
-        log_id=5,
-        log_channel_id=SOCS_RECORDS_CHANNEL
-    )
-    repo.close_session()
+    repo.set_graduation(1, SOCS_GRADUATE_ROLE)
+    repo.remove_graduation(1, SOCS_GRADUATE_ROLE)
