@@ -39,6 +39,8 @@ class PopulateTrainingRecords(commands.Cog):
             await context.send("Finished populating NETC training records.")
             log.info("[TRAINING] Finished populating training records.")
 
+        await context.send("Finished populating training records.")
+
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(PopulateTrainingRecords(bot))
