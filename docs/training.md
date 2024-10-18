@@ -47,6 +47,14 @@ So they know if everything is being added correctly. And they can alert us if so
 | SNLA_graduation_date  | The date of when the target was trained as Senior non-commissioned officer (SNLA). None if not trained | DATETIME | TRUE     | None    | Trainee |
 | OCS_graduation_date   | The date of when the target was trained as Officer Candidate School (OCS). None if not trained         | DATETIME | TRUE     | None    | Trainee |
 | SOCS_graduation_date  | The date of when the target was trained as Senior Officer Candidate School (SOCS). None if not trained | DATETIME | TRUE     | None    | Trainee |
+## training
+| Field            | Description                                                | Type     | Optional | Default | Context |
+|------------------|------------------------------------------------------------|----------|----------|---------|---------|
+| log_id (`PK`)    | The unique ID of the log entry                             | BIGINT   | FALSE    |         |         |
+| target_id (`FK`) | The discord ID of the target                               | BIGINT   | FALSE    |         |         |
+| log_channel_id   | The discord ID of the channel where the log entry was made | BIGINT   | FALSE    |         |         |
+| log_time         | The time of the log entry                                  | DATETIME | FALSE    |         |         |
+
 
 ```mermaid
 erDiagram
@@ -59,6 +67,14 @@ erDiagram
         DATETIME ocs_graduation_date
         DATETIME socs_graduation_date
     }
+    
+    Training {
+        BIGINT log_id
+        BIGINT target_id
+        BIGINT log_channel_id
+        DATETIME log_time
+    }
+    
 
     Sailor {
         BIGINT sailor_id
@@ -67,6 +83,7 @@ erDiagram
     }
     
     TrainingRecord o|--|| Sailor : "has a"
+    Training o|--|| Sailor : "has a"
 ```
 
 # Adding training points
