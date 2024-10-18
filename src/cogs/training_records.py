@@ -2,7 +2,8 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.config import JE_AND_UP
+from src.config import JE_AND_UP, NETC_GUILD_ID, JLA_INSTRUCTOR_ROLE, SNLA_INSTRUCTOR_ROLE, OCS_GRADUATE_ROLE, \
+    SOCS_GRADUATE_ROLE, OCS_INSTRUCTOR_ROLE, SOCS_INSTRUCTOR_ROLE
 from src.data import TrainingRecord
 from src.data.repository.training_records_repository import TrainingRecordsRepository
 from src.utils.embeds import default_embed
@@ -44,36 +45,43 @@ class TrainingRecords(commands.Cog):
             inline=True
         )
         embed.add_field(
-            name="Total NRC Training Points",
+            name="Total NRC Points",
             value=f"{training_record.nrc_training_points}",
             inline=True
         )
         embed.add_field(
-            name="Total NETC Training Points",
+            name="Total NETC Points",
             value=f"{training_record.netc_training_points}",
             inline=True
         )
-        embed.add_field(
-            name="Total JLA Training Points",
-            value=f"{training_record.jla_training_points}",
-            inline=True
-        )
-        embed.add_field(
-            name="Total SNLA Training Points",
-            value=f"{training_record.snla_training_points}",
-            inline=True
-        )
-        embed.add_field(
-            name="Total OCS Training Points",
-            value=f"{training_record.ocs_training_points}",
-            inline=True
-        )
-        embed.add_field(
-            name="Total SOCS Training Points",
-            value=f"{training_record.socs_training_points}",
-            inline=True
-        )
 
+        netc_member = self.bot.get_guild(NETC_GUILD_ID).get_member(target.id)
+        if not netc_member is None:
+            netc_member_roles = [role.id for role in netc_member.roles]
+            if JLA_INSTRUCTOR_ROLE in netc_member_roles:
+                embed.add_field(
+                    name="Total JLA Points",
+                    value=f"{training_record.jla_training_points}",
+                    inline=True
+                )
+            if SNLA_INSTRUCTOR_ROLE in netc_member_roles:
+                embed.add_field(
+                    name="Total SNLA Training Points",
+                    value=f"{training_record.snla_training_points}",
+                    inline=True
+                )
+            if OCS_INSTRUCTOR_ROLE in netc_member_roles:
+                embed.add_field(
+                    name="Total OCS Training Points",
+                    value=f"{training_record.ocs_training_points}",
+                    inline=True
+                )
+            if SOCS_INSTRUCTOR_ROLE in netc_member_roles:
+                embed.add_field(
+                    name="Total SOCS Training Points",
+                    value=f"{training_record.socs_training_points}",
+                    inline=True
+                )
 
         # for record in [
         #     ("JLA", training_records.jla_graduation_date),
