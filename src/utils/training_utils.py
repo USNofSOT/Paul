@@ -8,8 +8,22 @@ from src.data.repository.training_records_repository import TrainingRecordsRepos
 
 log = getLogger(__name__)
 
-async def populate_nrc_training_records(bot: commands.Bot, amount: int = 50):
+async def process_training_record(message, channel):
     training_repository = TrainingRecordsRepository()
+    omit_log_when_word = ["returned by:"]
+
+    if channel.id == NRC_RECORDS_CHANNEL:
+        for word in omit_log_when_word:
+            if word.lower() in message.content.lower():
+                log.info(f"[TRAINING] Skipping training record {message.id} as it contains the word '{word}'.")
+                return
+
+    training_repository.save_training(log_id=message.id, target_id=message.author.id, log_channel_id=channel.id,
+                                      log_time=message.created_at)
+    log.info(f"[TRAINING] Training record {message.id} processed.")
+    training_repository.close_session()
+
+async def populate_nrc_training_records(bot: commands.Bot, amount: int = 50):
     guild = bot.get_guild(GUILD_ID)
     channel = guild.get_channel(NRC_RECORDS_CHANNEL)
     count = 0
@@ -17,7 +31,7 @@ async def populate_nrc_training_records(bot: commands.Bot, amount: int = 50):
     async for message in channel.history(limit=amount, oldest_first=False, after=TRAINING_POPULATE_FROM_DATE):
 
         try:
-            training_repository.save_training(log_id=message.id, target_id=message.author.id, log_channel_id=channel.id, log_time=message.created_at)
+            await process_training_record(message, channel)
         except ValueError as e:
             log.warning(f"[TRAINING] Skipping training record {message.id} as it already exists.")
             continue
@@ -27,10 +41,8 @@ async def populate_nrc_training_records(bot: commands.Bot, amount: int = 50):
         await asyncio.sleep(1)
 
     log.info("[TRAINING] Finished populating NRC training records.")
-    training_repository.close_session()
 
 async def populate_netc_training_records(bot: commands.Bot, amount: int = 50):
-    training_repository = TrainingRecordsRepository()
     guild = bot.get_guild(NETC_GUILD_ID)
     channels = [channel_id for channel_id in NETC_RECORDS_CHANNELS]
     for channel in channels:
@@ -40,7 +52,7 @@ async def populate_netc_training_records(bot: commands.Bot, amount: int = 50):
         async for message in channel.history(limit=amount, oldest_first=False, after=TRAINING_POPULATE_FROM_DATE):
 
             try:
-                training_repository.save_training(log_id=message.id, target_id=message.author.id, log_channel_id=channel.id, log_time=message.created_at)
+                await process_training_record(message, channel)
             except ValueError as e:
                 log.warning(f"[TRAINING] Skipping training record {message.id} as it already exists.")
                 continue
