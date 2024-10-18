@@ -4,6 +4,7 @@ from discord.ext import commands
 
 from src.config import ALL_TRAINING_RECORDS_CHANNELS
 from src.data.repository.training_records_repository import TrainingRecordsRepository
+from src.utils.training_utils import process_training_record
 
 log = getLogger(__name__)
 
@@ -21,8 +22,8 @@ class OnMessageTraining(commands.Cog):
         if message.channel.id in applicable_channel_ids and not message.author.bot:
             log.info(f"[TRAINING] Training record posted in {message.channel.name}.")
             try:
-                training_repository.save_training(log_id=message.id, target_id=message.author.id, log_channel_id=message.channel.id, log_time=message.created_at)
-                log.info(f"[TRAINING] Training record {message.id} saved.")
+                 await process_training_record(message, message.channel)
+                 log.info(f"[TRAINING] Training record {message.id} saved.")
             except Exception as e:
                 log.error(f"[TRAINING] Error saving training record: {e}")
             finally:
