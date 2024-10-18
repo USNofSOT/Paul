@@ -3,7 +3,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from src.config import JE_AND_UP
-from src.data import training_report, TrainingRecordsReport, TrainingRecord
+from src.data import TrainingRecord
 from src.data.repository.training_records_repository import TrainingRecordsRepository
 from src.utils.embeds import default_embed
 from src.utils.time_utils import format_time, get_time_difference_past
@@ -23,7 +23,6 @@ class TrainingRecords(commands.Cog):
         # Get the training records of the target
         training_repository = TrainingRecordsRepository()
         training_record: TrainingRecord = training_repository.get_or_create_training_record(target.id)
-        training_report_info: TrainingRecordsReport = training_report(target.id)
         training_repository.close_session()
 
         embed = default_embed(
