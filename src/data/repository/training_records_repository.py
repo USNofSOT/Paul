@@ -202,8 +202,3 @@ class TrainingRecordsRepository:
         except Exception as e:
             log.error(f"Failed to decrement NETC training points: {e}")
             raise e
-
-if __name__ == '__main__':
-    repo = TrainingRecordsRepository()
-    repo.set_graduation(1, SOCS_GRADUATE_ROLE)
-    repo.remove_graduation(1, SOCS_GRADUATE_ROLE)
