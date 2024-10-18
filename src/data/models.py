@@ -139,9 +139,17 @@ class TrainingRecord(Base):
     target_id = mapped_column(BIGINT, ForeignKey("sailor.discord_id"), primary_key=True)
     nrc_training_points = Column(Integer, nullable=False, server_default="0")
     netc_training_points = Column(Integer, nullable=False, server_default="0")
+
+    jla_training_points = Column(Integer, nullable=False, server_default="0")
     jla_graduation_date = Column(DATETIME, nullable=True, server_default=None)
+
+    snla_training_points = Column(Integer, nullable=False, server_default="0")
     snla_graduation_date = Column(DATETIME, nullable=True, server_default=None)
+
+    ocs_training_points = Column(Integer, nullable=False, server_default="0")
     ocs_graduation_date = Column(DATETIME, nullable=True, server_default=None)
+
+    sost_training_points = Column(Integer, nullable=False, server_default="0")
     socs_graduation_date = Column(DATETIME, nullable=True, server_default=None)
 
 class Training(Base):

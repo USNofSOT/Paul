@@ -120,11 +120,8 @@ class TrainingRecordsRepository:
             self.session.add(training)
             self.session.commit()
 
-            # 3. Check which NETC/NRC channel the training was logged in
-            if log_channel_id in NETC_RECORDS_CHANNELS:
-                self._increment_netc_training_points(target_id, 1)
-            elif log_channel_id == NRC_RECORDS_CHANNEL:
-                self._increment_nrc_training_points(target_id, 1)
+            # 3. Increment the training points
+            self._increment_training_points(training)
 
             # 4. Return the training record
             return training
@@ -150,11 +147,8 @@ class TrainingRecordsRepository:
             self.session.delete(training)
             self.session.commit()
 
-            # 3. Check which NETC/NRC channel the training was logged in
-            if log_channel_id in NETC_RECORDS_CHANNELS:
-                self._decrement_netc_training_points(target_id, 1)
-            elif log_channel_id == NRC_RECORDS_CHANNEL:
-                self._decrement_nrc_training_points(target_id, 1)
+            # 3. Decrement the training points
+            self._decrement_training_points(training)
 
             # 4. Return the training record
             return training
@@ -163,42 +157,64 @@ class TrainingRecordsRepository:
             log.error(f"Failed to delete training: {e}")
             raise e
 
-    def _increment_nrc_training_points(self, target_id: int, amount: int):
+    def _increment_training_points(self, training: Training):
         try:
-            training_record = self.get_or_create_training_record(target_id)
-            # Make sure the points are not negative
-            training_record.nrc_training_points = max(0, training_record.nrc_training_points + amount)
+            training_record = self.get_or_create_training_record(training.target_id)
+
+            log.info(f"Incrementing training points for {training.target_id}")
+
+            if training.training_category == TrainingCategory.NRC:
+                training_record.nrc_training_points = max(0, training_record.nrc_training_points + 1)
+                log.info(f"Incremented NRC training points for {training.target_id} from {training_record.nrc_training_points - 1} to {training_record.nrc_training_points}")
+            elif training.training_category == TrainingCategory.NETC:
+                training_record.netc_training_points = max(0, training_record.netc_training_points + 1)
+                log.info(f"Incremented NETC training points for {training.target_id} from {training_record.netc_training_points - 1} to {training_record.netc_training_points}")
+                if training.training_type == TraingType.JLA:
+                    training_record.jla_training_points = max(0, training_record.jla_training_points + 1)
+                    log.info(f"Incremented JLA training points for {training.target_id} from {training_record.jla_training_points - 1} to {training_record.jla_training_points}")
+                elif training.training_type == TraingType.SNLA:
+                    training_record.snla_training_points = max(0, training_record.snla_training_points + 1)
+                    log.info(f"Incremented SNLA training points for {training.target_id} from {training_record.snla_training_points - 1} to {training_record.snla_training_points}")
+                elif training.training_type == TraingType.OCS:
+                    training_record.ocs_training_points = max(0, training_record.ocs_training_points + 1)
+                    log.info(f"Incremented OCS training points for {training.target_id} from {training_record.ocs_training_points - 1} to {training_record.ocs_training_points}")
+                elif training.training_type == TraingType.SOCS:
+                    training_record.sost_training_points = max(0, training_record.sost_training_points + 1)
+                    log.info(f"Incremented SOCS training points for {training.target_id} from {training_record.sost_training_points - 1} to {training_record.sost_training_points}")
+
+            log.info(f"Committing training points for {training.target_id}")
             self.session.commit()
         except Exception as e:
-            log.error(f"Failed to increment NRC training points: {e}")
+            log.error(f"Failed to increment training points: {e}")
             raise e
 
-    def _decrement_nrc_training_points(self, target_id: int, amount: int):
+    def _decrement_training_points(self, training: Training):
         try:
-            training_record = self.get_or_create_training_record(target_id)
-            # Make sure the value is decremented but doesn't go below 0
-            training_record.nrc_training_points = max(0, training_record.nrc_training_points - amount)
-            self.session.commit()
-        except Exception as e:
-            log.error(f"Failed to decrement NRC training points: {e}")
-            raise e
+            training_record = self.get_or_create_training_record(training.target_id)
 
-    def _increment_netc_training_points(self, target_id: int, amount: int):
-        try:
-            training_record = self.get_or_create_training_record(target_id)
-            # Make sure the points are not negative
-            training_record.netc_training_points = max(0, training_record.netc_training_points + amount)
-            self.session.commit()
-        except Exception as e:
-            log.error(f"Failed to increment NETC training points: {e}")
-            raise
+            log.info(f"Decrementing training points for {training.target_id}")
 
-    def _decrement_netc_training_points(self, target_id: int, amount: int):
-        try:
-            training_record = self.get_or_create_training_record(target_id)
-            # Make sure the value is decremented but doesn't go below 0
-            training_record.netc_training_points = max(0, training_record.netc_training_points - amount)
+            if training.training_category == TrainingCategory.NRC:
+                training_record.nrc_training_points = max(0, training_record.nrc_training_points - 1)
+                log.info(f"Decremented NRC training points for {training.target_id} from {training_record.nrc_training_points + 1} to {training_record.nrc_training_points}")
+            elif training.training_category == TrainingCategory.NETC:
+                training_record.netc_training_points = max(0, training_record.netc_training_points - 1)
+                log.info(f"Decremented NETC training points for {training.target_id} from {training_record.netc_training_points + 1} to {training_record.netc_training_points}")
+                if training.training_type == TraingType.JLA:
+                    training_record.jla_training_points = max(0, training_record.jla_training_points - 1)
+                    log.info(f"Decremented JLA training points for {training.target_id} from {training_record.jla_training_points + 1} to {training_record.jla_training_points}")
+                elif training.training_type == TraingType.SNLA:
+                    training_record.snla_training_points = max(0, training_record.snla_training_points - 1)
+                    log.info(f"Decremented SNLA training points for {training.target_id} from {training_record.snla_training_points + 1} to {training_record.snla_training_points}")
+                elif training.training_type == TraingType.OCS:
+                    training_record.ocs_training_points = max(0, training_record.ocs_training_points - 1)
+                    log.info(f"Decremented OCS training points for {training.target_id} from {training_record.ocs_training_points + 1} to {training_record.ocs_training_points}")
+                elif training.training_type == TraingType.SOCS:
+                    training_record.sost_training_points = max(0, training_record.sost_training_points - 1)
+                    log.info(f"Decremented SOCS training points for {training.target_id} from {training_record.sost_training_points + 1} to {training_record.sost_training_points}")
+
+            log.info(f"Committing training points for {training.target_id}")
             self.session.commit()
         except Exception as e:
-            log.error(f"Failed to decrement NETC training points: {e}")
+            log.error(f"Failed to decrement training points: {e}")
             raise e
