@@ -20,6 +20,18 @@ class SubclassType(enum.Enum):
     GRENADIER = "Grenadier"
     SURGEON = "Surgeon"
 
+class TrainingCategory(enum.Enum):
+    NRC = "NRC"
+    NETC = "NETC"
+
+class TraingType(enum.Enum):
+    NRC = "NRC"
+    NETC = "NETC"
+    JLA = "JLA"
+    SNLA = "SNLA"
+    OCS = "OCS"
+    SOCS = "SOCS"
+
 # Base class for all models
 Base = declarative_base()
 
@@ -138,6 +150,8 @@ class Training(Base):
     log_id = Column(BIGINT, primary_key=True, autoincrement=True)
     target_id = mapped_column(BIGINT, ForeignKey("sailor.discord_id"))
     log_channel_id = Column(BIGINT, nullable=False)
+    training_type = Column(Enum(TraingType), nullable=False)
+    training_category = Column(Enum(TrainingCategory), nullable=False)
     log_time = Column(DATETIME, nullable=False)
 
 # Nifty function to create all tables

@@ -48,12 +48,14 @@ So they know if everything is being added correctly. And they can alert us if so
 | OCS_graduation_date   | The date of when the target was trained as Officer Candidate School (OCS). None if not trained         | DATETIME | TRUE     | None    | Trainee |
 | SOCS_graduation_date  | The date of when the target was trained as Senior Officer Candidate School (SOCS). None if not trained | DATETIME | TRUE     | None    | Trainee |
 ## training
-| Field            | Description                                                | Type     | Optional | Default | Context |
-|------------------|------------------------------------------------------------|----------|----------|---------|---------|
-| log_id (`PK`)    | The unique ID of the log entry                             | BIGINT   | FALSE    |         |         |
-| target_id (`FK`) | The discord ID of the target                               | BIGINT   | FALSE    |         |         |
-| log_channel_id   | The discord ID of the channel where the log entry was made | BIGINT   | FALSE    |         |         |
-| log_time         | The time of the log entry                                  | DATETIME | FALSE    |         |         |
+| Field             | Description                                                            | Type     | Optional | Default | Context |
+|-------------------|------------------------------------------------------------------------|----------|----------|---------|---------|
+| log_id (`PK`)     | The unique ID of the log entry                                         | BIGINT   | FALSE    |         |         |
+| target_id (`FK`)  | The discord ID of the target                                           | BIGINT   | FALSE    |         |         |
+| log_channel_id    | The discord ID of the channel where the log entry was made             | BIGINT   | FALSE    |         |         |
+| training_type     | The type of training that was logged (NRC, NETC, JLA, SNLA, OCS, SOCS) | ENUM     | FALSE    |         |         |
+| training_category | The category of training that was logged (NRC, NETC)                   | ENUM     | FALSE    |         |         |
+| log_time          | The time of the log entry                                              | DATETIME | FALSE    |         |         |
 
 
 ```mermaid
@@ -72,9 +74,10 @@ erDiagram
         BIGINT log_id
         BIGINT target_id
         BIGINT log_channel_id
+        ENUM training_type
+        ENUM training_category
         DATETIME log_time
     }
-    
 
     Sailor {
         BIGINT sailor_id
