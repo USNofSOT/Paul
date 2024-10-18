@@ -33,7 +33,5 @@ class OnMemberUpdateNicknameSync(commands.Cog):
                     else:
                         log.info(f"[SYNC] Member not found in {guild.name}")
 
-        log.info(f"[SYNC] Member updated: {before} -> {after}")
-
 async def setup(bot: commands.Bot):
     await bot.add_cog(OnMemberUpdateNicknameSync(bot))
