@@ -14,7 +14,6 @@ class OnMemberUpdateTraining(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
-        log.info(f"[TRAINING] Member updated: {before} -> {after}")
 
         if after.guild.id == NETC_GUILD_ID:
             training_repository = TrainingRecordsRepository()
