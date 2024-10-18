@@ -39,19 +39,38 @@ class TrainingRecords(commands.Cog):
             pass
 
         embed.add_field(
-            name="Total Trained",
+            name="Total Training Points",
             value=f"{training_record.nrc_training_points+training_record.netc_training_points}",
             inline=True
         )
-
         embed.add_field(
-            name="Total NRC Trained",
+            name="Total NRC Training Points",
             value=f"{training_record.nrc_training_points}",
             inline=True
         )
         embed.add_field(
-            name="Total NETC Trained",
+            name="Total NETC Training Points",
             value=f"{training_record.netc_training_points}",
+            inline=True
+        )
+        embed.add_field(
+            name="Total JLA Training Points",
+            value=f"{training_record.jla_training_points}",
+            inline=True
+        )
+        embed.add_field(
+            name="Total SNLA Training Points",
+            value=f"{training_record.snla_training_points}",
+            inline=True
+        )
+        embed.add_field(
+            name="Total OCS Training Points",
+            value=f"{training_record.ocs_training_points}",
+            inline=True
+        )
+        embed.add_field(
+            name="Total SOCS Training Points",
+            value=f"{training_record.socs_training_points}",
             inline=True
         )
 
