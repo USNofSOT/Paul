@@ -3,10 +3,34 @@ from logging import getLogger
 
 from discord.ext import commands
 
-from src.config import GUILD_ID, NRC_RECORDS_CHANNEL, TRAINING_POPULATE_FROM_DATE, NETC_RECORDS_CHANNELS, NETC_GUILD_ID
+from src.config import GUILD_ID, NRC_RECORDS_CHANNEL, TRAINING_POPULATE_FROM_DATE, NETC_RECORDS_CHANNELS, NETC_GUILD_ID, \
+    JLA_GRADUATE_ROLE, SNLA_GRADUATE_ROLE, OCS_GRADUATE_ROLE, SOCS_GRADUATE_ROLE
 from src.data.repository.training_records_repository import TrainingRecordsRepository
 
 log = getLogger(__name__)
+
+async def populate_graduate_roles(bot: commands.Bot):
+    guild = bot.get_guild(NETC_GUILD_ID)
+    graduate_roles = [guild.get_role(role) for role in [JLA_GRADUATE_ROLE, SNLA_GRADUATE_ROLE, OCS_GRADUATE_ROLE, SOCS_GRADUATE_ROLE]]
+    training_repository = TrainingRecordsRepository()
+
+    for role in graduate_roles:
+        log.info(f"[TRAINING] Attempting to populate Graduate role {role.name}.")
+        for member in role.members:
+            training_record = training_repository.get_or_create_training_record(member.id)
+
+            if training_record.jla_graduation_date is None and role.id == JLA_GRADUATE_ROLE:
+                training_repository.set_graduation(member.id, JLA_GRADUATE_ROLE)
+            if training_record.snla_graduation_date is None and role.id == SNLA_GRADUATE_ROLE:
+                training_repository.set_graduation(member.id, SNLA_GRADUATE_ROLE)
+            if training_record.ocs_graduation_date is None and role.id == OCS_GRADUATE_ROLE:
+                training_repository.set_graduation(member.id, OCS_GRADUATE_ROLE)
+            if training_record.socs_graduation_date is None and role.id == SOCS_GRADUATE_ROLE:
+                training_repository.set_graduation(member.id, SOCS_GRADUATE_ROLE)
+
+        log.info(f"[TRAINING] Finished populating Graduate role {role.name}.")
+
+    log.info("[TRAINING] Finished populating Graduate roles.")
 
 async def process_training_record(message, channel):
     training_repository = TrainingRecordsRepository()
