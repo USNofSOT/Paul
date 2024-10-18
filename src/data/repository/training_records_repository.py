@@ -1,10 +1,12 @@
 import logging
+from datetime import datetime
 from typing import Type
 
 from sqlalchemy.orm import sessionmaker
 
-from src.config import NETC_RECORDS_CHANNELS, TRAINING_RECORDS_CHANNEL
-from src.data import engine, TrainingRecord, Sailor, Training
+from src.config import NETC_RECORDS_CHANNELS, SNLA_RECORDS_CHANNEL, JLA_RECORDS_CHANNEL, \
+    SOCS_RECORDS_CHANNEL, OCS_RECORDS_CHANNEL, NRC_RECORDS_CHANNEL
+from src.data import engine, TrainingRecord, Sailor, Training, TraingType, TrainingCategory
 
 log = logging.getLogger(__name__)
 Session = sessionmaker(bind=engine)
@@ -35,28 +37,41 @@ class TrainingRecordsRepository:
                 training_record = TrainingRecord(target_id=sailor.discord_id)
                 self.session.add(training_record)
                 self.session.commit()
+
+            return training_record
         except Exception as e:
             log.error(f"Failed to get or create training record: {e}")
             raise e
 
-        return training_record
-
-    def save_training(self, log_id: int, target_id: int, log_channel_id: int) -> Type[Training]:
+    def save_training(self, log_id: int, target_id: int, log_channel_id: int) -> Training:
         try:
-            # 1. Check if the training record already exists
+            log_time = datetime.now()
+            # 1. Make sure training_record exists
+            training_record = self.get_or_create_training_record(target_id)
+
+            # 1. Check if the training already exists
             training = self.session.query(Training).filter(Training.log_id == log_id).first()
             if training:
                 raise ValueError("Training record already exists")
 
             # 2. Create a new training record
-            training = Training(log_id=log_id, target_id=target_id, log_channel_id=log_channel_id)
+            training_category = TrainingCategory.NETC if log_channel_id in NETC_RECORDS_CHANNELS else TrainingCategory.NRC
+            training_type_map = {
+                JLA_RECORDS_CHANNEL: TraingType.JLA,
+                SNLA_RECORDS_CHANNEL: TraingType.SNLA,
+                OCS_RECORDS_CHANNEL: TraingType.OCS,
+                SOCS_RECORDS_CHANNEL: TraingType.SOCS,
+                NRC_RECORDS_CHANNEL: TraingType.NRC,
+            }
+            training_type = training_type_map.get(log_channel_id, TraingType.NRC)
+            training = Training(log_id=log_id, target_id=target_id, log_channel_id=log_channel_id, log_time=log_time, training_type=training_type, training_category=training_category)
             self.session.add(training)
             self.session.commit()
 
             # 3. Check which NETC channel the training was logged in
             if log_channel_id in NETC_RECORDS_CHANNELS:
                 self._increment_netc_training_points(target_id, 1)
-            elif log_channel_id == TRAINING_RECORDS_CHANNEL:
+            elif log_channel_id == NRC_RECORDS_CHANNEL:
                 self._increment_nrc_training_points(target_id, 1)
 
             # 4. Return the training record
@@ -68,7 +83,12 @@ class TrainingRecordsRepository:
 
     def delete_training(self, log_id: int, target_id: int, log_channel_id: int) -> Type[Training]:
         try:
-            # 1. Get the training record
+            # 1. Get the training record for the user
+            training_record = self.get_or_create_training_record(target_id)
+            if not training_record:
+                raise ValueError("Training record not found")
+
+            # 1. Get the training
             training = self.session.query(Training).filter(Training.log_id == log_id).first()
             if not training:
                 raise ValueError("Training record not found")
@@ -80,7 +100,7 @@ class TrainingRecordsRepository:
             # 3. Check which NETC channel the training was logged in
             if log_channel_id in NETC_RECORDS_CHANNELS:
                 self._decrement_netc_training_points(target_id, 1)
-            elif log_channel_id == TRAINING_RECORDS_CHANNEL:
+            elif log_channel_id == NRC_RECORDS_CHANNEL:
                 self._decrement_nrc_training_points(target_id, 1)
 
             # 4. Return the training record
@@ -132,5 +152,9 @@ class TrainingRecordsRepository:
 
 if __name__ == '__main__':
     repo = TrainingRecordsRepository()
-
+    repo.save_training(
+        log_id=6,
+        target_id=1,
+        log_channel_id=SOCS_RECORDS_CHANNEL
+    )
     repo.close_session()

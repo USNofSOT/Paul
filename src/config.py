@@ -26,7 +26,7 @@ NETC_GUILD_ID: Final[int] = 1293725126562680985
 GUILD_OWNER_ID: Final[int] = 215990848465141760
 
 # MISC CHANNEL ID'S
-TRAINING_RECORDS_CHANNEL: Final[int] = 0 # TODO: Add training records channel ID
+NRC_RECORDS_CHANNEL: Final[int] = 0 # TODO: Add training records channel ID
 ENGINE_ROOM: Final[int] = 1288304233409548309
 
 # NETC CHANNEL ID'S
