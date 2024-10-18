@@ -179,8 +179,8 @@ class TrainingRecordsRepository:
                     training_record.ocs_training_points = max(0, training_record.ocs_training_points + 1)
                     log.info(f"Incremented OCS training points for {training.target_id} from {training_record.ocs_training_points - 1} to {training_record.ocs_training_points}")
                 elif training.training_type == TraingType.SOCS:
-                    training_record.sost_training_points = max(0, training_record.sost_training_points + 1)
-                    log.info(f"Incremented SOCS training points for {training.target_id} from {training_record.sost_training_points - 1} to {training_record.sost_training_points}")
+                    training_record.socs_training_points = max(0, training_record.socs_training_points + 1)
+                    log.info(f"Incremented SOCS training points for {training.target_id} from {training_record.socs_training_points - 1} to {training_record.socs_training_points}")
 
             log.info(f"Committing training points for {training.target_id}")
             self.session.commit()
@@ -210,8 +210,8 @@ class TrainingRecordsRepository:
                     training_record.ocs_training_points = max(0, training_record.ocs_training_points - 1)
                     log.info(f"Decremented OCS training points for {training.target_id} from {training_record.ocs_training_points + 1} to {training_record.ocs_training_points}")
                 elif training.training_type == TraingType.SOCS:
-                    training_record.sost_training_points = max(0, training_record.sost_training_points - 1)
-                    log.info(f"Decremented SOCS training points for {training.target_id} from {training_record.sost_training_points + 1} to {training_record.sost_training_points}")
+                    training_record.socs_training_points = max(0, training_record.socs_training_points - 1)
+                    log.info(f"Decremented SOCS training points for {training.target_id} from {training_record.socs_training_points + 1} to {training_record.socs_training_points}")
 
             log.info(f"Committing training points for {training.target_id}")
             self.session.commit()

@@ -1,7 +1,5 @@
 import asyncio
-from itertools import count
 from logging import getLogger
-from multiprocessing.managers import Value
 
 from discord.ext import commands
 
@@ -35,7 +33,6 @@ async def populate_netc_training_records(bot: commands.Bot, amount: int = 50):
     training_repository = TrainingRecordsRepository()
     guild = bot.get_guild(NETC_GUILD_ID)
     channels = [channel_id for channel_id in NETC_RECORDS_CHANNELS]
-    print(channels)
     for channel in channels:
         channel = guild.get_channel(channel)
         count = 0

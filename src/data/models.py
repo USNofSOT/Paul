@@ -149,7 +149,7 @@ class TrainingRecord(Base):
     ocs_training_points = Column(Integer, nullable=False, server_default="0")
     ocs_graduation_date = Column(DATETIME, nullable=True, server_default=None)
 
-    sost_training_points = Column(Integer, nullable=False, server_default="0")
+    socs_training_points = Column(Integer, nullable=False, server_default="0")
     socs_graduation_date = Column(DATETIME, nullable=True, server_default=None)
 
 class Training(Base):
