@@ -43,9 +43,25 @@ class TrainingRecordsRepository:
             log.error(f"Failed to get or create training record: {e}")
             raise e
 
-    def save_training(self, log_id: int, target_id: int, log_channel_id: int) -> Training:
+    def get_training_record_by_log_id(self, log_id: int) -> Type[TrainingRecord]:
         try:
-            log_time = datetime.now()
+            result = (
+                self.session.query(TrainingRecord)
+                .join(Training, TrainingRecord.target_id == Training.target_id)
+                .filter(Training.log_id == log_id)
+                .one_or_none()
+            )
+            if result is None:
+                raise ValueError(f"No training record found for log_id {log_id}")
+
+            return result
+        except Exception as e:
+            log.error(f"Failed to get training record by log id {log_id}: {e}")
+            raise
+
+    def save_training(self, log_id: int, target_id: int, log_channel_id: int, log_time: datetime = None) -> Type[Training]:
+        try:
+            log_time = datetime.now() if not log_time else log_time
             # 1. Make sure training_record exists
             training_record = self.get_or_create_training_record(target_id)
 
@@ -68,7 +84,7 @@ class TrainingRecordsRepository:
             self.session.add(training)
             self.session.commit()
 
-            # 3. Check which NETC channel the training was logged in
+            # 3. Check which NETC/NRC channel the training was logged in
             if log_channel_id in NETC_RECORDS_CHANNELS:
                 self._increment_netc_training_points(target_id, 1)
             elif log_channel_id == NRC_RECORDS_CHANNEL:
@@ -81,12 +97,13 @@ class TrainingRecordsRepository:
             log.error(f"Failed to save training: {e}")
             raise e
 
-    def delete_training(self, log_id: int, target_id: int, log_channel_id: int) -> Type[Training]:
+    def delete_training(self, log_id: int, log_channel_id: int) -> Type[Training]:
         try:
             # 1. Get the training record for the user
-            training_record = self.get_or_create_training_record(target_id)
+            training_record = self.get_training_record_by_log_id(log_id)
             if not training_record:
                 raise ValueError("Training record not found")
+            target_id = training_record.target_id or 0
 
             # 1. Get the training
             training = self.session.query(Training).filter(Training.log_id == log_id).first()
@@ -97,7 +114,7 @@ class TrainingRecordsRepository:
             self.session.delete(training)
             self.session.commit()
 
-            # 3. Check which NETC channel the training was logged in
+            # 3. Check which NETC/NRC channel the training was logged in
             if log_channel_id in NETC_RECORDS_CHANNELS:
                 self._decrement_netc_training_points(target_id, 1)
             elif log_channel_id == NRC_RECORDS_CHANNEL:
@@ -153,8 +170,12 @@ class TrainingRecordsRepository:
 if __name__ == '__main__':
     repo = TrainingRecordsRepository()
     repo.save_training(
-        log_id=6,
+        log_id=5,
         target_id=1,
+        log_channel_id=SOCS_RECORDS_CHANNEL
+    )
+    repo.delete_training(
+        log_id=5,
         log_channel_id=SOCS_RECORDS_CHANNEL
     )
     repo.close_session()
