@@ -2,13 +2,8 @@
 The following document outlines the requirements and design for the bots (PAUL's) training system. 
 The training system is responsible for tracking the training points and completion of training for targets.
 
-It is important to understand that these are 2 separate concepts
-
 **1. Training Points** (Trainer)
 > The points a user has earned for training others. This is used for example for rewards and commendations.
-
-**2. Trained Completion** (Trainee)
-> The completion of training for a user. This is used for example for eligibility for promotions.
 
 # Files
 Following is a list of files that are part of the training system. This excludes generic files like `config.py` and `models.py`.
@@ -38,17 +33,17 @@ There should be someway for a user to check their training points.
 So they know if everything is being added correctly. And they can alert us if something is wrong.
 
 # Datamodel: training_records
-| Field                 | Description                                                                                            | Type     | Optional | Default | Context |
-|-----------------------|--------------------------------------------------------------------------------------------------------|----------|----------|---------|---------|
-| target_id (`PK`/`FK`) | The discord ID of the target                                                                           | BIGINT   | FALSE    |         |         |
-| NRC_training_points   | The number of New Recruit Command (NRC) trained points                                                 | INT      | FALSE    | 0       | Trainer |
-| NETC_training_points  | The number of Naval Education and Training Command (NETC) trained points.                              | INT      | FALSE    | 0       | Trainer |
-| JLA_training_points   | The number of Junior Leadership Academy (JLA) trained points                                           | INT      | FALSE    | 0       | Trainer |
-| SNLA_training_points  | The number of Senior non-commissioned officer (SNLA) trained points                                    | INT      | FALSE    | 0       | Trainer |
-| OCS_training_points   | The number of Officer Candidate School (OCS) trained points                                            | INT      | FALSE    | 0       | Trainer |
-| SOCS_training_points  | The number of Senior Officer Candidate School (SOCS) trained points                                    | INT      | FALSE    | 0       | Trainer |
-| NLA_training_points   | The number of Non-Leadership Academy (NLA) trained points                                              | INT      | FALSE    | 0       | Trainer |
-| VLA_training_points   | The number of Virtual Leadership (VL) trained points                                                   | INT      | FALSE    | 0       | Trainer |
+| Field                 | Description                                                               | Type     | Optional | Default | Context |
+|-----------------------|---------------------------------------------------------------------------|----------|----------|---------|---------|
+| target_id (`PK`/`FK`) | The discord ID of the target                                              | BIGINT   | FALSE    |         |         |
+| NRC_training_points   | The number of New Recruit Command (NRC) trained points                    | INT      | FALSE    | 0       | Trainer |
+| NETC_training_points  | The number of Naval Education and Training Command (NETC) trained points. | INT      | FALSE    | 0       | Trainer |
+| JLA_training_points   | The number of Junior Leadership Academy (JLA) trained points              | INT      | FALSE    | 0       | Trainer |
+| SNLA_training_points  | The number of Senior non-commissioned officer (SNLA) trained points       | INT      | FALSE    | 0       | Trainer |
+| OCS_training_points   | The number of Officer Candidate School (OCS) trained points               | INT      | FALSE    | 0       | Trainer |
+| SOCS_training_points  | The number of Senior Officer Candidate School (SOCS) trained points       | INT      | FALSE    | 0       | Trainer |
+| NLA_training_points   | The number of NLA points (no longer in user) - legacy                     | INT      | FALSE    | 0       | Trainer |
+| VLA_training_points   | The number of VLA points (no longer in user) - legacy                     | INT      | FALSE    | 0       | Trainer |
 
 
 > NETC points are a combination of JLA, SNLA, OCS, and SOCS points.
