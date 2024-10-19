@@ -152,6 +152,10 @@ class TrainingRecord(Base):
     socs_training_points = Column(Integer, nullable=False, server_default="0")
     socs_graduation_date = Column(DATETIME, nullable=True, server_default=None)
 
+    # Legacy training points (No longer being tracked)
+    nla_training_points = Column(Integer, nullable=False, server_default="0")
+    vla_training_points = Column(Integer, nullable=False, server_default="0")
+
 class Training(Base):
     __tablename__ = "training"
 
