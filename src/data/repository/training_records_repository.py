@@ -4,9 +4,9 @@ from typing import Type
 
 from sqlalchemy.orm import sessionmaker
 
-from src.config import NETC_RECORDS_CHANNELS, SNLA_RECORDS_CHANNEL, JLA_RECORDS_CHANNEL, \
-    SOCS_RECORDS_CHANNEL, OCS_RECORDS_CHANNEL, NRC_RECORDS_CHANNEL, SNLA_GRADUATE_ROLE, JLA_GRADUATE_ROLE, \
-    OCS_GRADUATE_ROLE, SOCS_GRADUATE_ROLE
+from src.config.main_server import NRC_RECORDS_CHANNEL
+from src.config.netc_server import NETC_RECORDS_CHANNELS, SNLA_RECORDS_CHANNEL, JLA_RECORDS_CHANNEL, \
+    OCS_RECORDS_CHANNEL, SOCS_RECORDS_CHANNEL
 from src.data import engine, TrainingRecord, Sailor, Training, TraingType, TrainingCategory
 
 log = logging.getLogger(__name__)
@@ -21,45 +21,6 @@ class TrainingRecordsRepository:
 
     def close_session(self):
         self.session.close()
-
-    def set_graduation(self, target_id: int, role_id: int) -> TrainingRecord:
-        timestamp = datetime.now()
-        try:
-            training_record: TrainingRecord = self.get_or_create_training_record(target_id)
-            if role_id == SNLA_GRADUATE_ROLE:
-                training_record.snla_graduation_date = timestamp
-                log.info(f"Set SNLA graduation for {target_id} to {timestamp}")
-            elif role_id == JLA_GRADUATE_ROLE:
-                training_record.jla_graduation_date = timestamp
-                log.info(f"Set JLA graduation for {target_id} to {timestamp}")
-            elif role_id == OCS_GRADUATE_ROLE:
-                training_record.ocs_graduation_date = timestamp
-                log.info(f"Set OCS graduation for {target_id} to {timestamp}")
-            elif role_id == SOCS_GRADUATE_ROLE:
-                training_record.socs_graduation_date = timestamp
-                log.info(f"Set SOCS graduation for {target_id} to {timestamp}")
-            self.session.commit()
-            return training_record
-        except Exception as e:
-            log.error(f"Failed to set graduation: {e}")
-            raise e
-
-    def remove_graduation(self, target_id: int, role_id: int):
-        try:
-            training_record: TrainingRecord = self.get_or_create_training_record(target_id)
-            if role_id == SNLA_GRADUATE_ROLE:
-                training_record.snla_graduation_date = None
-            elif role_id == JLA_GRADUATE_ROLE:
-                training_record.jla_graduation_date = None
-            elif role_id == OCS_GRADUATE_ROLE:
-                training_record.ocs_graduation_date = None
-            elif role_id == SOCS_GRADUATE_ROLE:
-                training_record.socs_graduation_date = None
-            self.session.commit()
-            return training_record
-        except Exception as e:
-            log.error(f"Failed to remove graduation: {e}")
-            raise e
 
     def get_or_create_training_record(self, target_id: int) -> TrainingRecord:
         try:
@@ -222,3 +183,50 @@ class TrainingRecordsRepository:
         except Exception as e:
             log.error(f"Failed to decrement training points: {e}")
             raise e
+
+        """
+           DEPRECATION NOTICE:
+           THE FOLLOWING FUNCTIONS ARE NO LONGER IN USE
+    
+           ---
+    
+           WE NO LONGER INTEND TO USE THESE FUNCTIONS FOR TRAINING RECORDS MANAGEMENT
+           """
+        # def set_graduation(self, target_id: int, role_id: int) -> TrainingRecord:
+        #     timestamp = datetime.now()
+        #     try:
+        #         training_record: TrainingRecord = self.get_or_create_training_record(target_id)
+        #         if role_id == SNLA_GRADUATE_ROLE:
+        #             training_record.snla_graduation_date = timestamp
+        #             log.info(f"Set SNLA graduation for {target_id} to {timestamp}")
+        #         elif role_id == JLA_GRADUATE_ROLE:
+        #             training_record.jla_graduation_date = timestamp
+        #             log.info(f"Set JLA graduation for {target_id} to {timestamp}")
+        #         elif role_id == OCS_GRADUATE_ROLE:
+        #             training_record.ocs_graduation_date = timestamp
+        #             log.info(f"Set OCS graduation for {target_id} to {timestamp}")
+        #         elif role_id == SOCS_GRADUATE_ROLE:
+        #             training_record.socs_graduation_date = timestamp
+        #             log.info(f"Set SOCS graduation for {target_id} to {timestamp}")
+        #         self.session.commit()
+        #         return training_record
+        #     except Exception as e:
+        #         log.error(f"Failed to set graduation: {e}")
+        #         raise e
+        #
+        # def remove_graduation(self, target_id: int, role_id: int):
+        #     try:
+        #         training_record: TrainingRecord = self.get_or_create_training_record(target_id)
+        #         if role_id == SNLA_GRADUATE_ROLE:
+        #             training_record.snla_graduation_date = None
+        #         elif role_id == JLA_GRADUATE_ROLE:
+        #             training_record.jla_graduation_date = None
+        #         elif role_id == OCS_GRADUATE_ROLE:
+        #             training_record.ocs_graduation_date = None
+        #         elif role_id == SOCS_GRADUATE_ROLE:
+        #             training_record.socs_graduation_date = None
+        #         self.session.commit()
+        #         return training_record
+        #     except Exception as e:
+        #         log.error(f"Failed to remove graduation: {e}")
+        #         raise e
