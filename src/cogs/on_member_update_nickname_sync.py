@@ -5,6 +5,7 @@ from discord.ext import commands
 
 from src.config.main_server import GUILD_ID
 from src.config.netc_server import NETC_GUILD_ID
+from src.config.spd_servers import SPD_GUILD_ID
 from src.data.repository.training_records_repository import TrainingRecordsRepository
 
 log = getLogger(__name__)
