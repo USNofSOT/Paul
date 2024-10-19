@@ -51,21 +51,6 @@ class TrainingRecords(commands.Cog):
             ("SOCS", SOCS_INSTRUCTOR_ROLE)
         ]
 
-        graduation_dates = [
-            ("JLA", training_record.jla_graduation_date),
-            ("SNLA", training_record.snla_graduation_date),
-            ("OCS", training_record.ocs_graduation_date),
-            ("SOCS", training_record.socs_graduation_date)
-        ]
-        if any([date for name, date in graduation_dates]):
-            embed.add_field(
-                name="Graduation Dates",
-                value="\n".join(
-                    [f"- {name} - {format_time(get_time_difference_past(date))}" if date else f"" for name, date in
-                     graduation_dates]),
-                inline=False
-            )
-
         netc_member = self.bot.get_guild(NETC_GUILD_ID).get_member(target.id)
         if netc_member is not None:
             embed.add_field(

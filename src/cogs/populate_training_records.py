@@ -4,8 +4,7 @@ import discord.ext.commands
 from discord.ext import commands
 
 from src.config import NSC_ROLES
-from src.utils.training_utils import populate_nrc_training_records, populate_netc_training_records, \
-    populate_graduate_roles
+from src.utils.training_utils import populate_nrc_training_records, populate_netc_training_records
 
 log = getLogger(__name__)
 
@@ -15,17 +14,18 @@ class PopulateTrainingRecords(commands.Cog):
 
     @commands.command(name="populate_training_records")
     @commands.has_any_role(*NSC_ROLES)
-    async def populate_voyages(self, context, amount: int = 50, roles: bool = True, nrc: bool = True, netc: bool = True):
+    async def populate_voyages(self, context, amount: int = 50, nrc: bool = True, netc: bool = True):
         if amount == -1:
             max_voyages = None
         else:
             max_voyages = amount
 
-        if roles:
-            log.info(f"[TRAINING] Attempting to populate Graduate roles.")
-            await context.send("Attempting to populate Graduate roles.")
-            await populate_graduate_roles(self.bot)
-            await context.send("Finished populating Graduate roles.")
+        # The following feature was removed from the bot.
+        # if roles:
+        #     log.info(f"[TRAINING] Attempting to populate Graduate roles.")
+        #     await context.send("Attempting to populate Graduate roles.")
+        #     await populate_graduate_roles(self.bot)
+        #     await context.send("Finished populating Graduate roles.")
 
         if nrc:
             log.info(f"[TRAINING] Attempting to populate NRC training records.")

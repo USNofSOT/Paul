@@ -141,16 +141,16 @@ class TrainingRecord(Base):
     netc_training_points = Column(Integer, nullable=False, server_default="0")
 
     jla_training_points = Column(Integer, nullable=False, server_default="0")
-    jla_graduation_date = Column(DATETIME, nullable=True, server_default=None)
+    # jla_graduation_date = Column(DATETIME, nullable=True, server_default=None) - No longer being tracked
 
     snla_training_points = Column(Integer, nullable=False, server_default="0")
-    snla_graduation_date = Column(DATETIME, nullable=True, server_default=None)
+    # snla_graduation_date = Column(DATETIME, nullable=True, server_default=None) - No longer being tracked
 
     ocs_training_points = Column(Integer, nullable=False, server_default="0")
-    ocs_graduation_date = Column(DATETIME, nullable=True, server_default=None)
+    # ocs_graduation_date = Column(DATETIME, nullable=True, server_default=None) - No longer being tracked
 
     socs_training_points = Column(Integer, nullable=False, server_default="0")
-    socs_graduation_date = Column(DATETIME, nullable=True, server_default=None)
+    # socs_graduation_date = Column(DATETIME, nullable=True, server_default=None) - No longer being tracked
 
     # Legacy training points (No longer being tracked)
     nla_training_points = Column(Integer, nullable=False, server_default="0")
