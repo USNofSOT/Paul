@@ -69,12 +69,18 @@ class CheckAwards(commands.Cog):
 
         # Check voyage medals
         msg_str += self.check_voyages(interaction, sailor, member)
+        msg_str += self.check_hosted(interaction, sailor, member)
 
         return msg_str
     
     def check_voyages(self, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
         count = sailor.voyage_count + sailor.force_voyage_count
         medals = MEDALS_AND_RIBBONS.voyages
+        return self._check_awards_by_type(count, medals, interaction, sailor, member)
+    
+    def check_hosted(self, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
+        count = sailor.hosted_count + sailor.force_hosted_count
+        medals = MEDALS_AND_RIBBONS.hosted
         return self._check_awards_by_type(count, medals, interaction, sailor, member)
     
     def _check_awards_by_type(self, count: int, medals: list[Award], interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
