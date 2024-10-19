@@ -3,8 +3,10 @@ from logging import getLogger
 
 from discord.ext import commands
 
-from src.config import GUILD_ID, NRC_RECORDS_CHANNEL, TRAINING_POPULATE_FROM_DATE, NETC_RECORDS_CHANNELS, NETC_GUILD_ID, \
-    JLA_GRADUATE_ROLE, SNLA_GRADUATE_ROLE, OCS_GRADUATE_ROLE, SOCS_GRADUATE_ROLE
+from src.config.main_server import NRC_RECORDS_CHANNEL, GUILD_ID
+from src.config.netc_server import NETC_GUILD_ID, SNLA_GRADUATE_ROLE, JLA_GRADUATE_ROLE, OCS_GRADUATE_ROLE, \
+    SOCS_GRADUATE_ROLE, NETC_RECORDS_CHANNELS
+from src.config.training import TRAINING_POPULATE_FROM_DATE
 from src.data.repository.training_records_repository import TrainingRecordsRepository
 
 log = getLogger(__name__)

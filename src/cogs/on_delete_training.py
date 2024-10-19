@@ -3,7 +3,7 @@ from logging import getLogger
 import discord
 from discord.ext import commands
 
-from src.config import ALL_TRAINING_RECORDS_CHANNELS
+from src.config.training import ALL_TRAINING_RECORDS_CHANNELS
 from src.data.repository.training_records_repository import TrainingRecordsRepository
 
 log = getLogger(__name__)
