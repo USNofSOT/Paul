@@ -29,26 +29,6 @@ O6_ROLES = [933909668550553630] # Captain
 O7_ROLES = [933909182711746570] # Commodore
 O8_ROLES = [1157429131416449134] # Rear Admiral
 
-O8_AND_UP = O8_ROLES + [BOA_ROLE] # some overlap, but includes BOA members without ranks
-O7_AND_UP = O7_ROLES + O8_AND_UP
-O6_AND_UP = O6_ROLES + O7_AND_UP
-O5_AND_UP = O5_ROLES + O6_AND_UP
-O4_AND_UP = O4_ROLES + O5_AND_UP
-O3_AND_UP = O3_ROLES + O4_AND_UP
-O2_AND_UP = O2_ROLES + O3_AND_UP
-O1_AND_UP = O1_ROLES + O2_AND_UP
-E8_AND_UP = E8_ROLES + O1_AND_UP
-E7_AND_UP = E7_ROLES + E8_AND_UP
-E6_AND_UP = E6_ROLES + E7_AND_UP
-E5_AND_UP = E5_ROLES + E6_AND_UP
-E4_AND_UP = E4_ROLES + E5_AND_UP
-E3_AND_UP = E3_ROLES + E4_AND_UP
-E2_AND_UP = E2_ROLES + E3_AND_UP
-E1_AND_UP = E1_ROLES + E2_AND_UP
-
-#def rank_to_roles(rank_str : str) -> list[int] | None:
-#    if rank_str = 
-
 ###############################################################################
 # SPD Roles
 ###############################################################################
@@ -66,3 +46,20 @@ SNCO_AND_UP = SNCO_ROLE, JO_ROLE, SO_ROLE, BOA_ROLE, NSC_ROLE
 JO_AND_UP = JO_ROLE, SO_ROLE, BOA_ROLE, NSC_ROLE
 SO_AND_UP = SO_ROLE, BOA_ROLE, NSC_ROLE
 BOA_NSC = BOA_ROLE, NSC_ROLE
+
+O8_AND_UP = O8_ROLES + [BOA_ROLE] # some overlap, but includes BOA members without ranks
+O7_AND_UP = O7_ROLES + O8_AND_UP
+O6_AND_UP = O6_ROLES + O7_AND_UP
+O5_AND_UP = O5_ROLES + O6_AND_UP
+O4_AND_UP = O4_ROLES + O5_AND_UP
+O3_AND_UP = O3_ROLES + O4_AND_UP
+O2_AND_UP = O2_ROLES + O3_AND_UP
+O1_AND_UP = O1_ROLES + O2_AND_UP
+E8_AND_UP = E8_ROLES + O1_AND_UP
+E7_AND_UP = E7_ROLES + E8_AND_UP
+E6_AND_UP = E6_ROLES + E7_AND_UP
+E5_AND_UP = E5_ROLES + E6_AND_UP
+E4_AND_UP = E4_ROLES + E5_AND_UP
+E3_AND_UP = E3_ROLES + E4_AND_UP
+E2_AND_UP = E2_ROLES + E3_AND_UP
+E1_AND_UP = E1_ROLES + E2_AND_UP
