@@ -57,6 +57,19 @@ class SailorRepository:
             bool: True if the operation was successful, False otherwise.
         """
         column = subclass.value.lower() + "_points"
+        self._increment_column_by_discord_id(target_id, column, increment)
+
+    def increment_force_subclass_by_discord_id(self, target_id: int, subclass: SubclassType, increment: int = 1) -> bool:
+        column = "force_" + subclass.value.lower() + "_points"
+        self._increment_column_by_discord_id(target_id, column, increment)
+
+    def increment_force_voyage_by_discord_id(self, target_id: int, increment: int = 1) -> bool:
+        self._increment_column_by_discord_id(target_id, "force_voyage_count", increment)
+
+    def increment_force_hosted_by_discord_id(self, target_id: int, increment: int = 1) -> bool:
+        self._increment_column_by_discord_id(target_id, "force_hosted_count", increment)
+
+    def _increment_column_by_discord_id(self, target_id: int, column: str, increment: int) -> bool:
         try:
             self.session.execute(
                 update(Sailor)
@@ -67,7 +80,7 @@ class SailorRepository:
             )
             self.session.commit()
         except Exception as e:
-            log.error(f"Error incrementing subclass count: {e}")
+            log.error(f"Error incrementing {column}: {e}")
             self.session.rollback()
             raise e
         finally:

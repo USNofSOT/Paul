@@ -29,12 +29,13 @@ class On_Edit_Voyages(commands.Cog):
         self.hosted_repository = HostedRepository()
         self.voyage_repository = VoyageRepository()
         if payload.channel_id == VOYAGE_LOGS:
-            log_id = payload.message_id                 
+            log.info(f"[{payload.message_id}] [ON_EDIT] Voyage log message edited.")
+            log_id = payload.message_id
             host = self.hosted_repository.get_host_by_log_id(log_id)
             if host:
                 host_id = host.discord_id
             else:
-                log.info(f"Voyage:{log_id} was not logged before.")
+                log.info(f"[{log_id}] Voyage:{log_id} was not logged before.")
                 return
             participant_ids = [user.discord_id for  user in self.voyage_repository.get_sailors_by_log_id(log_id)]
             
