@@ -2,7 +2,7 @@ from logging import getLogger
 
 from discord.ext import commands
 
-from src.config import ALL_TRAINING_RECORDS_CHANNELS
+from src.config.training import ALL_TRAINING_RECORDS_CHANNELS
 from src.data.repository.training_records_repository import TrainingRecordsRepository
 from src.utils.training_utils import process_training_record
 

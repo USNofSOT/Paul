@@ -3,7 +3,7 @@ from typing import Final
 
 # GUILD ID for SPD Server
 SPD_ID: Final[int]=971718695602778162
-SPD_GUID_ID: Final[int] = 971718695602778162
+SPD_GUILD_ID: Final[int] = 971718695602778162
 
 ###############################################################################
 # NRC Department
