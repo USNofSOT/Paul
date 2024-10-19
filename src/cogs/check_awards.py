@@ -74,7 +74,7 @@ class CheckAwards(commands.Cog):
     
     def check_voyages(self, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
         count = sailor.voyage_count + sailor.force_voyage_count
-        medals = MEDALS_AND_RIBBONS['voyages']
+        medals = MEDALS_AND_RIBBONS.voyages
         return self._check_awards_by_type(count, medals, interaction, sailor, member)
     
     def _check_awards_by_type(self, count: int, medals: list[Award], interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
