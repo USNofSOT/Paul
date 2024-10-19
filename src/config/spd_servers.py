@@ -1,4 +1,3 @@
-
 from typing import Final
 
 # GUILD ID for SPD Server
