@@ -20,6 +20,18 @@ class SubclassType(enum.Enum):
     GRENADIER = "Grenadier"
     SURGEON = "Surgeon"
 
+class TrainingCategory(enum.Enum):
+    NRC = "NRC"
+    NETC = "NETC"
+
+class TraingType(enum.Enum):
+    NRC = "NRC"
+    NETC = "NETC"
+    JLA = "JLA"
+    SNLA = "SNLA"
+    OCS = "OCS"
+    SOCS = "SOCS"
+
 # Base class for all models
 Base = declarative_base()
 
@@ -113,7 +125,6 @@ class Subclasses(Base):
     subclass_count = Column(Integer, server_default="1")
     log_time = Column(DATETIME)
 
-
 class Voyages(Base):
     __tablename__ = "voyages"
 
@@ -121,6 +132,39 @@ class Voyages(Base):
     target_id = mapped_column(ForeignKey("sailor.discord_id"), primary_key=True)
     # amount = Column(Integer, server_default="1") Note: no longer needed
     log_time = Column(DATETIME)
+
+class TrainingRecord(Base):
+    __tablename__ = "training_records"
+
+    target_id = mapped_column(BIGINT, ForeignKey("sailor.discord_id"), primary_key=True)
+    nrc_training_points = Column(Integer, nullable=False, server_default="0")
+    netc_training_points = Column(Integer, nullable=False, server_default="0")
+
+    jla_training_points = Column(Integer, nullable=False, server_default="0")
+    # jla_graduation_date = Column(DATETIME, nullable=True, server_default=None) - No longer being tracked
+
+    snla_training_points = Column(Integer, nullable=False, server_default="0")
+    # snla_graduation_date = Column(DATETIME, nullable=True, server_default=None) - No longer being tracked
+
+    ocs_training_points = Column(Integer, nullable=False, server_default="0")
+    # ocs_graduation_date = Column(DATETIME, nullable=True, server_default=None) - No longer being tracked
+
+    socs_training_points = Column(Integer, nullable=False, server_default="0")
+    # socs_graduation_date = Column(DATETIME, nullable=True, server_default=None) - No longer being tracked
+
+    # Legacy training points (No longer being tracked)
+    nla_training_points = Column(Integer, nullable=False, server_default="0")
+    vla_training_points = Column(Integer, nullable=False, server_default="0")
+
+class Training(Base):
+    __tablename__ = "training"
+
+    log_id = Column(BIGINT, primary_key=True, autoincrement=True)
+    target_id = mapped_column(BIGINT, ForeignKey("sailor.discord_id"))
+    log_channel_id = Column(BIGINT, nullable=False)
+    training_type = Column(Enum(TraingType), nullable=False)
+    training_category = Column(Enum(TrainingCategory), nullable=False)
+    log_time = Column(DATETIME, nullable=False)
 
 # Nifty function to create all tables
 def create_tables():
