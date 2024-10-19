@@ -19,7 +19,7 @@ class CoinRepository:
     def close_session(self):
         self.session.close()
 
-    def save_coin(self, target_id: int, coin_type: str, moderator_id: int, old_name: str, coin_time: datetime = datetime.now()) -> Coins:
+    def save_coin(self, target_id: int, coin_type: str, moderator_id: int, old_name: str, coin_time: datetime = None) -> Coins:
         """
         Save a coin transaction to the database.
 
@@ -32,6 +32,7 @@ class CoinRepository:
         Returns:
             Coins: The Coins object
         """
+        coin_time = coin_time or datetime.now()
 
         try:
             coin = Coins(target_id=target_id, coin_type=coin_type, moderator_id=moderator_id, old_name=old_name, coin_time=coin_time)
@@ -86,5 +87,34 @@ class CoinRepository:
         except Exception as e:
             log.error(f"Error finding coin: {e}")
             raise e
+        finally:
+            self.session.close()
+
+    def get_coins_by_target(self, target_id):
+        """
+        Fetches and categorizes coins for a target.
+
+        Args:
+            target_id: The ID of the target.
+
+        Returns:
+            A tuple containing two lists: regular_coins and commander_coins.
+        """
+        
+        try:
+            regular_coins = []
+            commander_coins = []
+
+            with Session() as session:
+                coins = session.query(Coins).filter(Coins.target_id == target_id).all()
+                for coin in coins:
+                    if coin.coin_type == "Regular Challenge Coin":
+                        regular_coins.append(coin)
+                    elif coin.coin_type == "Commanders Challenge Coin":
+                        commander_coins.append(coin)
+
+            return regular_coins, commander_coins
+        except Exception as e:
+            log.error(f"Error retriving coins by user: {e}")
         finally:
             self.session.close()

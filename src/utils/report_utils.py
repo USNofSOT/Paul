@@ -31,7 +31,7 @@ async def tiered_medals(member: discord.Member) -> str:
         "Meritorious Combat Action",
         "Honorable Combat Action",
         "Legion of Combat",
-        "Citation Of Combat",
+        "Citation of Combat",
     ]
 
     training_titles = [
@@ -186,7 +186,11 @@ def process_role_index(ctx, member, role_index):
 
 
     elif role_index == 3:
-        fleet_role = get_role_with_keyword(member, "fleet")
+        fleet_role = None
+        for role in member.roles:
+            if "fleet" in role.name.lower() and role.name != "Legends of the Fleets":
+                fleet_role = role
+                break
         if fleet_role is None:
             return process_role_index(ctx, member, role_index + 1)
         fleet_members = [m.id for m in fleet_role.members]
