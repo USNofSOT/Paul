@@ -5,6 +5,7 @@ from config.awards import *
 from config.main_server import *
 from config.ranks_roles import *
 from config.spd_servers import *
+from config.subclasses import *
 from config.synonyms import *
 
 load_dotenv()
