@@ -1,4 +1,5 @@
 from logging import getLogger
+from typing import Union
 
 import discord
 from discord.ext import commands
@@ -19,30 +20,30 @@ class CheckAwards(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name="check_awards", description="Check awards eligibility for a target role")
-    @app_commands.describe(role="Mention the role to get a report of")
-    async def check_awards(self, interaction: discord.Interaction, role:discord.Role):
+    @app_commands.describe(target="Mention the role to get awards for")
+    async def check_awards(self, interaction: discord.Interaction, target: Union[discord.Member, discord.Role] = None):
         await interaction.response.defer(ephemeral=True)
 
         # Check if role is defined
-        if role is None:
-            log.warning("No role mentioned")
-            await interaction.followup.send("Please mention a role", ephemeral=True)
-            return
-
-        # Get the members of the squad
-        members = role.members
-
-        log.info(f"Checking awards for {role.name} with {len(members)} members")
+        if target is None:
+            members = [interaction.user]
+            log.info(f"Checking awards for {interaction.user.name}")
+        elif isinstance(target, discord.Member):
+            members = [target]
+            log.info(f"Checking awards for {target.name}")
+        else:
+            members = target.members
+            log.info(f"Checking awards for {target.name} with {len(members)} members")
 
         # Get the repositories
-        #self.voyage_repo = VoyageRepository()
         self.sailor_repo = SailorRepository()
 
         try:
             role_has_sailors = False
             msg_str = ""
             for member in members:
-                log.info(f"Checking member {member.name}")
+                if isinstance(target, discord.Role):
+                    log.info(f"Checking member {member.name}")
                 # Check if member in database
                 sailor = self.sailor_repo.get_sailor(member.id)
                 if sailor is None:
@@ -52,10 +53,8 @@ class CheckAwards(commands.Cog):
 
                 # Check for award messages for sailor
                 sailor_strs = self.check_sailor(interaction, sailor, member)
-                
                 # Add strings to message, printing early if message would be too long
-                while sailor_strs:
-                    sailor_str = sailor_strs.pop(0)
+                for sailor_str in sailor_strs:
                     if len(msg_str+sailor_str) <= MAX_MESSAGE_LENGTH:
                         msg_str += sailor_str
                     else:
@@ -69,7 +68,7 @@ class CheckAwards(commands.Cog):
             await interaction.followup.send(msg_str, ephemeral=True)
 
         except Exception as e:
-            log.error(f"Error checking awards: {e}")
+            log.error(f"Error checking awards: {e}",exc_info=True)
             await interaction.followup.send("Error checking awards", ephemeral=True)
 
         finally:
@@ -79,7 +78,7 @@ class CheckAwards(commands.Cog):
         # Assert these are the same person
         assert sailor.discord_id == member.id, "Sailor does not have the same ID as discord member."
 
-        msg_strs = [
+        msg_strs = (
             # Check awards
             self.check_voyages(interaction, sailor, member),
             self.check_hosted(interaction, sailor, member),
@@ -96,7 +95,7 @@ class CheckAwards(commands.Cog):
             self.check_helm(interaction, sailor, member),
             self.check_grenadier(interaction, sailor, member),
             self.check_surgeon(interaction, sailor, member),
-        ]
+        )
 
         return msg_strs
     
@@ -159,7 +158,6 @@ class CheckAwards(commands.Cog):
             return msg_str
         
         # Check if member has award role already
-        log.info(f"GUILD_ID: {GUILD_ID}, award role id: {award.role_id}")
         award_role = self.bot.get_guild(GUILD_ID).get_role(award.role_id)
         if award_role not in member.roles:
             msg_str = self._award_message(award, award_role, interaction, member)
@@ -203,9 +201,8 @@ class CheckAwards(commands.Cog):
             return None
     
         # Guarantee a list and take the last element (current CO)
-        if not isinstance(next_in_command,list):
-            next_in_command = [next_in_command]
-        next_in_command = next_in_command[-1]
+        while isinstance(next_in_command,list):   #FIXME: this is the worst code ive ever written - Thunder
+            next_in_command = next_in_command[-1]
         co_member = self.bot.get_guild(GUILD_ID).get_member(next_in_command)
 
         # Return early for "CO+"
