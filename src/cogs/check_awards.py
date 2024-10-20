@@ -112,6 +112,7 @@ class CheckAwards(commands.Cog):
         msg_str += f"{member.mention} is now eligible for {award_role.mention}.\n"
         msg_str += f"Ranks Responsible: {award.ranks_responsible}\n"
         msg_str += f"Responsible CO: (coming soon)\n"
+        msg_str += f"Details: {award.embed_url}\n"
         return msg_str
 
 

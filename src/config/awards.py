@@ -1,38 +1,45 @@
 from data.structs import Award, CombatAward, AwardsCollector
 
+_AWARDS_THREAD_ID=1292510151219347519 
+
 ###############################################################################
 ## Medals And Ribbons - Voyage Medals
 ###############################################################################
 _VOYAGE_EMBED_ID=1292514303936561183
 CITATION_OF_VOAYGES = Award(
+    threshold=5,
+    ranks_responsible="E-6+",
     role_id=934090102735536188,
     embed_id=_VOYAGE_EMBED_ID,
-    ranks_responsible="E-6+",
-    threshold=5
+    channelthread_id=_AWARDS_THREAD_ID
 )
 LEGION_OF_VOYAGES = Award(
+    threshold=25,
+    ranks_responsible="E-7+",
     role_id=983412707912998942,
     embed_id=_VOYAGE_EMBED_ID,
-    ranks_responsible="E-7+",
-    threshold=25
+    channelthread_id=_AWARDS_THREAD_ID
 )
 HONORABLE_VOYAGER_MEDAL = Award(
+    threshold=50,
+    ranks_responsible="O-1+",
     role_id=1059271717836566588,
     embed_id=_VOYAGE_EMBED_ID,
-    ranks_responsible="O-1+",
-    threshold=50
+    channelthread_id=_AWARDS_THREAD_ID
 )
 MERITORIOUS_VOYAGER_MEDAL = Award(
+    threshold=100,
+    ranks_responsible="O-4+",
     role_id=1059240151852797993,
     embed_id=_VOYAGE_EMBED_ID,
-    ranks_responsible="O-4+",
-    threshold=100
+    channelthread_id=_AWARDS_THREAD_ID
 )
 ADMIRABLE_VOYAGER_MEDAL = Award(
+    threshold=200,
+    ranks_responsible="O-7+",
     role_id=1140637598457544857,
     embed_id=_VOYAGE_EMBED_ID,
-    ranks_responsible="O-7+",
-    threshold=200
+    channelthread_id=_AWARDS_THREAD_ID
 )
 # Medals must be ordered lowest to highest voyage count
 VOYAGE_MEDALS = (CITATION_OF_VOAYGES, LEGION_OF_VOYAGES, HONORABLE_VOYAGER_MEDAL, 
@@ -43,28 +50,32 @@ VOYAGE_MEDALS = (CITATION_OF_VOAYGES, LEGION_OF_VOYAGES, HONORABLE_VOYAGER_MEDAL
 ###############################################################################
 _HOSTED_EMBED_ID=1292514303936561183
 SEA_SERVICE_RIBBON = Award(
+    threshold=25,
+    ranks_responsible="E-7+",
     role_id=1140740078025576569,
     embed_id=_HOSTED_EMBED_ID,
-    ranks_responsible="E-7+",
-    threshold=25
+    channelthread_id=_AWARDS_THREAD_ID,
 )
 MARITIME_SERVICE_MEDAL = Award(
+    threshold=50,
+    ranks_responsible="O-1+",
     role_id=1140740079808155688,
     embed_id=_HOSTED_EMBED_ID,
-    ranks_responsible="O-1+",
-    threshold=50
+    channelthread_id=_AWARDS_THREAD_ID
 )
 LEGENDARY_SERVICE_MEDAL = Award(
+    threshold=100,
+    ranks_responsible="O-4+",
     role_id=1140740081594941460,
     embed_id=_HOSTED_EMBED_ID,
-    ranks_responsible="O-4+",
-    threshold=100
+    channelthread_id=_AWARDS_THREAD_ID
 )
 ADMIRABLE_SERVICE_MEDAL = Award(
+    threshold=200,
+    ranks_responsible="O-7+",
     role_id=1205129048309637170,
     embed_id=_HOSTED_EMBED_ID,
-    ranks_responsible="O-7+",
-    threshold=200
+    channelthread_id=_AWARDS_THREAD_ID
 )
 
 # Medals must be ordered lowest to highest voyage count
@@ -76,39 +87,44 @@ HOSTED_MEDALS = (SEA_SERVICE_RIBBON, MARITIME_SERVICE_MEDAL,
 ###############################################################################
 _COMBAT_EMBED_ID=1292514373751017586
 CITATION_OF_COMBAT = CombatAward(
+    threshold=2,
+    streak=False,
+    ranks_responsible="E-6+",
     role_id=944648920083079189,
     embed_id=_COMBAT_EMBED_ID,
-    ranks_responsible="E-6+",
-    threshold=2,
-    streak=False
+    channelthread_id=_AWARDS_THREAD_ID
 )
 LEGION_OF_COMBAT = CombatAward(
+    threshold=3,
+    streak=True,
+    ranks_responsible="E-7+",
     role_id=1140638151174541502,
     embed_id=_COMBAT_EMBED_ID,
-    ranks_responsible="E-7+",
-    threshold=3,
-    streak=True
+    channelthread_id=_AWARDS_THREAD_ID
 )
 HONORABLE_COMBAT_ACTION = CombatAward(
+    threshold=5,
+    streak=True,
+    ranks_responsible="O-1+",
     role_id=1140638148217544714,
     embed_id=_COMBAT_EMBED_ID,
-    ranks_responsible="O-1+",
-    threshold=5,
-    streak=True
+    channelthread_id=_AWARDS_THREAD_ID
 )
 MERITORIOUS_COMBAT_ACTION = CombatAward(
+    threshold=7,
+    streak=True,
+    ranks_responsible="O-4+",
     role_id=1140740442334433301,
     embed_id=_COMBAT_EMBED_ID,
-    ranks_responsible="O-4+",
-    threshold=7,
-    streak=True
+    channelthread_id=_AWARDS_THREAD_ID
 )
 ADMIRABLE_COMBAT_ACTION = CombatAward(
+    threshold=10,
+    streak=True,
+    ranks_responsible="O-7+",
     role_id=1140638153892450406,
     embed_id=_COMBAT_EMBED_ID,
-    ranks_responsible="O-7+",
-    threshold=10,
-    streak=True
+    channelthread_id=_AWARDS_THREAD_ID
 )
 
 # Medals must be ordered lowest to highest win streak
@@ -120,22 +136,25 @@ COMBAT_MEDALS = (CITATION_OF_COMBAT, LEGION_OF_COMBAT, HONORABLE_COMBAT_ACTION,
 ###############################################################################
 _TRAINING_EMBED_ID=1292514591854559263
 HONORABLE_TRAINING_RIBBON = Award(
+    threshold=25,
+    ranks_responsible="CO/XO of NRC or NETC",
     role_id=972552284145860619,
     embed_id=_TRAINING_EMBED_ID,
-    ranks_responsible="CO/XO of NRC or NETC",
-    threshold=25
+    channelthread_id=_AWARDS_THREAD_ID
 )
 MERITORIOUS_TRAINING_RIBBON = Award(
+    threshold=50,
+    ranks_responsible="CO/XO of NRC or NETC", 
     role_id=1205124628712792064,
     embed_id=_TRAINING_EMBED_ID,
-    ranks_responsible="CO/XO of NRC or NETC", 
-    threshold=50
+    channelthread_id=_AWARDS_THREAD_ID
 )
 ADMIRABLE_TRAINING_RIBBON = Award(
+    threshold=100,
+    ranks_responsible="CO/XO of NRC or NETC",
     role_id=1205126555467255818,
     embed_id=_TRAINING_EMBED_ID,
-    ranks_responsible="CO/XO of NRC or NETC",
-    threshold=100
+    channelthread_id=_AWARDS_THREAD_ID
 )
 
 # Medals must be ordered lowest to highest training count
@@ -143,10 +162,11 @@ TRAINING_MEDALS = (HONORABLE_TRAINING_RIBBON, MERITORIOUS_TRAINING_RIBBON, ADMIR
 
 _RECRUIT_EMBED_ID=1292514591854559263
 RECRUITMENT_RIBBON = Award(
+    threshold=15,
+    ranks_responsible="CO/XO of NRC",
     role_id=934071290875232267,
     embed_id=_RECRUIT_EMBED_ID,
-    ranks_responsible="CO/XO of NRC",
-    threshold=15
+    channelthread_id=_AWARDS_THREAD_ID
 )
 
 # Medals must be ordered lowest to highest recruit count

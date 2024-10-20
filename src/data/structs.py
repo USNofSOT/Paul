@@ -1,12 +1,20 @@
 from __future__ import annotations
 from dataclasses import dataclass
 
+from config.main_server import GUILD_ID
+
 @dataclass
 class Award:
+    threshold: int = 0
+    ranks_responsible: str = ""
     role_id: int = 0
     embed_id: int = 0
-    ranks_responsible: str = ""
-    threshold: int = 0
+    channelthread_id: int = 0
+
+    @property
+    def embed_url(self) -> str:
+        return f"https://discord.com/channels/{GUILD_ID}/{self.channelthread_id}/{self.embed_id}"
+
 
 @dataclass
 class CombatAward(Award):
