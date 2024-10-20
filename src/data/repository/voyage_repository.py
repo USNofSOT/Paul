@@ -24,6 +24,20 @@ class VoyageRepository:
     def close_session(self):
         self.session.close()
 
+    def get_voyages_by_log_id(self, log_id: int) -> list[Type[Voyages]]:
+        try:
+            return self.session.query(Voyages).filter(Voyages.log_id == log_id).all()
+        except Exception as e:
+            log.error(f"Error getting voyage log entries: {e}")
+            raise e
+
+    def get_most_recent_voyage(self, target_id: int) -> Type[Voyages] | None:
+        try:
+            return self.session.query(Voyages).filter(Voyages.target_id == target_id).order_by(Voyages.log_time.desc()).first()
+        except Exception as e:
+            log.error(f"Error getting most recent voyage log entry: {e}")
+            raise e
+
     def batch_save_voyage_data(self, voyage_data: list[tuple[int, int, datetime]]):
         """
         Batch inserts voyage records. Ignores duplicates based on log_id and participant_id.
