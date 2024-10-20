@@ -4,7 +4,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 
-from config import GUILD_ID, MEDALS_AND_RIBBONS
+from config import GUILD_ID, MEDALS_AND_RIBBONS, SUBCLASS_AWARDS, MAX_MESSAGE_LENGTH
 from data import Sailor
 from data.repository.sailor_repository import SailorRepository
 from data.structs import Award
@@ -43,10 +43,22 @@ class CheckAwards(commands.Cog):
                 log.info(f"Checking member {member.name}")
                 # Check if member in database
                 sailor = self.sailor_repo.get_sailor(member.id)
-                if sailor:
+                if sailor is None:
+                    continue
+                else:
                     role_has_sailors = True
-                    msg_str += self.check_sailor(interaction, sailor, member)
-                    #msg_str += f"I checked {member.mention}.\n"
+
+                # Check for award messages for sailor
+                sailor_strs = self.check_sailor(interaction, sailor, member)
+                
+                # Add strings to message, printing early if message would be too long
+                while sailor_strs:
+                    sailor_str = sailor_strs.pop(0)
+                    if len(msg_str+sailor_str) <= MAX_MESSAGE_LENGTH:
+                        msg_str += sailor_str
+                    else:
+                        await interaction.followup.send(msg_str, ephemeral=True)
+                        msg_str = sailor_str
 
             if not role_has_sailors:
                 msg_str = "Role has no sailors in it"
@@ -61,17 +73,30 @@ class CheckAwards(commands.Cog):
         finally:
             self.sailor_repo.close_session()
 
-    def check_sailor(self, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
+    def check_sailor(self, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> list[str]:
         # Assert these are the same person
         assert sailor.discord_id == member.id, "Sailor does not have the same ID as discord member."
 
-        msg_str = ""
+        msg_strs = [
+            # Check awards
+            self.check_voyages(interaction, sailor, member),
+            self.check_hosted(interaction, sailor, member),
+            #FIXME: Add check for combat medals
+            #FIXME: Add check for training medals
+            #FIXME: Add check for recruiting medals
+            #FIXME: Add check for attendance medals
+            #FIXME: Add check for service stripes
 
-        # Check voyage medals
-        msg_str += self.check_voyages(interaction, sailor, member)
-        msg_str += self.check_hosted(interaction, sailor, member)
+            # Check subclasses
+            self.check_cannoneer(interaction, sailor, member),
+            self.check_carpenter(interaction, sailor, member),
+            self.check_flex(interaction, sailor, member),
+            self.check_helm(interaction, sailor, member),
+            self.check_grenadier(interaction, sailor, member),
+            self.check_surgeon(interaction, sailor, member),
+        ]
 
-        return msg_str
+        return msg_strs
     
     def check_voyages(self, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
         count = sailor.voyage_count + sailor.force_voyage_count
@@ -82,6 +107,46 @@ class CheckAwards(commands.Cog):
         count = sailor.hosted_count + sailor.force_hosted_count
         medals = MEDALS_AND_RIBBONS.hosted
         return self._check_awards_by_type(count, medals, interaction, sailor, member)
+    
+    # check_combat
+
+    # check_training
+
+    # check_recruiting
+
+    # check_attendance
+
+    # check_service
+
+    def check_cannoneer(self, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
+        count = sailor.cannoneer_points + sailor.force_cannoneer_points
+        tiers = SUBCLASS_AWARDS.cannoneer
+        return self._check_awards_by_type(count, tiers, interaction, sailor, member)
+
+    def check_carpenter(self, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
+        count = sailor.carpenter_points + sailor.force_carpenter_points
+        tiers = SUBCLASS_AWARDS.carpenter
+        return self._check_awards_by_type(count, tiers, interaction, sailor, member)
+
+    def check_flex(self, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
+        count = sailor.flex_points + sailor.force_flex_points
+        tiers = SUBCLASS_AWARDS.flex
+        return self._check_awards_by_type(count, tiers, interaction, sailor, member)
+
+    def check_helm(self, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
+        count = sailor.helm_points + sailor.force_helm_points
+        tiers = SUBCLASS_AWARDS.helm
+        return self._check_awards_by_type(count, tiers, interaction, sailor, member)
+
+    def check_grenadier(self, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
+        count = sailor.grenadier_points + sailor.force_grenadier_points
+        tiers = SUBCLASS_AWARDS.grenadier
+        return self._check_awards_by_type(count, tiers, interaction, sailor, member)
+
+    def check_surgeon(self, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
+        count = sailor.surgeon_points + sailor.force_surgeon_points
+        tiers = SUBCLASS_AWARDS.surgeon
+        return self._check_awards_by_type(count, tiers, interaction, sailor, member)
     
     def _check_awards_by_type(self, count: int, medals: list[Award], interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
         msg_str = ""
@@ -110,9 +175,10 @@ class CheckAwards(commands.Cog):
     def _award_message(self, award : Award | None, award_role : discord.Role, interaction: discord.Interaction, member: discord.Member) -> str:
         msg_str = ""
         msg_str += f"{member.mention} is now eligible for {award_role.mention}.\n"
-        msg_str += f"Ranks Responsible: {award.ranks_responsible}\n"
-        msg_str += f"Responsible CO: (coming soon)\n"
-        msg_str += f"Details: {award.embed_url}\n"
+        msg_str += f"\tRanks Responsible: {award.ranks_responsible}\n"
+        msg_str += f"\tResponsible CO: (coming soon)\n"
+        msg_str += f"\tDetails: {award.embed_url}\n"
+        msg_str += f"\n"
         return msg_str
 
 

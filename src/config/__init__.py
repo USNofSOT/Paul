@@ -12,5 +12,4 @@ load_dotenv()
 
 NSC_ROLES = NSC_ROLE, SPD_NSC_ROLE
 
-
-
+MAX_MESSAGE_LENGTH = 2000
