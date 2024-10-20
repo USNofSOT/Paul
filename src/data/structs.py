@@ -28,6 +28,7 @@ class AwardsCollector:
     training: tuple[Award]
     recruit: tuple[Award]
     attendance: tuple[Award]
+    service: tuple[Award]
 
 @dataclass
 class SubclassCollector:

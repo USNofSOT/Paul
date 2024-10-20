@@ -174,6 +174,95 @@ RECRUIT_MEDALS = (RECRUITMENT_RIBBON,)
 
 
 ###############################################################################
+## Medals And Ribbons - Attendance
+###############################################################################
+_ATTENDANCE_EMBED_ID=1292514591854559263
+CITATION_OF_ATTENDANCE = Award(
+    threshold=1,
+    ranks_responsible="Head or XO of Scheduling Department",
+    role_id=1286548679561445387,
+    embed_id=_ATTENDANCE_EMBED_ID,
+    channelthread_id=_AWARDS_THREAD_ID
+)
+LEGION_OF_ATTENDANCE = Award(
+    threshold=2,
+    ranks_responsible="Head or XO of Scheduling Department",
+    role_id=1286548851028656178,
+    embed_id=_ATTENDANCE_EMBED_ID,
+    channelthread_id=_AWARDS_THREAD_ID
+)
+MERITORIOUS_ATTENDANCE_MEDAL = Award(
+    threshold=4,
+    ranks_responsible="Head or XO of Scheduling Department",
+    role_id=1286548979235950602,
+    embed_id=_ATTENDANCE_EMBED_ID,
+    channelthread_id=_AWARDS_THREAD_ID
+)
+ADMIRABLE_ATTENDANCE_MEDAL = Award(
+    threshold=6,
+    ranks_responsible="Head or XO of Scheduling Department",
+    role_id=1286549059288436757,
+    embed_id=_ATTENDANCE_EMBED_ID,
+    channelthread_id=_AWARDS_THREAD_ID
+)
+
+# Medals must be ordered lowest to highest attendance count
+ATTENDANCE_MEDALS = (CITATION_OF_ATTENDANCE, LEGION_OF_ATTENDANCE,
+                     MERITORIOUS_ATTENDANCE_MEDAL, ADMIRABLE_ATTENDANCE_MEDAL)
+
+
+###############################################################################
+## Medals And Ribbons - Service Stripes
+###############################################################################
+_SERVICE_EMBED_ID=1292514684506734643
+FOUR_MONTHS_SERVICE_STRIPES = Award(
+    threshold=4,
+    ranks_responsible="CO+",
+    role_id=995304238773190667,
+    embed_id=_SERVICE_EMBED_ID,
+    channelthread_id=_AWARDS_THREAD_ID
+)
+SIX_MONTHS_SERVICE_STRIPES = Award(
+    threshold=6,
+    ranks_responsible="CO+",
+    role_id=1083148237373964319,
+    embed_id=_SERVICE_EMBED_ID,
+    channelthread_id=_AWARDS_THREAD_ID
+)
+EIGHT_MONTHS_SERVICE_STRIPES = Award(
+    threshold=8,
+    ranks_responsible="CO+",
+    role_id=1023358727358795786,
+    embed_id=_SERVICE_EMBED_ID,
+    channelthread_id=_AWARDS_THREAD_ID
+)
+TWELVE_MONTHS_SERVICE_STRIPES = Award(
+    threshold=12,
+    ranks_responsible="CO+",
+    role_id=1066065470580609046,
+    embed_id=_SERVICE_EMBED_ID,
+    channelthread_id=_AWARDS_THREAD_ID
+)
+EIGHTEEN_MONTHS_SERVICE_STRIPES = Award(
+    threshold=18,
+    ranks_responsible="CO+",
+    role_id=1202901182528364624,
+    embed_id=_SERVICE_EMBED_ID,
+    channelthread_id=_AWARDS_THREAD_ID
+)
+TWNETYFOUR_MONTHS_SERVICE_STRIPES = Award(
+    threshold=24,
+    ranks_responsible="CO+",
+    role_id=1204423843062485053,
+    embed_id=_SERVICE_EMBED_ID,
+    channelthread_id=_AWARDS_THREAD_ID
+)
+
+# Stripes must be ordered lowest to highest month count
+SERVICE_STRIPES = (FOUR_MONTHS_SERVICE_STRIPES, SIX_MONTHS_SERVICE_STRIPES, EIGHT_MONTHS_SERVICE_STRIPES,
+                   TWELVE_MONTHS_SERVICE_STRIPES, EIGHTEEN_MONTHS_SERVICE_STRIPES, TWNETYFOUR_MONTHS_SERVICE_STRIPES)
+
+###############################################################################
 ## Collector
 ###############################################################################
 MEDALS_AND_RIBBONS = AwardsCollector(
@@ -181,6 +270,8 @@ MEDALS_AND_RIBBONS = AwardsCollector(
     hosted=HOSTED_MEDALS,
     combat=COMBAT_MEDALS,
     training=TRAINING_MEDALS,
-    recruit=RECRUIT_MEDALS
+    recruit=RECRUIT_MEDALS,
+    attendance=ATTENDANCE_MEDALS,
+    service=SERVICE_STRIPES
 )
 
