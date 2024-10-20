@@ -48,6 +48,9 @@ JO_AND_UP = JO_ROLE, SO_ROLE, BOA_ROLE, NSC_ROLE
 SO_AND_UP = SO_ROLE, BOA_ROLE, NSC_ROLE
 BOA_NSC = BOA_ROLE, NSC_ROLE
 
+# Pure roles list without any additional permissions (e.g. NSC)
+NCO_AND_UP_PURE = NCO_ROLE, SNCO_ROLE, JO_ROLE, SO_ROLE, BOA_ROLE
+
 O8_AND_UP = O8_ROLES + [BOA_ROLE] # some overlap, but includes BOA members without ranks
 O7_AND_UP = O7_ROLES + O8_AND_UP
 O6_AND_UP = O6_ROLES + O7_AND_UP
