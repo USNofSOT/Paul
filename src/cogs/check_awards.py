@@ -8,6 +8,8 @@ from config import GUILD_ID, MEDALS_AND_RIBBONS, SUBCLASS_AWARDS, MAX_MESSAGE_LE
 from data import Sailor
 from data.repository.sailor_repository import SailorRepository
 from data.structs import Award
+from utils.report_utils import identify_role_index, process_role_index
+from utils.ranks import rank_to_roles
 
 log = getLogger(__name__)
 
@@ -173,13 +175,57 @@ class CheckAwards(commands.Cog):
         return highest
     
     def _award_message(self, award : Award | None, award_role : discord.Role, interaction: discord.Interaction, member: discord.Member) -> str:
+        responsible_co = self._get_responsible_co(interaction, member, award.ranks_responsible)
+        
         msg_str = ""
         msg_str += f"{member.mention} is now eligible for {award_role.mention}.\n"
         msg_str += f"\tRanks Responsible: {award.ranks_responsible}\n"
-        msg_str += f"\tResponsible CO: (coming soon)\n"
+        if responsible_co is not None:
+            msg_str += f"\tResponsible CO: {responsible_co.mention}\n"
         msg_str += f"\tDetails: {award.embed_url}\n"
         msg_str += f"\n"
         return msg_str
+    
+    def _get_responsible_co(self, interaction:discord.Interaction, member: discord.Member, ranks_responsible: str) -> discord.Member | None:
+         # Check if NETC/SPD Award
+        for spd in ("Logistics","Media","NETC","NRC","NSC","Scheduling"):
+           if spd in ranks_responsible:
+              return None
+    
+         # Extract next in command
+        role_index = identify_role_index(interaction, member)
+        next_in_command = process_role_index(interaction, member, role_index)
+
+        # Return None if process_role_index returns None or str
+        if next_in_command is None:
+          return None
+        if isinstance(next_in_command,str):
+            return None
+    
+        # Guarantee a list and take the last element (current CO)
+        if not isinstance(next_in_command,list):
+            next_in_command = [next_in_command]
+        next_in_command = next_in_command[-1]
+        co_member = self.bot.get_guild(GUILD_ID).get_member(next_in_command)
+
+        # Return early for "CO+"
+        if ranks_responsible == "CO+":
+            return co_member
+        
+        # Get roles for ranks responsible
+        responsible_roles = rank_to_roles(ranks_responsible)
+
+        # Check if CO has any roles
+        co_role_ids = [r.id for r in co_member.roles]
+        role_intersection = set(responsible_roles).intersection(set(co_role_ids))
+        co_has_roles = len(role_intersection) > 0
+
+        # If CO has roles, return them. Otherwise, go up the chain of command
+        if co_has_roles:
+            responsible_co=co_member
+        else:
+            responsible_co=self._get_responsible_co(interaction, co_member, ranks_responsible)
+        return responsible_co
 
 
 async def setup(bot: commands.Bot):
