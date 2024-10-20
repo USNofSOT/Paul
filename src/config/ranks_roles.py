@@ -29,6 +29,25 @@ O6_ROLES = [933909668550553630] # Captain
 O7_ROLES = [933909182711746570] # Commodore
 O8_ROLES = [1157429131416449134] # Rear Admiral
 
+###############################################################################
+# SPD Roles
+###############################################################################
+NETC_ROLE = 1034233491707150376 # NETC Department
+NSC_ROLE = 1293725126562680985 # NSC Department
+NRC_ROLE = 944631719456284735 # NRC Department
+
+###############################################################################
+# Permissions
+###############################################################################
+# PERMISSIONS these are list with integers values, every integer value corresponds with a role\
+# Note: For adding these you should declare them as followed @app_commands.checks.has_any_role(*SNCO_AND_UP)
+JE_AND_UP = JE_ROLE, NCO_ROLE, SNCO_ROLE, JO_ROLE, SO_ROLE, BOA_ROLE, NSC_ROLE
+NCO_AND_UP = NCO_ROLE, SNCO_ROLE, JO_ROLE, SO_ROLE, BOA_ROLE, NSC_ROLE
+SNCO_AND_UP = SNCO_ROLE, JO_ROLE, SO_ROLE, BOA_ROLE, NSC_ROLE
+JO_AND_UP = JO_ROLE, SO_ROLE, BOA_ROLE, NSC_ROLE
+SO_AND_UP = SO_ROLE, BOA_ROLE, NSC_ROLE
+BOA_NSC = BOA_ROLE, NSC_ROLE
+
 O8_AND_UP = O8_ROLES + [BOA_ROLE] # some overlap, but includes BOA members without ranks
 O7_AND_UP = O7_ROLES + O8_AND_UP
 O6_AND_UP = O6_ROLES + O7_AND_UP
@@ -45,24 +64,3 @@ E4_AND_UP = E4_ROLES + E5_AND_UP
 E3_AND_UP = E3_ROLES + E4_AND_UP
 E2_AND_UP = E2_ROLES + E3_AND_UP
 E1_AND_UP = E1_ROLES + E2_AND_UP
-
-#def rank_to_roles(rank_str : str) -> list[int] | None:
-#    if rank_str = 
-
-###############################################################################
-# SPD Roles
-###############################################################################
-NSC_ROLE = 1293725126562680985 # NSC Department
-NRC_ROLE = 944631719456284735 # NRC Department
-
-###############################################################################
-# Permissions
-###############################################################################
-# PERMISSIONS these are list with integers values, every integer value corresponds with a role\
-# Note: For adding these you should declare them as followed @app_commands.checks.has_any_role(*SNCO_AND_UP)
-JE_AND_UP = JE_ROLE, NCO_ROLE, SNCO_ROLE, JO_ROLE, SO_ROLE, BOA_ROLE, NSC_ROLE
-NCO_AND_UP = NCO_ROLE, SNCO_ROLE, JO_ROLE, SO_ROLE, BOA_ROLE, NSC_ROLE
-SNCO_AND_UP = SNCO_ROLE, JO_ROLE, SO_ROLE, BOA_ROLE, NSC_ROLE
-JO_AND_UP = JO_ROLE, SO_ROLE, BOA_ROLE, NSC_ROLE
-SO_AND_UP = SO_ROLE, BOA_ROLE, NSC_ROLE
-BOA_NSC = BOA_ROLE, NSC_ROLE
