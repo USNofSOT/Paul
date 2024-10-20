@@ -21,19 +21,16 @@ class CheckAwards(commands.Cog):
 
     @app_commands.command(name="check_awards", description="Check awards eligibility for a target role")
     @app_commands.describe(target="Mention the role to get awards for")
-    async def check_awards(self, interaction: discord.Interaction, target: Union[discord.Member, discord.Role] = None):
+    async def check_awards(self, interaction: discord.Interaction, target: Union[discord.Member, discord.Role]):
         await interaction.response.defer(ephemeral=True)
 
         # Check if role is defined
-        if target is None:
-            members = [interaction.user]
-            log.info(f"Checking awards for {interaction.user.name}")
-        elif isinstance(target, discord.Member):
-            members = [target]
-            log.info(f"Checking awards for {target.name}")
-        else:
+        if isinstance(target, discord.Role):
             members = target.members
             log.info(f"Checking awards for {target.name} with {len(members)} members")
+        else:
+            members = [target]
+            log.info(f"Checking awards for {target.name}")
 
         # Get the repositories
         self.sailor_repo = SailorRepository()
