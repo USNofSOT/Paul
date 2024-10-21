@@ -21,6 +21,24 @@ class AuditLogRepository:
     def close_session(self):
         self.session.close()
 
+    def get_timeout_logs(self, target_id: int = None, limit: int = 10) -> [TimeoutLog]:
+        if target_id:
+            return self.session.query(TimeoutLog).filter(TimeoutLog.target_id == target_id).order_by(TimeoutLog.log_time.desc()).limit(limit).all()
+        else:
+            return self.session.query(TimeoutLog).order_by(TimeoutLog.log_time.desc()).limit(limit).all()
+
+    def get_name_changes_logs(self, target_id: int = None, limit: int = 10) -> [NameChangeLog]:
+        if target_id:
+            return self.session.query(NameChangeLog).filter(NameChangeLog.target_id == target_id).order_by(NameChangeLog.log_time.desc()).limit(limit).all()
+        else:
+            return self.session.query(NameChangeLog).order_by(NameChangeLog.log_time.desc()).limit(limit).all()
+
+    def get_role_changes_logs(self, target_id: int = None, limit: int = 10) -> [RoleChangeLog]:
+        if target_id:
+            return self.session.query(RoleChangeLog).filter(RoleChangeLog.target_id == target_id).order_by(RoleChangeLog.log_time.desc()).limit(limit).all()
+        else:
+            return self.session.query(RoleChangeLog).order_by(RoleChangeLog.log_time.desc()).limit(limit).all()
+
     def log_role_change(self, target_id: int, changed_by_id: int, guild_id: int, role_id: int, role_name: str, action: RoleChangeType) -> RoleChangeLog:
         try:
             log_entry = RoleChangeLog(
