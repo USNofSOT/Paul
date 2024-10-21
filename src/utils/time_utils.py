@@ -1,16 +1,22 @@
-from datetime import datetime, timezone
+import datetime
+from datetime import timezone
+
+def utc_time_now():
+    return datetime.datetime.now(datetime.UTC)
+
+def get_time_difference(time_a: datetime, time_b: datetime) -> datetime or None:
+    if time_b is None:
+        return
+
+    if time_b.tzinfo is None or time_b.utcoffset() is None:
+        other_time = time_b.replace(tzinfo=timezone.utc)
+
+    time_difference = time_a - time_b
+    return time_difference
 
 
 def get_time_difference_past(other_time):
-    if other_time is None:
-        return
-
-    if other_time.tzinfo is None or other_time.utcoffset() is None:
-        other_time = other_time.replace(tzinfo=timezone.utc)
-
-    current_time = datetime.now(timezone.utc)
-    time_difference = current_time - other_time
-    return time_difference
+    return get_time_difference(datetime.now(timezone.utc), other_time)
 
 
 def format_time(time_difference):
