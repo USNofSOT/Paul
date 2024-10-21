@@ -6,6 +6,7 @@ from sqlalchemy.orm import sessionmaker
 
 from src.data.engine import engine
 from src.data import Sailor, ModNotes
+from src.utils.time_utils import utc_time_now
 
 log = logging.getLogger(__name__)
 Session = sessionmaker(bind=engine)
@@ -24,7 +25,7 @@ class ModNoteRepository:
             modnote = ModNotes(target_id=target_id,
                                moderator_id=moderator_id,
                                note=note,
-                               note_time=datetime.datetime.now())
+                               note_time=utc_time_now())
             self.session.add(modnote)
             self.session.commit()
             return modnote
@@ -47,7 +48,7 @@ class ModNoteRepository:
 
         if hidden:
             modnote.who_hid = who_hid_id
-            modnote.hide_time = datetime.datetime.now()
+            modnote.hide_time = utc_time_now()
         else:
             pass #TODO: Consider wiping who_hid and hide_time if the note is un-hidden
         self.session.commit()

@@ -1,7 +1,7 @@
 import datetime
 from datetime import timezone
 
-def time_now():
+def utc_time_now():
     return datetime.datetime.now(datetime.UTC)
 
 def get_time_difference(time_a: datetime, time_b: datetime) -> datetime or None:
