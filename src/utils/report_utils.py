@@ -1,4 +1,5 @@
 import discord
+from config.ranks_roles import DH_ROLES, VT_ROLES, RT_ROLES
 
 async def tiered_medals(member: discord.Member) -> str:
     found_titles = []
@@ -152,9 +153,11 @@ def get_role_with_keyword(member, keyword):
     return None
 
 def process_role_index(ctx, member, role_index):
-    if role_index == -1 or role_index == 7:
+    member_role_ids = [role.id for role in member.roles]
+    if any(role in member_role_ids for role in [DH_ROLES, VT_ROLES, RT_ROLES]):  #checks for roles without CO Returns None
+        return "None"
+    elif role_index == -1 or role_index == 7:  #Checks if Owns Server Returns STR
         return "Owns Server (No CO)"
-
     elif role_index == 6 or role_index == 5:
         admiral_role = discord.utils.get(ctx.guild.roles, name='Admiral of the Navy')
         if admiral_role is None:
