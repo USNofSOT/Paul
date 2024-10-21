@@ -23,6 +23,9 @@ class SubclassRepository:
         self.sailor_repository.close_session()
         self.session.close()
 
+    def entries_for_target_id(self, target_id: int, limit: int = 10) -> [Subclasses]:
+        return self.session.query(Subclasses).filter(Subclasses.target_id == target_id).order_by(Subclasses.log_time.desc()).limit(limit).all()
+
     def entries_for_log_id(self, log_id: int) -> [Subclasses]:
         """
         Retrieve all subclass entries for a specific log ID
