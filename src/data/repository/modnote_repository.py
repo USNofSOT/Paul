@@ -20,6 +20,18 @@ class ModNoteRepository:
     def close_session(self):
         self.session.close()
 
+    def count_modnotes(self, target_id : int, include_hidden : bool = False) -> int:
+        if include_hidden:
+            return self.session.query(ModNotes).filter(ModNotes.target_id == target_id).count()
+        else:
+            return self.session.query(ModNotes).filter(ModNotes.target_id == target_id).filter(ModNotes.hidden == False).count()
+
+    def get_modnotes(self, target_id : int, limit : int = 10, show_hidden : bool = False) -> [ModNotes]:
+        if show_hidden:
+            return self.session.query(ModNotes).filter(ModNotes.target_id == target_id).order_by(ModNotes.note_time.desc()).limit(limit).all()
+        else:
+            return self.session.query(ModNotes).filter(ModNotes.target_id == target_id).filter(ModNotes.hidden == False).order_by(ModNotes.note_time.desc()).limit(limit).all()
+
     def create_modnote(self, target_id : int, moderator_id : int, note : str) -> ModNotes | None:
         try:
             modnote = ModNotes(target_id=target_id,
