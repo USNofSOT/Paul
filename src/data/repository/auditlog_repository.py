@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker
 from src.data import NameChangeLog, AuditLog, RoleChangeLog, RoleChangeType, TimeoutLog
 from src.data.engine import engine
 from src.data.repository.sailor_repository import ensure_sailor_exists
-from src.utils.time_utils import time_now
+from src.utils.time_utils import utc_time_now
 
 log = logging.getLogger(__name__)
 Session = sessionmaker(bind=engine)
@@ -32,7 +32,7 @@ class AuditLogRepository:
                 role_name=role_name,
                 change_type=action,
 
-                log_time=time_now()
+                log_time=utc_time_now()
             )
 
             self.session.add(log_entry)
@@ -53,7 +53,7 @@ class AuditLogRepository:
                 name_before=old_name,
                 name_after=new_name,
 
-                log_time=time_now()
+                log_time=utc_time_now()
             )
 
             self.session.add(log_entry)
@@ -75,7 +75,7 @@ class AuditLogRepository:
                 timed_out_until_before=timed_out_until_before,
                 timed_out_until=timed_out_until,
 
-                log_time=time_now()
+                log_time=utc_time_now()
             )
             self.session.add(log_entry)
             self.session.commit()
