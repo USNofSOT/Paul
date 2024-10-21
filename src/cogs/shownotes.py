@@ -2,7 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.config.ranks_roles import SNCO_AND_UP, NSC_ROLE
+from src.config.ranks_roles import SNCO_AND_UP, NSC_ROLE, BOA_ROLE
 from src.data import ModNotes
 from src.data.repository.modnote_repository import ModNoteRepository
 from src.utils.embeds import default_embed
@@ -33,7 +33,7 @@ class ShowNotes(commands.Cog):
 
         mod_note_repository = ModNoteRepository()
         interaction_user_roles = [role.id for role in interaction.user.roles]
-        is_boa = NSC_ROLE in interaction_user_roles
+        is_boa = BOA_ROLE in interaction_user_roles
 
         mod_notes: [ModNotes] = mod_note_repository.get_modnotes(target_id=target.id, limit=25, show_hidden=is_boa)
         mod_notes_total: int = mod_note_repository.count_modnotes(target.id, include_hidden=is_boa)
