@@ -4,8 +4,9 @@ import logging
 from sqlalchemy import Column, Integer, BIGINT, ForeignKey, VARCHAR
 from sqlalchemy.dialects.mysql import TINYTEXT
 from sqlalchemy.orm import declarative_base, mapped_column
-from sqlalchemy.sql.sqltypes import BOOLEAN, TEXT, DATETIME, Enum
+from sqlalchemy.sql.sqltypes import BOOLEAN, TEXT, DATETIME, Enum, DateTime
 
+from src.utils.time_utils import get_time_difference
 from .engine import engine
 
 log = logging.getLogger(__name__)
@@ -196,6 +197,31 @@ class RoleChangeLog(AuditLog):
     change_type = Column(Enum(RoleChangeType), nullable=False) # Whether the role was added or removed
     role_id = Column(BIGINT, nullable=False) # The role that was added or removed
     role_name = Column(VARCHAR(32), nullable=False) # The name of the role
+
+class TimeoutLog(AuditLog):
+    __tablename__ = "log_timeout"
+
+    # The timeout time before the new timeout was applied
+    timed_out_until_before = Column(DATETIME, nullable=True)
+    # The timeout time after the new timeout was applied (current timeout)
+    timed_out_until = Column(DATETIME, nullable=True)
+
+    @property
+    def timeout_removed(self) -> bool:
+        """Returns True if this timeout log was for a removal of a timeout."""
+        return self.timed_out_until is None
+
+    @property
+    def timeout_added(self) -> bool:
+        """Returns True if this timeout log was for an addition of a timeout."""
+        return self.timed_out_until_before is None
+
+    @property
+    def length(self) -> float:
+        """Calculates the length of the timeout. Given log_time is the time the timeout was applied."""
+        if self.timeout_removed:
+            return 0
+        return get_time_difference(self.timed_out_until, self.log_time)
 
 # Nifty function to create all tables
 def create_tables():

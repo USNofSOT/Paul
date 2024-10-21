@@ -1,6 +1,7 @@
 from logging import getLogger
 
 import discord
+from discord import AuditLogDiff
 from discord.ext import commands
 
 from src.data import RoleChangeType
@@ -21,17 +22,29 @@ class OnAuditLogEntryCreate(commands.Cog):
             try:
                 log.info(f"[AUDIT LOG] [{entry.id}] Generic member update detected.")
 
-                member_before = entry.changes.before
-                member_after = entry.changes.after
+                member_before : AuditLogDiff.member = entry.changes.before
+                member_after : AuditLogDiff.member = entry.changes.after
+
                 # If the update was a (nick)name change
-                if member_before.nick != member_after.nick:
+                if hasattr(member_before, 'nick') or hasattr(member_after, 'nick') and member_before.nick != member_after.nick:
                     log.info(f"[AUDIT LOG] [{entry.id}] Member name changed.")
                     auditlog_repository.log_name_change(
                         target_id=int(entry.target.id),
                         changed_by_id=entry.user_id,
                         guild_id=entry.guild.id,
-                        old_name=member_before.nick,
-                        new_name=member_after.nick
+                        old_name=member_before.nick or None,
+                        new_name=member_after.nick or None
+                    )
+
+                # Check if a timeout was added
+                if hasattr(member_before, 'timed_out_until') or hasattr(member_after, 'timed_out_until') and member_before.timed_out_until != member_after.timed_out_until:
+                    log.info(f"[AUDIT LOG] [{entry.id}] Member timeout changed.")
+                    timeout = auditlog_repository.log_timeout(
+                        target_id=int(entry.target.id),
+                        changed_by_id=entry.user_id,
+                        guild_id=entry.guild.id,
+                        timed_out_until_before=member_before.timed_out_until,
+                        timed_out_until=member_after.timed_out_until
                     )
             except Exception as e:
                 log.error(f"[AUDIT LOG] Error logging audit log entry: {e}")
@@ -43,8 +56,9 @@ class OnAuditLogEntryCreate(commands.Cog):
             try:
                 log.info(f"[AUDIT LOG] [{entry.id}] Member role update detected.")
 
-                member_before = entry.changes.before
-                member_after = entry.changes.after
+                member_before : AuditLogDiff.member = entry.changes.before
+                member_after : AuditLogDiff.member = entry.changes.after
+
                 # If the update was a role change
                 if member_before.roles != member_after.roles:
                     log.info(f"[AUDIT LOG] [{entry.id}] Member roles changed.")
@@ -75,7 +89,6 @@ class OnAuditLogEntryCreate(commands.Cog):
                 log.error(f"[AUDIT LOG] Error logging audit log entry: {e}")
             finally:
                 auditlog_repository.close_session()
-
 
 
 
