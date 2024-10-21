@@ -5,6 +5,9 @@ from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.voyage_repository import VoyageRepository
 from logging import getLogger
 from src.config.ship_roles import ALL_SHIP_ROLES
+import matplotlib.pyplot as plt
+from datetime import datetime, timedelta
+import os
 
 log = getLogger(__name__)
 
@@ -32,44 +35,57 @@ class Ships(commands.Cog):
         self.ships = {}
         self.total_voyages = 0
 
-        await interaction.response.defer()
-        roles = []
-        for role_id in ALL_SHIP_ROLES:
-            roles.append(discord.utils.get(interaction.guild.roles, id=role_id))
 
-        for role in roles:
-            self.get_info(role)
+        try:
+            await interaction.response.defer()
 
-        embed = discord.Embed(title="Ship Statistics Report", color=discord.Color.yellow())
+            roles = []
+            for role_id in ALL_SHIP_ROLES:
+                roles.append(discord.utils.get(interaction.guild.roles, id=role_id))
 
-        embed.add_field(name="Total Voyages", value=self.total_voyages, inline=False)
+            for role in roles:
+                self.get_info(role)
 
-        top_voyaged = []
-        for medal in (":third_place:", ":second_place:", ":first_place:"):
-            member_id, voyaged = self.top_3_voyagers.popitem()
-            top_voyaged.append(f"{medal} <@{member_id}> with {voyaged}")
-        top_voyaged.reverse()
-        embed.add_field(name="Top 3 Voyagers :trophy:", value="\n".join(top_voyaged), inline=True)
+            embed = discord.Embed(title="Ship Statistics Report", color=discord.Color.yellow())
 
-        top_hosted = []
-        for medal in (":third_place:", ":second_place:", ":first_place:"):
-            member_id, hosted = self.top_3_hosts.popitem()
-            top_hosted.append(f"{medal} <@{member_id}> with {hosted}")
-        top_hosted.reverse()
-        embed.add_field(name="Top 3 Hosts :trophy:", value="\n".join(top_hosted), inline=True)
+            embed.add_field(name="Total Voyages", value=self.total_voyages, inline=False)
 
-        top_ships = []
-        for medal in (":third_place:", ":second_place:", ":first_place:"):
-            ship, voyages = self.top_3_voyage_ships.popitem()
-            top_ships.append(f"{medal} {ship} with {voyages}")
-        top_ships.reverse()
-        embed.add_field(name="Top 3 Ships :trophy:", value="\n".join(top_ships), inline=True)
+            top_voyaged = []
+            for medal in (":third_place:", ":second_place:", ":first_place:"):
+                member_id, voyaged = self.top_3_voyagers.popitem()
+                top_voyaged.append(f"{medal} <@{member_id}> with {voyaged}")
+            top_voyaged.reverse()
+            embed.add_field(name="Top 3 Voyagers :trophy:", value="\n".join(top_voyaged), inline=True)
+
+            top_hosted = []
+            for medal in (":third_place:", ":second_place:", ":first_place:"):
+                member_id, hosted = self.top_3_hosts.popitem()
+                top_hosted.append(f"{medal} <@{member_id}> with {hosted}")
+            top_hosted.reverse()
+            embed.add_field(name="Top 3 Hosts :trophy:", value="\n".join(top_hosted), inline=True)
+
+            top_ships = []
+            for medal in (":third_place:", ":second_place:", ":first_place:"):
+                ship, voyages = self.top_3_voyage_ships.popitem()
+                top_ships.append(f"{medal} {ship} with {voyages}")
+            top_ships.reverse()
+            embed.add_field(name="Top 3 Ships :trophy:", value="\n".join(top_ships), inline=True)
 
 
-        for role_name, role_info in self.ships.items():
-            embed.add_field(name=role_name, value=f"Total Members: {role_info['Total Members']}\nTotal Hosts: {role_info['Total Hosts']}\nVoyages: {role_info['Voyages']}\nHosted: {role_info['Hosted']}", inline=True)
+            for role_name, role_info in self.ships.items():
+                embed.add_field(name=role_name, value=f"Total Members: {role_info['Total Members']}\nTotal Hosts: {role_info['Total Hosts']}\nVoyages: {role_info['Voyages']}\nHosted: {role_info['Hosted']}", inline=True)
 
-        await interaction.followup.send(embed=embed)
+            embed_v, file_v = self.generate_voyage_pie_chart(list(self.ships.keys()), [role_info['Voyages'] for role_info in self.ships.values()], self.total_voyages)
+            embed_h, file_h = self.generate_hosted_pie_chart(list(self.ships.keys()), [role_info['Hosted'] for role_info in self.ships.values()], self.total_voyages)
+
+            await interaction.followup.send(embeds=[embed, embed_v, embed_h], files=[file_v, file_h])
+        except Exception as e:
+            log.error(f"Error getting ships: {e}")
+            await interaction.followup.send("Error getting ships", ephemeral=True)
+
+        finally:
+            os.remove("./voyage_pie_chart.png")
+            os.remove("./hosted_pie_chart.png")
 
 
 
@@ -114,6 +130,47 @@ class Ships(commands.Cog):
             "Voyages": voyages_count,
             "Hosted": hosted_count
         }
+
+    def perc(self, pct, total):
+        absolute = round(pct / 100. * total)
+        return f'{absolute} ({pct:.1f}%)'
+
+    def generate_voyage_pie_chart(self, names, member_voyages, total_voyage_count):
+        embed = discord.Embed(title="Voyages per ship", color=discord.Color.yellow())
+
+        plt.figure(figsize=(8, 6))
+        plt.pie(member_voyages, labels=names, autopct=lambda pct: self.perc(member_voyages, total_voyage_count),
+                startangle=140,
+                colors=plt.cm.tab20(range(len(names))))
+
+        plt.title(
+            f'Voyages per ship from: {(datetime.now() - timedelta(days=30)).date()} to: {datetime.now().date()} - Total: {total_voyage_count}')
+        plt.savefig("./hosted_pie_chart.png")
+        plt.close()
+
+        with open("./voyage_pie_chart.png", 'rb') as file:
+            discord_file = discord.File(file)
+            embed.set_image(url="attachment://voyage_pie_chart.png")
+
+        return embed, discord_file
+
+    def generate_hosted_pie_chart(self, names, member_hosted, total_hosted_count):
+        embed = discord.Embed(title="Hosted voyages per ship", color=discord.Color.yellow())
+
+        plt.figure(figsize=(8, 6))
+        plt.pie(member_hosted, labels=names, autopct=lambda pct: self.perc(member_hosted, total_hosted_count), startangle=140,
+                colors=plt.cm.tab20(range(len(names))))
+
+
+        plt.title(f'Hosted voyages per ship from: {(datetime.now() - timedelta(days=30)).date()} to: {datetime.now().date()} - Total: {total_hosted_count}')
+        plt.savefig("./hosted_pie_chart.png")
+        plt.close()
+
+        with open("./hosted_pie_chart.png", 'rb') as file:
+            discord_file = discord.File(file)
+            embed.set_image(url="attachment://hosted_pie_chart.png")
+
+        return embed, discord_file
 
 
 
