@@ -9,14 +9,17 @@ def get_time_difference(time_a: datetime, time_b: datetime) -> datetime or None:
         return
 
     if time_b.tzinfo is None or time_b.utcoffset() is None:
-        other_time = time_b.replace(tzinfo=timezone.utc)
+        time_b = time_b.replace(tzinfo=timezone.utc)
+
+    if time_a.tzinfo is None or time_a.utcoffset() is None:
+        time_a = time_a.replace(tzinfo=timezone.utc)
 
     time_difference = time_a - time_b
     return time_difference
 
 
 def get_time_difference_past(other_time):
-    return get_time_difference(datetime.now(timezone.utc), other_time)
+    return get_time_difference(utc_time_now(), other_time)
 
 
 def format_time(time_difference):
