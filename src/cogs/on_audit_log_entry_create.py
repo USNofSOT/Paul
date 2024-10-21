@@ -6,6 +6,7 @@ from discord.ext import commands
 
 from src.data import RoleChangeType
 from src.data.repository.auditlog_repository import AuditLogRepository
+from src.data.repository.sailor_repository import ensure_sailor_exists
 
 log = getLogger(__name__)
 
@@ -15,6 +16,8 @@ class OnAuditLogEntryCreate(commands.Cog):
 
     @commands.Cog.listener()
     async def on_audit_log_entry_create(self, entry: discord.AuditLogEntry):
+        if hasattr(entry.target, 'id'):
+            ensure_sailor_exists(int(entry.target.id))
 
         # Check if member has been updated
         if entry.action == discord.AuditLogAction.member_update:
