@@ -1,11 +1,10 @@
 import enum
 import logging
 
-from sqlalchemy.dialects.mysql import TINYTEXT
-from sqlalchemy.sql.sqltypes import BOOLEAN, TEXT, DATETIME, Enum
 from sqlalchemy import Column, Integer, BIGINT, ForeignKey, VARCHAR
-
+from sqlalchemy.dialects.mysql import TINYTEXT
 from sqlalchemy.orm import declarative_base, mapped_column
+from sqlalchemy.sql.sqltypes import BOOLEAN, TEXT, DATETIME, Enum
 
 from .engine import engine
 
@@ -34,14 +33,6 @@ class TraingType(enum.Enum):
 
 # Base class for all models
 Base = declarative_base()
-
-class AuditLogs(Base):
-    __tablename__ = "audit_logs"
-
-    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
-    event = Column(TEXT)
-    event_time = Column(DATETIME)
-
 
 class Coins(Base):
     __tablename__ = "coins"
@@ -165,6 +156,46 @@ class Training(Base):
     training_type = Column(Enum(TraingType), nullable=False)
     training_category = Column(Enum(TrainingCategory), nullable=False)
     log_time = Column(DATETIME, nullable=False)
+
+""" AUDIT LOGS
+The following classes are used for audit logging 
+
+Things we may log are
+- Name changes
+- Role Changes
+- Moderation actions
+- Commands used?
+
+We may refer to the Sailor class for the discord_id as 
+- target_id (the person who the action was taken on)
+- changed_by (the person who took the action)
+"""
+
+class AuditLog(Base):
+    __abstract__ = True
+
+    id = Column(Integer, primary_key=True, autoincrement=True) # The internal identifier
+    target_id = mapped_column(ForeignKey("sailor.discord_id"), nullable=False) # The person who the action was taken on
+    changed_by_id = mapped_column(ForeignKey("sailor.discord_id")) # The person who took the action
+    guild_id = Column(BIGINT, nullable=False) # The guild the action was taken in
+    log_time = Column(DATETIME, nullable=False)
+
+class NameChangeLog(AuditLog):
+    __tablename__ = "log_name_change"
+
+    name_before = Column(VARCHAR(32))
+    name_after = Column(VARCHAR(32))
+
+class RoleChangeType(enum.Enum):
+    ADDED = "Add"
+    REMOVED = "Remove"
+
+class RoleChangeLog(AuditLog):
+    __tablename__ = "log_role_change"
+
+    change_type = Column(Enum(RoleChangeType), nullable=False) # Whether the role was added or removed
+    role_id = Column(BIGINT, nullable=False) # The role that was added or removed
+    role_name = Column(VARCHAR(32), nullable=False) # The name of the role
 
 # Nifty function to create all tables
 def create_tables():
