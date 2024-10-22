@@ -106,7 +106,7 @@ class CheckPromotion(commands.Cog):
                     latest_e3_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id, E3_ROLES[0])
                     if not latest_e3_role_log:
                         requirements += f"\u200b \n **:warning: Please verify role age by hand whilst bot is new**  \n \n"
-                        
+
                     days_with_e3 = get_time_difference_in_days(utc_time_now(), latest_e3_role_log.log_time) if latest_e3_role_log else None
                     if days_with_e3 is None or latest_e3_role_log.change_type != RoleChangeType.ADDED:
                         days_with_e3 = 0
@@ -122,8 +122,13 @@ class CheckPromotion(commands.Cog):
                         requirements += f"**AND**\n"
 
                     ## Completed JLA ##
-                    # TODO: Check this from database, in case they left NETC (right now we do this cause the DB is not updated)
-                    if JLA_GRADUATE_ROLE in netc_guild_member_role_ids:
+                    latest_jla_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id, JLA_GRADUATE_ROLE)
+                    if not latest_jla_role_log:
+                        if JLA_GRADUATE_ROLE in netc_guild_member_role_ids:
+                            requirements += f":white_check_mark: is a JLA Graduate \n"
+                        else:
+                            requirements += f":x: is a JLA Graduate \n"
+                    elif latest_jla_role_log.change_type == RoleChangeType.ADDED:
                         requirements += f":white_check_mark: is a JLA Graduate \n"
                     else:
                         requirements += f":x: is a JLA Graduate \n"
@@ -161,9 +166,15 @@ class CheckPromotion(commands.Cog):
                         requirements += f":white_check_mark: Hosted twenty voyages ({hosted_count}/20) \n"
                     else:
                         requirements += f":x: Hosted twenty voyages ({hosted_count}/20) \n"
-                    ## SNLA Completed ##
-                    # TODO: Check this from database, in case they left NETC (right now we do this cause the DB is not updated)
-                    if SNLA_GRADUATE_ROLE in netc_guild_member_role_ids:
+
+                    latest_snla_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id, SNLA_GRADUATE_ROLE)
+                    if not latest_snla_role_log:
+                        # Given that the bot is new, we can't get the role age
+                        if SNLA_GRADUATE_ROLE in netc_guild_member_role_ids:
+                            requirements += f":white_check_mark: is a SNLA Graduate \n"
+                        else:
+                            requirements += f":x: is a SNLA Graduate \n"
+                    elif latest_snla_role_log.change_type == RoleChangeType.ADDED:
                         requirements += f":white_check_mark: is a SNLA Graduate \n"
                     else:
                         requirements += f":x: is a SNLA Graduate \n"
@@ -204,7 +215,7 @@ class CheckPromotion(commands.Cog):
                     ## 4 month Service Stripe ##
                     if has_award_or_higher(
                         guild_member,
-                        FOUR_MONTHS_SERVICE_STRIPES,
+                       FOUR_MONTHS_SERVICE_STRIPES,
                         SERVICE_STRIPES
                     ):
                         requirements += f":white_check_mark: Awarded <@&{FOUR_MONTHS_SERVICE_STRIPES.role_id}> \n"
@@ -231,39 +242,49 @@ class CheckPromotion(commands.Cog):
                         requirements += f":x: Waited two weeks as an O1 ({days_with_o1}/14) \n"
 
                     ## Completed OCS ##
-                    # TODO: Check this from database, in case they left NETC (right now we do this cause the DB is not updated)
-                    if OCS_GRADUATE_ROLE in netc_guild_member_role_ids:
+                    latest_ocs_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id, OCS_GRADUATE_ROLE)
+                    if not latest_ocs_role_log:
+                        if OCS_GRADUATE_ROLE in netc_guild_member_role_ids:
+                            requirements += f":white_check_mark: is an OCS Graduate \n"
+                        else:
+                            requirements += f":x: is an OCS Graduate \n"
+                    elif latest_ocs_role_log.change_type == RoleChangeType.ADDED:
                         requirements += f":white_check_mark: is an OCS Graduate \n"
                     else:
                         requirements += f":x: is an OCS Graduate \n"
 
-                case 11: # Lieutenant Commander
+                case 11: # Lieutenant Commander\
+                    ### Prerequisites ###
+                    ## Completed SOCS ##
 
-                        ### Prerequisites ###
-                        ## Completed SOCS ##
-                        # TODO: Check this from database, in case they left NETC (right now we do this cause the DB is not updated)
+                    latest_socs_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id, SOCS_GRADUATE_ROLE)
+                    if not latest_socs_role_log:
                         if SOCS_GRADUATE_ROLE in netc_guild_member_role_ids:
                             requirements += f":white_check_mark: is an SOCS Graduate \n"
                         else:
                             requirements += f":x: is an SOCS Graduate \n"
+                    elif latest_socs_role_log.change_type == RoleChangeType.ADDED:
+                        requirements += f":white_check_mark: is an SOCS Graduate \n"
+                    else:
+                        requirements += f":x: is an SOCS Graduate \n"
 
                 case 12: # Commander
 
-                        ### Prerequisites ###
-                        ## 3 to 4 weeks as an O4 ##
-                        latest_o4_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id, O4_ROLES[0])
-    
-                        if not latest_o4_role_log:
-                            requirements += f"\u200b \n **:warning: Please verify role age by hand whilst bot is new**  \n \n"
+                    ### Prerequisites ###
+                    ## 3 to 4 weeks as an O4 ##
+                    latest_o4_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id, O4_ROLES[0])
 
-                        days_with_o4 = get_time_difference_in_days(utc_time_now(), latest_o4_role_log.log_time) if latest_o4_role_log else None
-                        if days_with_o4 is None or latest_o4_role_log.change_type != RoleChangeType.ADDED:
-                            days_with_o4 = 0
+                    if not latest_o4_role_log:
+                        requirements += f"\u200b \n **:warning: Please verify role age by hand whilst bot is new**  \n \n"
 
-                        if days_with_o4 >= 21:
-                            requirements += f":white_check_mark: Waited three weeks as an O4 ({days_with_o4}/21) \n"
-                        else:
-                            requirements += f":x: Waited three weeks as an O4 ({days_with_o4}/21) \n"
+                    days_with_o4 = get_time_difference_in_days(utc_time_now(), latest_o4_role_log.log_time) if latest_o4_role_log else None
+                    if days_with_o4 is None or latest_o4_role_log.change_type != RoleChangeType.ADDED:
+                        days_with_o4 = 0
+
+                    if days_with_o4 >= 21:
+                        requirements += f":white_check_mark: Waited three weeks as an O4 ({days_with_o4}/21) \n"
+                    else:
+                        requirements += f":x: Waited three weeks as an O4 ({days_with_o4}/21) \n"
 
                 case 13: # Captain
 
