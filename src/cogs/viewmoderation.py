@@ -2,8 +2,8 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.config import NSC_ROLE
-from src.config.main_server import GUILD_OWNER_ID
+from src.config import NSC_ROLE, SPD_NSC_ROLE
+from src.config.main_server import GUILD_OWNER_ID, GUILD_ID
 from src.config.ranks_roles import SNCO_AND_UP, BOA_ROLE
 from src.data import Subclasses, SubclassType, RoleChangeLog, NameChangeLog, TimeoutLog, ModNotes
 from src.data.repository.auditlog_repository import AuditLogRepository
@@ -82,7 +82,9 @@ class ViewModeration(commands.Cog):
         auditlog_repository = AuditLogRepository()
         role_changes: [RoleChangeLog] = auditlog_repository.get_role_changes_logs(target.id, 5)
         role_change_string = "\n".join(
-            f"<@{role_change.changed_by_id}> `{role_change.change_type.name}` <@&{role_change.role_id}> _({format_time(get_time_difference_past(role_change.log_time))} ago)_"
+            f"<@{role_change.changed_by_id}> `{role_change.change_type.name}` "
+            f"{'<@&' + str(role_change.role_id) + '>' if target.guild.get_role(role_change.role_id) else f'{role_change.role_name} in `{self.bot.get_guild(role_change.guild_id).name}`'} "
+            f"_({format_time(get_time_difference_past(role_change.log_time))} ago)_"
             for role_change in role_changes
         )
         if len(role_change_string) > 0:
@@ -92,14 +94,14 @@ class ViewModeration(commands.Cog):
                 inline=True
             )
 
-        name_changes: [NameChangeLog] = auditlog_repository.get_name_changes_logs(target.id, 5)
+        name_changes: [NameChangeLog] = auditlog_repository.get_name_changes_logs(target.id, 5, guild_id=GUILD_ID)
         name_change_string = "\n".join(
             f"<@{name_change.changed_by_id}> changed name from `{name_change.name_before}` to `{name_change.name_after}` _({format_time(get_time_difference_past(name_change.log_time))} ago)_"
             for name_change in name_changes
         )
         if len(name_change_string) > 0:
             embed.add_field(
-                name="Recent Name Changes",
+                name="Recent Name Changes (USN Server)",
                 value=name_change_string,
                 inline=False
             )
