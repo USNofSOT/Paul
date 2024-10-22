@@ -5,10 +5,12 @@ from discord import app_commands
 from discord.ext import commands
 
 from src.config.awards import CITATION_OF_COMBAT, COMBAT_MEDALS, CITATION_OF_CONDUCT, CONDUCT_MEDALS, \
-    NCO_IMPROVEMENT_RIBBON
+    NCO_IMPROVEMENT_RIBBON, FOUR_MONTHS_SERVICE_STRIPES, SERVICE_STRIPES, HONORABLE_CONDUCT, MARITIME_SERVICE_MEDAL, \
+    HOSTED_MEDALS
 from src.config.main_server import GUILD_ID
-from src.config.netc_server import JLA_GRADUATE_ROLE, NETC_GRADUATE_ROLES
-from src.config.ranks_roles import JE_AND_UP, E3_ROLES, E2_ROLES, SPD_ROLES
+from src.config.netc_server import JLA_GRADUATE_ROLE, NETC_GRADUATE_ROLES, SNLA_GRADUATE_ROLE, OCS_GRADUATE_ROLE, \
+    SOCS_GRADUATE_ROLE
+from src.config.ranks_roles import JE_AND_UP, E3_ROLES, E2_ROLES, SPD_ROLES, O1_ROLES, O4_ROLES, O5_ROLES
 from src.data import Sailor, RoleChangeType
 from src.data.repository.auditlog_repository import AuditLogRepository
 from src.data.repository.sailor_repository import SailorRepository, ensure_sailor_exists
@@ -102,7 +104,9 @@ class CheckPromotion(commands.Cog):
                     ### Prerequisites ###
                     ## Complete 15 total voyages and wait 2 week as an E-3 or Complete 20 total voyages and wait 1 week as an E-3 ##
                     latest_e3_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id, E3_ROLES[0])
-
+                    if not latest_e3_role_log:
+                        requirements += f"\u200b \n **:warning: Please verify role age by hand whilst bot is new**  \n \n"
+                        
                     days_with_e3 = get_time_difference_in_days(utc_time_now(), latest_e3_role_log.log_time) if latest_e3_role_log else None
                     if days_with_e3 is None or latest_e3_role_log.change_type != RoleChangeType.ADDED:
                         days_with_e3 = 0
@@ -118,6 +122,7 @@ class CheckPromotion(commands.Cog):
                         requirements += f"**AND**\n"
 
                     ## Completed JLA ##
+                    # TODO: Check this from database, in case they left NETC (right now we do this cause the DB is not updated)
                     if JLA_GRADUATE_ROLE in netc_guild_member_role_ids:
                         requirements += f":white_check_mark: is a JLA Graduate \n"
                     else:
@@ -130,6 +135,7 @@ class CheckPromotion(commands.Cog):
                         requirements += f":x: Awarded <@&{CITATION_OF_CONDUCT.role_id}> \n"
 
                 case 5: #  Petty Officer
+
                     ### Prerequisites ###
                     ## 10 hosted voyages ##
                     if hosted_count >= 10:
@@ -147,7 +153,145 @@ class CheckPromotion(commands.Cog):
                     else:
                         requirements += f":x: Joined an SPD \n"
 
+                case 6: # Chief Petty Officer
 
+                    ### Prerequisites ###
+                    ## 20 hosted voyages ##
+                    if hosted_count >= 20:
+                        requirements += f":white_check_mark: Hosted twenty voyages ({hosted_count}/20) \n"
+                    else:
+                        requirements += f":x: Hosted twenty voyages ({hosted_count}/20) \n"
+                    ## SNLA Completed ##
+                    # TODO: Check this from database, in case they left NETC (right now we do this cause the DB is not updated)
+                    if SNLA_GRADUATE_ROLE in netc_guild_member_role_ids:
+                        requirements += f":white_check_mark: is a SNLA Graduate \n"
+                    else:
+                        requirements += f":x: is a SNLA Graduate \n"
+
+                case 8: # Senior Chief Petty Officer
+
+                    ### Prerequisites ###
+                    ## 4 month Service Stripe ##
+                    if has_award_or_higher(
+                        guild_member,
+                        FOUR_MONTHS_SERVICE_STRIPES,
+                        SERVICE_STRIPES
+                    ):
+                        requirements += f":white_check_mark: Awarded <@&{FOUR_MONTHS_SERVICE_STRIPES.role_id}> \n"
+                    else:
+                        requirements += f":x: Awarded <@&{FOUR_MONTHS_SERVICE_STRIPES.role_id}> \n"
+                    ## Honorable Conduct Medal ##
+                    if has_award_or_higher(guild_member,HONORABLE_CONDUCT,CONDUCT_MEDALS):
+                        requirements += f":white_check_mark: Awarded <@&{CITATION_OF_CONDUCT.role_id}> \n"
+                    else:
+                        requirements += f":x: Awarded <@&{CITATION_OF_CONDUCT.role_id}> \n"
+
+                case 9: # Midshipman
+
+                    ### Prerequisites ###
+                    ## 35 hosted voyages ##
+                    if hosted_count >= 35:
+                        requirements += f":white_check_mark: Hosted thirty-five voyages ({hosted_count}/35) \n"
+                    else:
+                        requirements += f":x: Hosted thirty-five voyages ({hosted_count}/35) \n"
+
+                    ## Honorable Conduct Medal ##
+                    if has_award_or_higher(guild_member,HONORABLE_CONDUCT,CONDUCT_MEDALS):
+                        requirements += f":white_check_mark: Awarded <@&{CITATION_OF_CONDUCT.role_id}> \n"
+                    else:
+                        requirements += f":x: Awarded <@&{CITATION_OF_CONDUCT.role_id}> \n"
+
+                    ## 4 month Service Stripe ##
+                    if has_award_or_higher(
+                        guild_member,
+                        FOUR_MONTHS_SERVICE_STRIPES,
+                        SERVICE_STRIPES
+                    ):
+                        requirements += f":white_check_mark: Awarded <@&{FOUR_MONTHS_SERVICE_STRIPES.role_id}> \n"
+                    else:
+                        requirements += f":x: Awarded <@&{FOUR_MONTHS_SERVICE_STRIPES.role_id}> \n"
+
+                case 10: # Lieutenant
+
+                    ### Prerequisites ###
+
+                    ## Completed OCS ##
+                    # TODO: Check this from database, in case they left NETC (right now we do this cause the DB is not updated)
+                    if OCS_GRADUATE_ROLE in netc_guild_member_role_ids:
+                        requirements += f":white_check_mark: is an OCS Graduate \n"
+                    else:
+                        requirements += f":x: is an OCS Graduate \n"
+
+                    ## 2 weeks as an O1 ##
+                    latest_o1_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id, O1_ROLES[0])
+                    if not latest_o1_role_log:
+                        requirements += f"\u200b \n **:warning: Please verify role age by hand whilst bot is new**  \n \n"
+
+                    days_with_o1 = get_time_difference_in_days(utc_time_now(), latest_o1_role_log.log_time) if latest_o1_role_log else None
+                    if days_with_o1 is None or latest_o1_role_log.change_type != RoleChangeType.ADDED:
+                        days_with_o1 = 0
+
+                    if days_with_o1 >= 14:
+                        requirements += f":white_check_mark: Waited two weeks as an O1 ({days_with_o1}/14) \n"
+                    else:
+                        requirements += f":x: Waited two weeks as an O1 ({days_with_o1}/14) \n"
+
+                case 11: # Lieutenant Commander
+
+                        ### Prerequisites ###
+                        ## Completed SOCS ##
+                        # TODO: Check this from database, in case they left NETC (right now we do this cause the DB is not updated)
+                        if SOCS_GRADUATE_ROLE in netc_guild_member_role_ids:
+                            requirements += f":white_check_mark: is an SOCS Graduate \n"
+                        else:
+                            requirements += f":x: is an SOCS Graduate \n"
+
+                case 12: # Commander
+
+                        ### Prerequisites ###
+                        ## 3 to 4 weeks as an O4 ##
+                        latest_o4_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id, O4_ROLES[0])
+    
+                        if not latest_o4_role_log:
+                            requirements += f"\u200b \n **:warning: Please verify role age by hand whilst bot is new**  \n \n"
+
+                        days_with_o4 = get_time_difference_in_days(utc_time_now(), latest_o4_role_log.log_time) if latest_o4_role_log else None
+                        if days_with_o4 is None or latest_o4_role_log.change_type != RoleChangeType.ADDED:
+                            days_with_o4 = 0
+
+                        if days_with_o4 >= 21:
+                            requirements += f":white_check_mark: Waited three weeks as an O4 ({days_with_o4}/21) \n"
+                        else:
+                            requirements += f":x: Waited three weeks as an O4 ({days_with_o4}/21) \n"
+
+                case 13: # Captain
+
+                    ## Prequisites ##
+                    ## 2 months as an O5 ##
+                    latest_o5_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id, O5_ROLES[0])
+
+                    if not latest_o5_role_log:
+                        requirements += f"\u200b \n **:warning: Please verify role age by hand whilst bot is new**  \n \n"
+
+                    days_with_o5 = get_time_difference_in_days(utc_time_now(), latest_o5_role_log.log_time) if latest_o5_role_log else None
+                    if days_with_o5 is None or latest_o5_role_log.change_type != RoleChangeType.ADDED:
+                        days_with_o5 = 0
+
+                    if days_with_o5 >= 60:
+                        requirements += f":white_check_mark: Waited two months as an O5 ({days_with_o5}/60) \n"
+                    else:
+                        requirements += f":x: Waited two months as an O5 ({days_with_o5}/60) \n"
+
+                    ## Maritime Service Medal ##
+                    if has_award_or_higher(guild_member, MARITIME_SERVICE_MEDAL, HOSTED_MEDALS):
+                        requirements += f":white_check_mark: Awarded <@&{MARITIME_SERVICE_MEDAL.role_id}> \n"
+                    else:
+                        requirements += f":x: Awarded <@&{MARITIME_SERVICE_MEDAL.role_id}> \n"
+
+                case 14:
+                    requirements += ":x: Must bribe the admiral"
+                case 15:
+                    requirements += ":x: Must bribe the admiral"
 
 
 
