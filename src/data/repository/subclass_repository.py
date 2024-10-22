@@ -7,6 +7,7 @@ from src.data import SubclassType
 from src.data.engine import engine
 from src.data.models import Subclasses
 from src.data.repository.sailor_repository import SailorRepository
+from src.utils.time_utils import utc_time_now
 
 log = logging.getLogger(__name__)
 Session = sessionmaker(bind=engine)
@@ -21,6 +22,9 @@ class SubclassRepository:
     def close_session(self):
         self.sailor_repository.close_session()
         self.session.close()
+
+    def entries_for_target_id(self, target_id: int, limit: int = 10) -> [Subclasses]:
+        return self.session.query(Subclasses).filter(Subclasses.target_id == target_id).order_by(Subclasses.log_time.desc()).limit(limit).all()
 
     def entries_for_log_id(self, log_id: int) -> [Subclasses]:
         """
@@ -63,7 +67,7 @@ class SubclassRepository:
             Subclasses: The subclass record that was saved
             -1: If a duplicate record is found
         """
-        log_time = log_time or datetime.datetime.now()
+        log_time = log_time or utc_time_now()
         try:
             # Check if a record with the same target_id, subclass, and log_id already exists
             existing = self.session.query(Subclasses).filter(

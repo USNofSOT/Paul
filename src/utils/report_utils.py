@@ -1,4 +1,5 @@
 import discord
+from config.ranks_roles import DH_ROLES, VT_ROLES, RT_ROLES
 
 async def tiered_medals(member: discord.Member) -> str:
     found_titles = []
@@ -119,7 +120,7 @@ def get_role_in_list(member, role_list):
     return None
 
 def identify_role_index(ctx, member):
-    listidentify = ['Squad Leader', 'Chief of Ship', 'First Officer', 'Commanding Officer', 'Fleet Commander',
+    listidentify = ['Veteran','Deckhand','Retired','Squad Leader', 'Chief of Ship', 'First Officer', 'Commanding Officer', 'Fleet Commander',
                     'Master Chief Petty Officer of the Navy', 'Vice Admiral of the Navy', 'Admiral of the Navy']
     identify_role = get_role_in_list(member, listidentify)
     
@@ -152,10 +153,15 @@ def get_role_with_keyword(member, keyword):
     return None
 
 def process_role_index(ctx, member, role_index):
-    if role_index == -1 or role_index == 7:
+    member_role_ids = [role.id for role in member.roles]
+    print("Processing Role Index")
+    print(f"Roles: {member_role_ids}")
+    
+    if role_index == -1 or role_index == 10:  #Checks if Owns Server Returns STR
         return "Owns Server (No CO)"
-
-    elif role_index == 6 or role_index == 5:
+    elif role_index == 0 or role_index == 1  or role_index == 2:  #Checks for Vet, Deckhand, Ret. Returns No CO
+        return None
+    elif role_index == 8 or role_index == 9:
         admiral_role = discord.utils.get(ctx.guild.roles, name='Admiral of the Navy')
         if admiral_role is None:
             return None
@@ -170,7 +176,7 @@ def process_role_index(ctx, member, role_index):
         return process_role_index(ctx, member, role_index + 1)
 
 
-    elif role_index == 4:
+    elif role_index == 7:
         vice_admiral_role = discord.utils.get(ctx.guild.roles, name='Vice Admiral of the Navy')
         if vice_admiral_role is None:
             return process_role_index(ctx, member, role_index + 1)
@@ -185,7 +191,7 @@ def process_role_index(ctx, member, role_index):
         return process_role_index(ctx, member, role_index + 1)
 
 
-    elif role_index == 3:
+    elif role_index == 6:
         fleet_role = None
         for role in member.roles:
             if "fleet" in role.name.lower() and role.name != "Legends of the Fleets":
@@ -212,8 +218,7 @@ def process_role_index(ctx, member, role_index):
                     return [next_in_command_id, LOACheck]
         return process_role_index(ctx, member, role_index + 1)
 
-
-    elif role_index == 2:
+    elif role_index == 5:
         ship_role = get_role_with_keyword(member, "USS")
         if ship_role is None:
             return process_role_index(ctx, member, role_index + 1)
@@ -236,8 +241,7 @@ def process_role_index(ctx, member, role_index):
                     return [next_in_command_id, LOACheck]
         return process_role_index(ctx, member, role_index + 1)
 
-
-    elif role_index == 1:
+    elif role_index == 4:
         ship_role = get_role_with_keyword(member, "USS")
         if ship_role is None:
             return process_role_index(ctx, member, role_index + 1)
@@ -260,8 +264,7 @@ def process_role_index(ctx, member, role_index):
                     return [next_in_command_id, LOACheck]
         return process_role_index(ctx, member, role_index + 1)
 
-
-    elif role_index == 0:
+    elif role_index == 3:
         ship_role = get_role_with_keyword(member, "USS")
         if ship_role is None:
             return process_role_index(ctx, member, role_index + 1)
@@ -283,7 +286,6 @@ def process_role_index(ctx, member, role_index):
                 else:
                     return [next_in_command_id, LOACheck]
         return process_role_index(ctx, member, role_index + 1)
-
 
     elif role_index == None:
         squad_role = get_role_with_keyword(member, "squad")

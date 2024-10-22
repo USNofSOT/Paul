@@ -37,10 +37,10 @@ class AddCoin(commands.Cog):
         coin_repo = CoinRepository()
         try:
             found_coin = (
-                coin_repo.find_coin_by_target_and_moderator_and_type
+                coin_repo.find_coin_by_target_and_OldName_and_type
                     (
                         target_id=target.id,
-                        moderator_id=interaction.user.id,
+                        old_name=display_name,
                         coin_type=coin_type
                     )
             )
