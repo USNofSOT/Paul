@@ -18,8 +18,10 @@ def has_award_or_higher(
     member_role_ids = [role.id for role in target.roles]
     member_awards = [award for award in category_awards if award.role_id in member_role_ids]
     required_threshold = required_award.threshold
+    log.info(f"Checking if {target.display_name} has the required award or higher: {required_award}")
     for award in member_awards:
         if award.threshold >= required_threshold:
+            log.info(f"{target.display_name} has the required award or higher: {award} - {award.threshold} >= {required_threshold}")
             return True
 
 def get_current_rank(

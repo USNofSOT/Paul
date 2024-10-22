@@ -54,7 +54,12 @@ JUNIOR_PETTY_OFFICER = NavyRank(
     identifier="E4",
     role_ids=E4_ROLES,
     name="Junior Petty Officer",
-    promotion_index={5}  # Petty Officer
+    promotion_index={5},  # Petty Officer
+    rank_prerequisites = RankPrerequisites(
+        [
+            "Have 2FA enabled"
+        ]
+    )
 )
 PETTY_OFFICER = NavyRank(
     index=5,
