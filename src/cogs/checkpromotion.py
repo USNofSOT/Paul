@@ -9,7 +9,7 @@ from src.config.awards import CITATION_OF_COMBAT, COMBAT_MEDALS, CITATION_OF_CON
     HOSTED_MEDALS
 from src.config.main_server import GUILD_ID
 from src.config.netc_server import JLA_GRADUATE_ROLE, NETC_GRADUATE_ROLES, SNLA_GRADUATE_ROLE, OCS_GRADUATE_ROLE, \
-    SOCS_GRADUATE_ROLE
+    SOCS_GRADUATE_ROLE, NETC_GUILD_ID
 from src.config.ranks_roles import JE_AND_UP, E3_ROLES, E2_ROLES, SPD_ROLES, O1_ROLES, O4_ROLES, O5_ROLES
 from src.data import Sailor, RoleChangeType
 from src.data.repository.auditlog_repository import AuditLogRepository
@@ -38,7 +38,7 @@ class CheckPromotion(commands.Cog):
         # Get information from member from guild
         guild_member = self.bot.get_guild(GUILD_ID).get_member(target.id)
         guild_member_role_ids = [role.id for role in guild_member.roles]
-        netc_guild_member = self.bot.get_guild(GUILD_ID).get_member(target.id)
+        netc_guild_member = self.bot.get_guild(NETC_GUILD_ID).get_member(target.id)
         netc_guild_member_role_ids = [role.id for role in netc_guild_member.roles]
 
         # Get user information as sailor from database
