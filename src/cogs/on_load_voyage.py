@@ -1,6 +1,7 @@
 from logging import getLogger
 
 import discord, config, asyncio
+import os
 from discord.ext import commands
 from discord import app_commands
 from src.config import VOYAGE_LOGS
@@ -15,6 +16,7 @@ from src.data.repository.voyage_repository import VoyageRepository
 # from utils.database_manager import DatabaseManager   # Imports Database Manager from Utilies if needed uncomment it!
 
 log = getLogger(__name__)
+ENV : str = os.getenv('ENVIRONMENT', "DEV")
 
 class On_Load_Voyages(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -25,7 +27,10 @@ class On_Load_Voyages(commands.Cog):
         voyage_repository = VoyageRepository()
         hosted_repository = HostedRepository()
         sailor_repository = SailorRepository()
-
+    
+        if not ENV=="PROD":
+            log.info("Not In Production")
+            return
         try:
             log.info("Processing existing voyage logs.")
 
