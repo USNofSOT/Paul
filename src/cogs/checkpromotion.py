@@ -214,20 +214,14 @@ class CheckPromotion(commands.Cog):
                 case 10: # Lieutenant
 
                     ### Prerequisites ###
-
-                    ## Completed OCS ##
-                    # TODO: Check this from database, in case they left NETC (right now we do this cause the DB is not updated)
-                    if OCS_GRADUATE_ROLE in netc_guild_member_role_ids:
-                        requirements += f":white_check_mark: is an OCS Graduate \n"
-                    else:
-                        requirements += f":x: is an OCS Graduate \n"
-
                     ## 2 weeks as an O1 ##
-                    latest_o1_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id, O1_ROLES[0])
+                    latest_o1_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id,
+                                                                                                      O1_ROLES[0])
                     if not latest_o1_role_log:
                         requirements += f"\u200b \n **:warning: Please verify role age by hand whilst bot is new**  \n \n"
 
-                    days_with_o1 = get_time_difference_in_days(utc_time_now(), latest_o1_role_log.log_time) if latest_o1_role_log else None
+                    days_with_o1 = get_time_difference_in_days(utc_time_now(),
+                                                               latest_o1_role_log.log_time) if latest_o1_role_log else None
                     if days_with_o1 is None or latest_o1_role_log.change_type != RoleChangeType.ADDED:
                         days_with_o1 = 0
 
@@ -235,6 +229,13 @@ class CheckPromotion(commands.Cog):
                         requirements += f":white_check_mark: Waited two weeks as an O1 ({days_with_o1}/14) \n"
                     else:
                         requirements += f":x: Waited two weeks as an O1 ({days_with_o1}/14) \n"
+
+                    ## Completed OCS ##
+                    # TODO: Check this from database, in case they left NETC (right now we do this cause the DB is not updated)
+                    if OCS_GRADUATE_ROLE in netc_guild_member_role_ids:
+                        requirements += f":white_check_mark: is an OCS Graduate \n"
+                    else:
+                        requirements += f":x: is an OCS Graduate \n"
 
                 case 11: # Lieutenant Commander
 
