@@ -1,5 +1,6 @@
 import datetime
 import logging
+from typing import Type
 
 from sqlalchemy.orm import sessionmaker
 
@@ -20,6 +21,13 @@ class AuditLogRepository:
 
     def close_session(self):
         self.session.close()
+
+    def get_latest_role_log_for_target_and_role(self, target_id: int, role_id: int) -> Type[RoleChangeLog] | None:
+        try:
+            return self.session.query(RoleChangeLog).filter(RoleChangeLog.target_id == target_id, RoleChangeLog.role_id == role_id).order_by(RoleChangeLog.log_time.desc()).first()
+        except Exception as e:
+            log.error(f"Error getting latest role log for target and role: {e}")
+            raise e
 
     def get_timeout_logs(self, target_id: int = None, limit: int = 10) -> [TimeoutLog]:
         if target_id:
