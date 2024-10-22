@@ -154,8 +154,6 @@ def get_role_with_keyword(member, keyword):
 
 def process_role_index(ctx, member, role_index):
     member_role_ids = [role.id for role in member.roles]
-    print("Processing Role Index")
-    print(f"Roles: {member_role_ids}")
     
     if role_index == -1 or role_index == 10:  #Checks if Owns Server Returns STR
         return "Owns Server (No CO)"
