@@ -4,6 +4,10 @@ from datetime import timezone
 def utc_time_now():
     return datetime.datetime.now(datetime.UTC)
 
+def get_time_difference_in_days(time_a: datetime, time_b: datetime) -> int:
+    time_difference = get_time_difference(time_a, time_b)
+    return time_difference.days
+
 def get_time_difference(time_a: datetime, time_b: datetime) -> datetime or None:
     if time_b is None:
         return
