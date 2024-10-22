@@ -27,9 +27,13 @@ class AuditLogRepository:
         else:
             return self.session.query(TimeoutLog).order_by(TimeoutLog.log_time.desc()).limit(limit).all()
 
-    def get_name_changes_logs(self, target_id: int = None, limit: int = 10) -> [NameChangeLog]:
-        if target_id:
+    def get_name_changes_logs(self, target_id: int = None, limit: int = 10, guild_id: int = None) -> [NameChangeLog]:
+        if target_id and guild_id:
+            return self.session.query(NameChangeLog).filter(NameChangeLog.target_id == target_id,NameChangeLog.guild_id == guild_id).order_by(NameChangeLog.log_time.desc()).limit(limit).all()
+        elif target_id:
             return self.session.query(NameChangeLog).filter(NameChangeLog.target_id == target_id).order_by(NameChangeLog.log_time.desc()).limit(limit).all()
+        elif guild_id:
+            return self.session.query(NameChangeLog).filter(NameChangeLog.guild_id == guild_id).order_by(NameChangeLog.log_time.desc()).limit(limit).all()
         else:
             return self.session.query(NameChangeLog).order_by(NameChangeLog.log_time.desc()).limit(limit).all()
 
