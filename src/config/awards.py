@@ -307,6 +307,17 @@ SERVICE_STRIPES = (FOUR_MONTHS_SERVICE_STRIPES, SIX_MONTHS_SERVICE_STRIPES, EIGH
                    TWELVE_MONTHS_SERVICE_STRIPES, EIGHTEEN_MONTHS_SERVICE_STRIPES, TWNETYFOUR_MONTHS_SERVICE_STRIPES)
 
 ###############################################################################
+## Medals And Ribbons - MISC
+###############################################################################
+NCO_IMPROVEMENT_RIBBON = Award(
+    threshold=1,
+    ranks_responsible="O-1+",
+    role_id=995304090143838348,
+    embed_id=1292514591854559263,
+    channelthread_id=_AWARDS_THREAD_ID
+)
+
+###############################################################################
 ## Collector
 ###############################################################################
 MEDALS_AND_RIBBONS = AwardsCollector(

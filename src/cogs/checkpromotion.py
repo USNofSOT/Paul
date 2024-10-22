@@ -4,10 +4,11 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.config.awards import CITATION_OF_COMBAT, COMBAT_MEDALS, CITATION_OF_CONDUCT, CONDUCT_MEDALS
+from src.config.awards import CITATION_OF_COMBAT, COMBAT_MEDALS, CITATION_OF_CONDUCT, CONDUCT_MEDALS, \
+    NCO_IMPROVEMENT_RIBBON
 from src.config.main_server import GUILD_ID
 from src.config.netc_server import JLA_GRADUATE_ROLE, NETC_GRADUATE_ROLES
-from src.config.ranks_roles import JE_AND_UP, E3_ROLES, E2_ROLES
+from src.config.ranks_roles import JE_AND_UP, E3_ROLES, E2_ROLES, SPD_ROLES
 from src.data import Sailor, RoleChangeType
 from src.data.repository.auditlog_repository import AuditLogRepository
 from src.data.repository.sailor_repository import SailorRepository, ensure_sailor_exists
@@ -43,8 +44,9 @@ class CheckPromotion(commands.Cog):
         sailor: Sailor = sailor_repository.get_sailor(target.id)
         sailor_repository.close_session()
 
-        # Get voyage count
+        # Get voyage/hosted count
         voyage_count: int = sailor.voyage_count + sailor.force_voyage_count or 0
+        hosted_count: int = sailor.hosted_count + sailor.force_hosted_count or 0
 
         embed = default_embed(
             title=f"{target.display_name or target.name}",
@@ -98,7 +100,6 @@ class CheckPromotion(commands.Cog):
                 case 4: # Junior Petty Officer
 
                     ### Prerequisites ###
-
                     ## Complete 15 total voyages and wait 2 week as an E-3 or Complete 20 total voyages and wait 1 week as an E-3 ##
                     latest_e3_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id, E3_ROLES[0])
 
@@ -116,19 +117,40 @@ class CheckPromotion(commands.Cog):
                         requirements += f":x: Go on twenty voyages ({voyage_count}/20)  and wait one week as an E-3 ({days_with_e3}/7) \n"
                         requirements += f"**AND**\n"
 
-                    ## JLA ##
+                    ## Completed JLA ##
                     if JLA_GRADUATE_ROLE in netc_guild_member_role_ids:
                         requirements += f":white_check_mark: is a JLA Graduate \n"
                     else:
                         requirements += f":x: is a JLA Graduate \n"
-
-
 
                     ## Citation of Conduct ##
                     if has_award_or_higher(guild_member,CITATION_OF_CONDUCT,CONDUCT_MEDALS):
                         requirements += f":white_check_mark: Awarded <@&{CITATION_OF_CONDUCT.role_id}> \n"
                     else:
                         requirements += f":x: Awarded <@&{CITATION_OF_CONDUCT.role_id}> \n"
+
+                case 5: #  Petty Officer
+                    ### Prerequisites ###
+                    ## 10 hosted voyages ##
+                    if hosted_count >= 10:
+                        requirements += f":white_check_mark: Hosted ten voyages ({hosted_count}/10) \n"
+                    else:
+                        requirements += f":x: Hosted ten voyages ({hosted_count}/10) \n"
+                    ## Have NCO Improvement Ribbon ##
+                    if NCO_IMPROVEMENT_RIBBON.role_id in guild_member_role_ids:
+                        requirements += f":white_check_mark: Awarded <@&{NCO_IMPROVEMENT_RIBBON.role_id}> \n"
+                    else:
+                        requirements += f":x: Awarded <@&{NCO_IMPROVEMENT_RIBBON.role_id}> \n"
+                    ## Join an SPD ##
+                    if any(role in guild_member_role_ids for role in SPD_ROLES):
+                        requirements += f":white_check_mark: Joined an SPD \n"
+                    else:
+                        requirements += f":x: Joined an SPD \n"
+
+
+
+
+
 
             if len(requirements) > 0:
                 embed.add_field(
