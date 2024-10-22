@@ -66,7 +66,12 @@ PETTY_OFFICER = NavyRank(
     identifier="E6",
     role_ids=E6_ROLES,
     name="Petty Officer",
-    promotion_index={6}  # Chief Petty Officer
+    promotion_index={6},  # Chief Petty Officer
+    rank_prerequisites = RankPrerequisites(
+        [
+            "Applying for a position of XO to a squad or becoming a squad leader (when available)"
+        ]
+    )
 )
 CHIEF_PETTY_OFFICER = NavyRank(
     index=6,
