@@ -83,6 +83,50 @@ HOSTED_MEDALS = (SEA_SERVICE_RIBBON, MARITIME_SERVICE_MEDAL,
                  LEGENDARY_SERVICE_MEDAL, ADMIRABLE_SERVICE_MEDAL)
 
 ###############################################################################
+## Medals And Ribbons - Conduct Medals
+###############################################################################
+_CITATION_EMBED_ID=1292514180208787519
+CITATION_OF_CONDUCT = Award(
+    threshold=1, # This is not per se a threshold, but more an index of award importance
+    ranks_responsible="E-6+",
+    role_id=944648745503563806,
+    embed_id=_CITATION_EMBED_ID,
+    channelthread_id=_AWARDS_THREAD_ID
+)
+LEGION_OF_CONDUCT = Award(
+    threshold=2,
+    ranks_responsible="E-7+",
+    role_id=1140739251739308042,
+    embed_id=_CITATION_EMBED_ID,
+    channelthread_id=_AWARDS_THREAD_ID
+)
+HONORABLE_CONDUCT = Award(
+    threshold=3,
+    ranks_responsible="O-1+",
+    role_id=1140739253895180378,
+    embed_id=_CITATION_EMBED_ID,
+    channelthread_id=_AWARDS_THREAD_ID
+)
+MERITORIOUS_CONDUCT = Award(
+    threshold=4,
+    ranks_responsible="O-4+",
+    role_id=1140739256214622329,
+    embed_id=_CITATION_EMBED_ID,
+    channelthread_id=_AWARDS_THREAD_ID
+)
+ADMIRABLE_CONDUCT = Award(
+    threshold=5,
+    ranks_responsible="O-7+",
+    role_id=1140739259003850752,
+    embed_id=_CITATION_EMBED_ID,
+    channelthread_id=_AWARDS_THREAD_ID
+)
+
+# Medals must be ordered lowest to highest in threshold
+CONDUCT_MEDALS = (CITATION_OF_CONDUCT, LEGION_OF_CONDUCT, HONORABLE_CONDUCT,
+                  MERITORIOUS_CONDUCT, ADMIRABLE_CONDUCT)
+
+###############################################################################
 ## Medals And Ribbons - Combat Medals
 ###############################################################################
 _COMBAT_EMBED_ID=1292514373751017586
