@@ -1,12 +1,12 @@
 import enum
 import logging
 
-from sqlalchemy.dialects.mysql import TINYTEXT
-from sqlalchemy.sql.sqltypes import BOOLEAN, TEXT, DATETIME, Enum
 from sqlalchemy import Column, Integer, BIGINT, ForeignKey, VARCHAR
-
+from sqlalchemy.dialects.mysql import TINYTEXT
 from sqlalchemy.orm import declarative_base, mapped_column
+from sqlalchemy.sql.sqltypes import BOOLEAN, TEXT, DATETIME, Enum, DateTime
 
+from src.utils.time_utils import get_time_difference
 from .engine import engine
 
 log = logging.getLogger(__name__)
@@ -34,14 +34,6 @@ class TraingType(enum.Enum):
 
 # Base class for all models
 Base = declarative_base()
-
-class AuditLogs(Base):
-    __tablename__ = "audit_logs"
-
-    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
-    event = Column(TEXT)
-    event_time = Column(DATETIME)
-
 
 class Coins(Base):
     __tablename__ = "coins"
@@ -165,6 +157,71 @@ class Training(Base):
     training_type = Column(Enum(TraingType), nullable=False)
     training_category = Column(Enum(TrainingCategory), nullable=False)
     log_time = Column(DATETIME, nullable=False)
+
+""" AUDIT LOGS
+The following classes are used for audit logging 
+
+Things we may log are
+- Name changes
+- Role Changes
+- Moderation actions
+- Commands used?
+
+We may refer to the Sailor class for the discord_id as 
+- target_id (the person who the action was taken on)
+- changed_by (the person who took the action)
+"""
+
+class AuditLog(Base):
+    __abstract__ = True
+
+    id = Column(Integer, primary_key=True, autoincrement=True) # The internal identifier
+    target_id = mapped_column(ForeignKey("sailor.discord_id"), nullable=False) # The person who the action was taken on
+    changed_by_id = mapped_column(ForeignKey("sailor.discord_id")) # The person who took the action
+    guild_id = Column(BIGINT, nullable=False) # The guild the action was taken in
+    log_time = Column(DATETIME, nullable=False)
+
+class NameChangeLog(AuditLog):
+    __tablename__ = "log_name_change"
+
+    name_before = Column(VARCHAR(32))
+    name_after = Column(VARCHAR(32))
+
+class RoleChangeType(enum.Enum):
+    ADDED = "Add"
+    REMOVED = "Remove"
+
+class RoleChangeLog(AuditLog):
+    __tablename__ = "log_role_change"
+
+    change_type = Column(Enum(RoleChangeType), nullable=False) # Whether the role was added or removed
+    role_id = Column(BIGINT, nullable=False) # The role that was added or removed
+    role_name = Column(VARCHAR(32), nullable=False) # The name of the role
+
+class TimeoutLog(AuditLog):
+    __tablename__ = "log_timeout"
+
+    # The timeout time before the new timeout was applied
+    timed_out_until_before = Column(DATETIME, nullable=True)
+    # The timeout time after the new timeout was applied (current timeout)
+    timed_out_until = Column(DATETIME, nullable=True)
+
+    @property
+    def timeout_removed(self) -> bool:
+        """Returns True if this timeout log was for a removal of a timeout."""
+        return self.timed_out_until is None
+
+    @property
+    def timeout_added(self) -> bool:
+        """Returns True if this timeout log was for an addition of a timeout."""
+        return self.timed_out_until_before is None
+
+    @property
+    def length(self) -> float:
+        """Calculates the length of the timeout. Given log_time is the time the timeout was applied."""
+        if self.timeout_removed:
+            return 0
+        return get_time_difference(self.timed_out_until, self.log_time)
 
 # Nifty function to create all tables
 def create_tables():

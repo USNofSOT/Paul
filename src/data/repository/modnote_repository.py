@@ -6,6 +6,7 @@ from sqlalchemy.orm import sessionmaker
 
 from src.data.engine import engine
 from src.data import Sailor, ModNotes
+from src.utils.time_utils import utc_time_now
 
 log = logging.getLogger(__name__)
 Session = sessionmaker(bind=engine)
@@ -19,12 +20,24 @@ class ModNoteRepository:
     def close_session(self):
         self.session.close()
 
+    def count_modnotes(self, target_id : int, include_hidden : bool = False) -> int:
+        if include_hidden:
+            return self.session.query(ModNotes).filter(ModNotes.target_id == target_id).count()
+        else:
+            return self.session.query(ModNotes).filter(ModNotes.target_id == target_id).filter(ModNotes.hidden == False).count()
+
+    def get_modnotes(self, target_id : int, limit : int = 10, show_hidden : bool = False) -> [ModNotes]:
+        if show_hidden:
+            return self.session.query(ModNotes).filter(ModNotes.target_id == target_id).order_by(ModNotes.note_time.desc()).limit(limit).all()
+        else:
+            return self.session.query(ModNotes).filter(ModNotes.target_id == target_id).filter(ModNotes.hidden == False).order_by(ModNotes.note_time.desc()).limit(limit).all()
+
     def create_modnote(self, target_id : int, moderator_id : int, note : str) -> ModNotes | None:
         try:
             modnote = ModNotes(target_id=target_id,
                                moderator_id=moderator_id,
                                note=note,
-                               note_time=datetime.datetime.now())
+                               note_time=utc_time_now())
             self.session.add(modnote)
             self.session.commit()
             return modnote
@@ -47,7 +60,7 @@ class ModNoteRepository:
 
         if hidden:
             modnote.who_hid = who_hid_id
-            modnote.hide_time = datetime.datetime.now()
+            modnote.hide_time = utc_time_now()
         else:
             pass #TODO: Consider wiping who_hid and hide_time if the note is un-hidden
         self.session.commit()

@@ -89,6 +89,26 @@ class CoinRepository:
             raise e
         finally:
             self.session.close()
+    
+    def find_coin_by_target_and_OldName_and_type(self, target_id: int, old_name: str, coin_type: str) -> Coins or None:
+        """
+        Find a coin transaction by target and moderator IDs.
+
+        Args:
+            target_id (int): The Discord ID of the user.
+            oldname (str): The Discord ID of the moderator.
+        Returns:
+            Coins: The Coins object
+        """
+
+        try:
+            coin = self.session.query(Coins).filter_by(target_id=target_id, old_name=old_name, coin_type=coin_type).first()
+            return coin
+        except Exception as e:
+            log.error(f"Error finding coin: {e}")
+            raise e
+        finally:
+            self.session.close()
 
     def get_coins_by_target(self, target_id):
         """
