@@ -4,6 +4,20 @@ from dataclasses import dataclass
 from config.main_server import GUILD_ID
 
 @dataclass
+class RankPrerequisites:
+
+    additional_requirements: list[str] = list
+
+@dataclass
+class NavyRank:
+    index: int = 0 # The index of the rank in the hierarchy (0 is the highest rank)
+    identifier: str = "" # The identifier of the rank (e.g. "E1", "O1", "DH")
+    role_ids: tuple[int] = () # The role IDs associated with the rank (e.g. [933913081099214848] for Recruit)
+    name: str = "" # The name of the rank (e.g. "Recruit", "Midshipman")
+    promotion_index: set[int] = () # The index of the rank that the member would be promoted to
+    rank_prerequisites: RankPrerequisites = None # The requirements needed for a rank
+
+@dataclass
 class Award:
     threshold: int = 0
     ranks_responsible: str = ""
