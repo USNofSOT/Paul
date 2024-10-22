@@ -38,7 +38,7 @@ class ShowNotes(commands.Cog):
         mod_notes: [ModNotes] = mod_note_repository.get_modnotes(target_id=target.id, limit=25, show_hidden=is_boa)
         mod_notes_total: int = mod_note_repository.count_modnotes(target.id, include_hidden=is_boa)
         mod_note_string = "\n".join(
-            f"<@{mod_note.moderator_id}>: {mod_note.note} _({format_time(get_time_difference_past(mod_note.note_time))} ago)_{' (`HIDDEN`)' if mod_note.hidden else ''}"
+            f"{mod_note.id}: <@{mod_note.moderator_id}>: {mod_note.note} _({format_time(get_time_difference_past(mod_note.note_time))} ago)_{' (`HIDDEN`)' if mod_note.hidden else ''}"
             for mod_note in mod_notes
         )
         mod_note_repository.close_session()
