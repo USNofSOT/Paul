@@ -10,7 +10,7 @@ from src.config.awards import CITATION_OF_COMBAT, COMBAT_MEDALS, CITATION_OF_CON
 from src.config.main_server import GUILD_ID
 from src.config.netc_server import JLA_GRADUATE_ROLE, NETC_GRADUATE_ROLES, SNLA_GRADUATE_ROLE, OCS_GRADUATE_ROLE, \
     SOCS_GRADUATE_ROLE, NETC_GUILD_ID
-from src.config.ranks_roles import JE_AND_UP, E3_ROLES, E2_ROLES, SPD_ROLES, O1_ROLES, O4_ROLES, O5_ROLES
+from src.config.ranks_roles import JE_AND_UP, E3_ROLES, E2_ROLES, SPD_ROLES, O1_ROLES, O4_ROLES, O5_ROLES, MARINE_ROLE
 from src.data import Sailor, RoleChangeType
 from src.data.repository.auditlog_repository import AuditLogRepository
 from src.data.repository.sailor_repository import SailorRepository, ensure_sailor_exists
@@ -41,6 +41,9 @@ class CheckPromotion(commands.Cog):
         netc_guild_member = self.bot.get_guild(NETC_GUILD_ID).get_member(target.id)
         netc_guild_member_role_ids = [role.id for role in netc_guild_member.roles]
 
+        # Check marine status
+        is_marine = MARINE_ROLE in guild_member_role_ids
+
         # Get user information as sailor from database
         sailor_repository = SailorRepository()
         sailor: Sailor = sailor_repository.get_sailor(target.id)
@@ -63,7 +66,7 @@ class CheckPromotion(commands.Cog):
         current_rank: NavyRank = get_current_rank(guild_member)
         embed.add_field(
             name="Current Rank",
-            value=f"{current_rank.name}",
+            value=f"{current_rank.name if not is_marine else current_rank.marine_name}",
         )
 
 
@@ -320,7 +323,7 @@ class CheckPromotion(commands.Cog):
 
             if len(requirements) > 0:
                 embed.add_field(
-                    name=f"Promotion Requirements - {next_rank.name}",
+                    name=f"Promotion Requirements - {next_rank.name if not is_marine else next_rank.marine_name}",
                     value=f"{requirements}",
                     inline=False
                 )

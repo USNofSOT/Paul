@@ -42,6 +42,7 @@ ABLE_SEAMAN = NavyRank(
     identifier="E3",
     role_ids=E3_ROLES,
     name="Able Seaman",
+    marine_name="Lance Corporal",
     promotion_index={4}, # Junior Petty Officer
     rank_prerequisites = RankPrerequisites(
         [
@@ -54,6 +55,7 @@ JUNIOR_PETTY_OFFICER = NavyRank(
     identifier="E4",
     role_ids=E4_ROLES,
     name="Junior Petty Officer",
+    marine_name="Corporal",
     promotion_index={5},  # Petty Officer
     rank_prerequisites = RankPrerequisites(
         [
@@ -66,6 +68,7 @@ PETTY_OFFICER = NavyRank(
     identifier="E6",
     role_ids=E6_ROLES,
     name="Petty Officer",
+    marine_name="Staff Sergeant",
     promotion_index={6},  # Chief Petty Officer
     rank_prerequisites = RankPrerequisites(
         [
@@ -78,6 +81,7 @@ CHIEF_PETTY_OFFICER = NavyRank(
     identifier="E7",
     role_ids=E7_ROLES,
     name="Chief Petty Officer",
+    marine_name="Gunnery Sergeant",
     promotion_index={8,9}, # Senior Petty Officer / Midshipman
     rank_prerequisites = RankPrerequisites(
         [
@@ -91,6 +95,7 @@ SENIOR_CHIEF_PETTY_OFFICER = NavyRank(
     identifier="E8",
     role_ids=E8_ROLES,
     name="Senior Petty Officer",
+    marine_name="Master Sergeant",
     promotion_index={9}, #  Midshipman
     rank_prerequisites=RankPrerequisites(
         [
@@ -103,6 +108,7 @@ MIDSHIPMAN = NavyRank(
     identifier="O1",
     role_ids=O1_ROLES,
     name="Midshipman",
+    marine_name="Second Lieutenant",
     promotion_index={10},  # Lieutenant
     rank_prerequisites=RankPrerequisites(
         [
@@ -115,6 +121,7 @@ LIEUTENANT = NavyRank(
     identifier="O3",
     role_ids=O3_ROLES,
     name="Lieutenant",
+    marine_name="Marine Captain",
     promotion_index={11}, # Lieutenant Commander
     rank_prerequisites=RankPrerequisites(
         [
@@ -127,6 +134,7 @@ LIEUTENANT_COMMANDER = NavyRank(
     identifier="O4",
     role_ids=O4_ROLES,
     name="Lieutenant Commander",
+    marine_name="Major",
     promotion_index={12}, # Commander
     rank_prerequisites=RankPrerequisites(
         [
@@ -139,6 +147,7 @@ COMMANDER = NavyRank(
     identifier="O5",
     role_ids=O5_ROLES,
     name="Commander",
+    marine_name="Lieutenant Colonel",
     promotion_index={13}, # Captain
     rank_prerequisites=RankPrerequisites(
         [
@@ -152,6 +161,7 @@ CAPTAIN = NavyRank(
     identifier="O6",
     role_ids=O6_ROLES,
     name="Captain",
+    marine_name="Colonel",
     promotion_index={14}, # Commodore
     rank_prerequisites = RankPrerequisites(
         [
@@ -165,6 +175,7 @@ COMMODORE = NavyRank(
     identifier="O7",
     role_ids=O7_ROLES,
     name="Commodore",
+    marine_name="Brigadier General",
     promotion_index={15}, # Rear Admiral
     rank_prerequisites=RankPrerequisites(
         [
@@ -177,6 +188,7 @@ REAR_ADMIRAL = NavyRank(
     identifier="O8",
     role_ids=O8_ROLES,
     name="Rear Admiral",
+    marine_name="Major General",
     rank_prerequisites=RankPrerequisites(
         [
             "Hand selected by the AOTN"

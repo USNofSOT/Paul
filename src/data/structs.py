@@ -14,6 +14,7 @@ class NavyRank:
     identifier: str = "" # The identifier of the rank (e.g. "E1", "O1", "DH")
     role_ids: tuple[int] = () # The role IDs associated with the rank (e.g. [933913081099214848] for Recruit)
     name: str = "" # The name of the rank (e.g. "Recruit", "Midshipman")
+    marine_name: str = name # The name of the rank in case they are a Marine
     promotion_index: set[int] = () # The index of the rank that the member would be promoted to
     rank_prerequisites: RankPrerequisites = None # The requirements needed for a rank
 
