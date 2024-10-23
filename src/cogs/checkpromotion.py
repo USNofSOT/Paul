@@ -10,7 +10,8 @@ from src.config.awards import CITATION_OF_COMBAT, COMBAT_MEDALS, CITATION_OF_CON
 from src.config.main_server import GUILD_ID
 from src.config.netc_server import JLA_GRADUATE_ROLE, NETC_GRADUATE_ROLES, SNLA_GRADUATE_ROLE, OCS_GRADUATE_ROLE, \
     SOCS_GRADUATE_ROLE, NETC_GUILD_ID
-from src.config.ranks_roles import JE_AND_UP, E3_ROLES, E2_ROLES, SPD_ROLES, O1_ROLES, O4_ROLES, O5_ROLES, MARINE_ROLE
+from src.config.ranks_roles import JE_AND_UP, E3_ROLES, E2_ROLES, SPD_ROLES, O1_ROLES, O4_ROLES, O5_ROLES, MARINE_ROLE, \
+    E7_ROLES
 from src.data import Sailor, RoleChangeType
 from src.data.repository.auditlog_repository import AuditLogRepository
 from src.data.repository.sailor_repository import SailorRepository, ensure_sailor_exists
@@ -67,22 +68,38 @@ class CheckPromotion(commands.Cog):
         except AttributeError:
             pass
         current_rank: NavyRank = get_current_rank(guild_member)
+
+        current_rank_name = current_rank.name if not is_marine else current_rank.marine_name
+        if E2_ROLES[1] in guild_member_role_ids:
+            current_rank_name = "Seaman Apprentice"
+
         embed.add_field(
             name="Current Rank",
-            value=f"{current_rank.name if not is_marine else current_rank.marine_name}",
+            value=f"{current_rank_name}",
         )
-
 
         for rank_index in current_rank.promotion_index:
             next_rank = get_rank_by_index(rank_index)
 
             requirements=""
             additional_requirements=[]
+            has_next = False
             match next_rank.index:
                 case 3: # Able Seaman
 
                     # if user is seaman apprentice
                     if E2_ROLES[1] in guild_member_role_ids:
+                        latest_apprentice_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id, E2_ROLES[1])
+                        if not latest_apprentice_role_log:
+                            days_with_apprentice = 0
+                            requirements += f"\u200b \n **:warning: Please verify role age by hand whilst bot is new**  \n \n"
+                        else:
+                            days_with_apprentice = get_time_difference_in_days(utc_time_now(), latest_apprentice_role_log.log_time) if latest_apprentice_role_log else None
+                        if days_with_apprentice >= 14:
+                            requirements += f":x: Has been a Seaman Apprentice for {days_with_apprentice} days (max 14 days) \n"
+                        else:
+                            requirements += f":information_source: Has been Seaman Apprentice for {days_with_apprentice} days (max 14 days) \n"
+
                         latest_voyage = voyage_repository.get_last_voyage_by_target_ids([target.id])
                         if latest_voyage:
                             voyage_time = latest_voyage[target.id]
@@ -208,9 +225,11 @@ class CheckPromotion(commands.Cog):
                         requirements += f":x: Awarded <@&{FOUR_MONTHS_SERVICE_STRIPES.role_id}> \n"
                     ## Honorable Conduct Medal ##
                     if has_award_or_higher(guild_member,HONORABLE_CONDUCT,CONDUCT_MEDALS):
-                        requirements += f":white_check_mark: Awarded <@&{CITATION_OF_CONDUCT.role_id}> \n"
+                        requirements += f":white_check_mark: Awarded <@&{HONORABLE_CONDUCT.role_id}> \n"
                     else:
-                        requirements += f":x: Awarded <@&{CITATION_OF_CONDUCT.role_id}> \n"
+                        requirements += f":x: Awarded <@&{HONORABLE_CONDUCT.role_id}> \n"
+
+                    has_next = True
 
                 case 9: # Midshipman
 
@@ -223,9 +242,9 @@ class CheckPromotion(commands.Cog):
 
                     ## Honorable Conduct Medal ##
                     if has_award_or_higher(guild_member,HONORABLE_CONDUCT,CONDUCT_MEDALS):
-                        requirements += f":white_check_mark: Awarded <@&{CITATION_OF_CONDUCT.role_id}> \n"
+                        requirements += f":white_check_mark: Awarded <@&{HONORABLE_CONDUCT.role_id}> \n"
                     else:
-                        requirements += f":x: Awarded <@&{CITATION_OF_CONDUCT.role_id}> \n"
+                        requirements += f":x: Awarded <@&{HONORABLE_CONDUCT.role_id}> \n"
 
                     ## 4 month Service Stripe ##
                     if has_award_or_higher(
@@ -236,6 +255,8 @@ class CheckPromotion(commands.Cog):
                         requirements += f":white_check_mark: Awarded <@&{FOUR_MONTHS_SERVICE_STRIPES.role_id}> \n"
                     else:
                         requirements += f":x: Awarded <@&{FOUR_MONTHS_SERVICE_STRIPES.role_id}> \n"
+
+                    has_next = False
 
                 case 10: # Lieutenant
 
@@ -326,16 +347,23 @@ class CheckPromotion(commands.Cog):
                         requirements += f":x: Awarded <@&{MARITIME_SERVICE_MEDAL.role_id}> \n"
 
                 case 14:
-                    requirements += ":x: Must bribe the admiral"
+                    requirements += ":x: Must bribe the Admiral"
                 case 15:
-                    requirements += ":x: Must bribe the admiral"
+                    requirements += ":x: Must bribe the Admiral"
+                case 101:
+                    requirements += ":x: Viewed [training video #1](https://www.youtube.com/watch?v=dQw4w9WgXcQ)"
 
 
 
+
+            promoting_to: str = next_rank.name if not is_marine else next_rank.marine_name
+            # if seaman apprentice
+            if E2_ROLES[1] in guild_member_role_ids:
+                promoting_to = "Seaman"
 
             if len(requirements) > 0:
                 embed.add_field(
-                    name=f"Promotion Requirements - {next_rank.name if not is_marine else next_rank.marine_name}",
+                    name=f"Promotion Requirements - {promoting_to}",
                     value=f"{requirements}",
                     inline=False
                 )
@@ -343,8 +371,13 @@ class CheckPromotion(commands.Cog):
             if len(additional_requirements) > 0:
                 embed.add_field(
                     name=f"Additional Requirements",
-                    value="\n".join(additional_requirements),
+                    value="\n".join(f"- {req}" for req in (additional_requirements if E2_ROLES[1] not in guild_member_role_ids else additional_requirements[1:])),
                     inline=False
+                )
+            if has_next and E7_ROLES[0] in guild_member_role_ids:
+                embed.add_field(
+                    name="\u200b",
+                    value="**OR** \n \u200b"
                 )
 
         await interaction.response.send_message(embed=embed, ephemeral=False)

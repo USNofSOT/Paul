@@ -59,7 +59,11 @@ JUNIOR_PETTY_OFFICER = NavyRank(
     promotion_index={5},  # Petty Officer
     rank_prerequisites = RankPrerequisites(
         [
-            "Have 2FA enabled"
+            "Have 2FA enabled",
+            "Write a minimum of 2 Logs on behalf of a Voyage Leader BEFORE beginning Day 1",
+            "One of the logs will be a Patrol log",
+            "No Warnings following E-3 Promotion",
+            "Recommended by candidate's Squad Leader or above"
         ]
     )
 )
@@ -86,7 +90,8 @@ CHIEF_PETTY_OFFICER = NavyRank(
     rank_prerequisites = RankPrerequisites(
         [
             "Interviewed for a SL position",
-            "SNCO Board Passed"
+            "SNCO Board Passed",
+            "Meets SNLA requirements"
         ]
     )
 )
@@ -125,7 +130,8 @@ LIEUTENANT = NavyRank(
     promotion_index={11}, # Lieutenant Commander
     rank_prerequisites=RankPrerequisites(
         [
-            "Mentorship under an SO"
+            "Mentorship under an SO",
+            "Meets OCS requirements"
         ]
     )
 )
@@ -138,7 +144,8 @@ LIEUTENANT_COMMANDER = NavyRank(
     promotion_index={12}, # Commander
     rank_prerequisites=RankPrerequisites(
         [
-            "Voted on by the BOA"
+            "Voted on by the BOA",
+            "Meets SOCS requirements"
         ]
     )
 )
@@ -196,10 +203,16 @@ REAR_ADMIRAL = NavyRank(
     )
 )
 ADMIRAL_OF_THE_NAVY = NavyRank(
-    index=100,
-    identifier="GOD",
+    index=16,
+    identifier="AOTN",
     role_ids=AOTN_ROLES,
+    promotion_index={101},
     name="Admiral Of The Navy"
+)
+DUNGEON_MASTER = NavyRank(
+    index=101,
+    identifier="DM",
+    name="Dungeon Master"
 )
 
 RANKS = (
@@ -220,5 +233,6 @@ RANKS = (
     CAPTAIN,
     COMMODORE,
     REAR_ADMIRAL,
-    ADMIRAL_OF_THE_NAVY
+    ADMIRAL_OF_THE_NAVY,
+    DUNGEON_MASTER
 )
