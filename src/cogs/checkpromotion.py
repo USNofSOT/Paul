@@ -39,7 +39,10 @@ class CheckPromotion(commands.Cog):
         guild_member = self.bot.get_guild(GUILD_ID).get_member(target.id)
         guild_member_role_ids = [role.id for role in guild_member.roles]
         netc_guild_member = self.bot.get_guild(NETC_GUILD_ID).get_member(target.id)
-        netc_guild_member_role_ids = [role.id for role in netc_guild_member.roles]
+        if netc_guild_member:
+            netc_guild_member_role_ids = [role.id for role in netc_guild_member.roles]
+        else:
+            netc_guild_member_role_ids = []
 
         # Check marine status
         is_marine = MARINE_ROLE in guild_member_role_ids
@@ -114,15 +117,24 @@ class CheckPromotion(commands.Cog):
                     if days_with_e3 is None or latest_e3_role_log.change_type != RoleChangeType.ADDED:
                         days_with_e3 = 0
 
-                    if voyage_count >= 15 and days_with_e3 >= 14:
-                        requirements += f":white_check_mark: Go on fifteen voyages ({voyage_count}/15) and wait two weeks as an E-3 ({days_with_e3}/14) \n"
-                    elif voyage_count >= 20 and days_with_e3 >= 7:
-                        requirements += f":white_check_mark: Go on twenty voyages ({voyage_count}/20)  and wait one week as an E-3 ({days_with_e3}/7) \n"
+                    # Check the condition for 20 voyages and 7 days first, since it's the higher requirement
+                    if voyage_count >= 20:
+                        if days_with_e3 >= 7:
+                            requirements += f":white_check_mark: Go on twenty voyages ({voyage_count}/20) and wait one week as an E-3 ({days_with_e3}/7) \n"
+                        else:
+                            requirements += f":x: Go on twenty voyages ({voyage_count}/20) and wait one week as an E-3 ({days_with_e3}/7) \n"
+                    # Only if 20 voyages requirement is not in progress or complete, check for 15 voyages and 14 days
+                    elif voyage_count >= 15:
+                        if days_with_e3 >= 14:
+                            requirements += f":white_check_mark: Go on fifteen voyages ({voyage_count}/15) and wait two weeks as an E-3 ({days_with_e3}/14) \n"
+                        else:
+                            requirements += f":x: Go on fifteen voyages ({voyage_count}/15) and wait two weeks as an E-3 ({days_with_e3}/14) \n"
+                    # If neither of the above conditions are met, show both requirements as unmet
                     else:
                         requirements += f":x: Go on fifteen voyages ({voyage_count}/15) and wait two weeks as an E-3 ({days_with_e3}/14) \n"
                         requirements += "**OR**\n"
-                        requirements += f":x: Go on twenty voyages ({voyage_count}/20)  and wait one week as an E-3 ({days_with_e3}/7) \n"
-                        requirements += f"**AND**\n"
+                        requirements += f":x: Go on twenty voyages ({voyage_count}/20) and wait one week as an E-3 ({days_with_e3}/7) \n"
+                        requirements += f"**AND**\n"\
 
                     ## Completed JLA ##
                     latest_jla_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id, JLA_GRADUATE_ROLE)
