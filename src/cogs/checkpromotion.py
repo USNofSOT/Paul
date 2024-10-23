@@ -84,6 +84,7 @@ class CheckPromotion(commands.Cog):
             requirements=""
             additional_requirements=[]
             has_next = False
+            can_promote = False
             match next_rank.index:
                 case 3: # Able Seaman
 
@@ -367,6 +368,13 @@ class CheckPromotion(commands.Cog):
                     value=f"{requirements}",
                     inline=False
                 )
+            if requirements.count(":x:") == 0:
+                can_promote = True
+            else:
+                can_promote = False
+
+            embed.colour = discord.Colour.green() if can_promote else discord.Colour.red()
+
             additional_requirements = next_rank.rank_prerequisites.additional_requirements if next_rank.rank_prerequisites else []
             if len(additional_requirements) > 0:
                 embed.add_field(
