@@ -196,9 +196,11 @@ REAR_ADMIRAL = NavyRank(
     role_ids=O8_ROLES,
     name="Rear Admiral",
     marine_name="Major General",
+    promotion_index={16}, # Admiral Of The Navy
     rank_prerequisites=RankPrerequisites(
         [
-            "Hand selected by the AOTN"
+            "Hand selected by the AOTN",
+            "Has to give flag ship command to another SO"
         ]
     )
 )
