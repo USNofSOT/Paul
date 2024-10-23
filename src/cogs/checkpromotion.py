@@ -364,7 +364,7 @@ class CheckPromotion(commands.Cog):
 
             if len(requirements) > 0:
                 embed.add_field(
-                    name=f"Promotion Requirements - {promoting_to}",
+                    name=f"Promotion Requirements - {promoting_to} \n{next_rank.rank_context.embed_url if next_rank.rank_context else ''}",
                     value=f"{requirements}",
                     inline=False
                 )
@@ -372,8 +372,9 @@ class CheckPromotion(commands.Cog):
                 can_promote = True
             else:
                 can_promote = False
-
             embed.colour = discord.Colour.green() if can_promote else discord.Colour.red()
+            if requirements.count(":information_source:") > 0:
+                embed.colour = discord.Colour.blue()
 
             additional_requirements = next_rank.rank_prerequisites.additional_requirements if next_rank.rank_prerequisites else []
             if len(additional_requirements) > 0:
