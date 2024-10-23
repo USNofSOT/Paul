@@ -1,3 +1,4 @@
+from dis import disco
 from enum import member
 
 import discord
@@ -84,7 +85,6 @@ class CheckPromotion(commands.Cog):
             requirements=""
             additional_requirements=[]
             has_next = False
-            can_promote = False
             match next_rank.index:
                 case 3: # Able Seaman
 
@@ -368,13 +368,19 @@ class CheckPromotion(commands.Cog):
                     value=f"{requirements}",
                     inline=False
                 )
-            if requirements.count(":x:") == 0:
-                can_promote = True
-            else:
-                can_promote = False
-            embed.colour = discord.Colour.green() if can_promote else discord.Colour.red()
-            if requirements.count(":information_source:") > 0 or requirements.count(":white_check_mark:") <= 0 and requirements.count(":x:") <= 0:
+
+            # If a user has one x
+            if requirements.count(":x:") >= 1:
+                embed.colour = discord.Colour.red()
+            # If an information source is present
+            elif requirements.count(":information_source:") >= 1:
                 embed.colour = discord.Colour.blue()
+            # If no white check marks are present
+            elif requirements.count(":white_check_mark:") == 0:
+                embed.colour = discord.Colour.blue()
+            # If there is more than one white check mark
+            elif requirements.count(":white_check_mark:") > 1:
+                embed.colour = discord.Colour.green()
 
             additional_requirements = next_rank.rank_prerequisites.additional_requirements if next_rank.rank_prerequisites else []
             if len(additional_requirements) > 0:
