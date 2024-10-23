@@ -373,7 +373,7 @@ class CheckPromotion(commands.Cog):
             else:
                 can_promote = False
             embed.colour = discord.Colour.green() if can_promote else discord.Colour.red()
-            if requirements.count(":information_source:") > 0:
+            if requirements.count(":information_source:") > 0 or requirements.count(":white_check_mark:") <= 0 and requirements.count(":x:") <= 0:
                 embed.colour = discord.Colour.blue()
 
             additional_requirements = next_rank.rank_prerequisites.additional_requirements if next_rank.rank_prerequisites else []
