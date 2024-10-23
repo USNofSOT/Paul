@@ -31,8 +31,8 @@ class On_Edit_Voyages(commands.Cog):
         if payload.channel_id == VOYAGE_LOGS:
             log.info(f"[{payload.message_id}] [ON_EDIT] Voyage log message edited.")
             log_id = payload.message_id
-            host = self.hosted_repository.get_host_by_log_id(log_id)
             try:
+                host = self.hosted_repository.get_host_by_log_id(log_id)
                 if host:
                     host_id = host.discord_id
 
@@ -61,11 +61,16 @@ class On_Edit_Voyages(commands.Cog):
                 guild = self.bot.get_guild(GUILD_ID)
                 logs_channel = guild.get_channel(VOYAGE_LOGS)
                 log_message = await logs_channel.fetch_message(int(log_id))
+
+                await Process_Voyage_Log.process_voyage_log(log_message)
                 
             except AttributeError as e:
                 log.info(f"[{log_id}] Was never in Database to edit.")
-                log.warning(f"[{log_id}], {e}")    
-                await Process_Voyage_Log.process_voyage_log(log_message)
+                log.warning(f"[{log_id}], {e}")
+            except Exception as e:
+                log.error(e)
+                raise e
+                
             
         self.subclass_repository.close_session()
         self.hosted_repository.close_session()
