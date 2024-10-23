@@ -4,6 +4,15 @@ from dataclasses import dataclass
 from config.main_server import GUILD_ID
 
 @dataclass
+class Abbreviation:
+    abbreviation: str = None # The abbreviation
+    meaning: str = None # The meaning of the abbreviation
+
+@dataclass
+class RankAbbreviation(Abbreviation):
+    associated_rank: NavyRank = None # The rank that the abbreviation is associated with
+
+@dataclass
 class RankContext:
     short_definition: str = None # Short definition of the abbreviation
 
