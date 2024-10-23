@@ -348,7 +348,7 @@ class CheckPromotion(commands.Cog):
 
                 case 14:
                     requirements += ":x: Must bribe the Admiral"
-                case 15:
+                case 16:
                     requirements += ":x: Must bribe the Admiral"
                 case 101:
                     requirements += ":x: Viewed [training video #1](https://www.youtube.com/watch?v=dQw4w9WgXcQ)"
