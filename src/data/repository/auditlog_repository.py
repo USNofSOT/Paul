@@ -4,7 +4,8 @@ from typing import Type
 
 from sqlalchemy.orm import sessionmaker
 
-from src.data import NameChangeLog, AuditLog, RoleChangeLog, RoleChangeType, TimeoutLog
+from src.data import NameChangeLog, AuditLog, RoleChangeLog, RoleChangeType, TimeoutLog, BotInteractionType, \
+    BotInteractionLog
 from src.data.engine import engine
 from src.data.repository.sailor_repository import ensure_sailor_exists
 from src.utils.time_utils import utc_time_now
@@ -92,6 +93,26 @@ class AuditLogRepository:
             return log_entry
         except Exception as e:
             log.error(f"Error logging name change: {e}")
+            self.session.rollback()
+
+    def log_interaction(self, interaction_type: BotInteractionType, guild_id: int, channel_id: int, user_id: int, command_name: str, failed: bool = False) -> BotInteractionLog:
+        try:
+            log_entry = BotInteractionLog(
+                interaction_type=interaction_type,
+                guild_id=guild_id,
+                channel_id=channel_id,
+                target_id=user_id,
+                command_name=command_name,
+                failed=failed,
+                log_time=utc_time_now()
+            )
+
+            self.session.add(log_entry)
+            self.session.commit()
+            log.info(f"Interaction logged for {user_id} ({command_name}).")
+            return log_entry
+        except Exception as e:
+            log.error(f"Error logging interaction: {e}")
             self.session.rollback()
 
     def log_timeout(self, target_id: int, changed_by_id: int, guild_id: int, timed_out_until_before: datetime, timed_out_until: datetime):
