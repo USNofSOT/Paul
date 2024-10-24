@@ -38,7 +38,7 @@ ABBREVIATION_COMMANDER = RankAbbreviation(
 ABBREVIATION_COLONEL = RankAbbreviation(
     abbreviation="COL",
     meaning="Colonel",
-    associated_rank=COMMANDER
+    associated_rank=CAPTAIN
 )
 ABBREVIATION_COMMODORE = RankAbbreviation(
     abbreviation="COM",
