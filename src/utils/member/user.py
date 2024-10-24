@@ -94,16 +94,12 @@ async def get_member_embed(bot, interaction, member: discord.Member) -> discord.
         inline=True
     )
 
-    total_voyages = database_report.sailor.voyage_count
-    # Force voyage count int will act as a modifier
-    # If the value is -1 it will subtract from the total voyages
-    # If the value is 1 it will add to the total voyages etc.
-    if database_report.sailor.force_voyage_count:
-        total_voyages += database_report.sailor.force_voyage_count
+    total_voyages = modify_points(database_report.sailor.voyage_count, database_report.sailor.force_voyage_count)
+    total_voyages_display = f"{total_voyages} ({database_report.sailor.voyage_count})" if database_report.sailor.force_voyage_count != 0 else str(total_voyages)
 
     embed.add_field(
         name="Total Voyages",
-        value=total_voyages,
+        value=total_voyages_display,
         inline=True
     )
 
@@ -115,6 +111,9 @@ async def get_member_embed(bot, interaction, member: discord.Member) -> discord.
             last_hosted = ":x: " + last_hosted_format
         else:
             last_hosted = ":white_check_mark: " + last_hosted_format
+
+    total_hosted = modify_points(database_report.sailor.hosted_count, database_report.sailor.force_hosted_count)
+    total_hosted_display = f"{total_hosted} ({database_report.sailor.hosted_count})" if database_report.sailor.force_hosted_count != 0  else str(total_hosted)
 
     interaction_user_roles = [role.id for role in member.roles]
     if any(role in interaction_user_roles for role in NCO_AND_UP):
@@ -130,7 +129,7 @@ async def get_member_embed(bot, interaction, member: discord.Member) -> discord.
         )
         embed.add_field(
             name="Total Hosted",
-            value=database_report.sailor.hosted_count,
+            value=total_hosted_display,
             inline=True
         )
 
@@ -149,34 +148,37 @@ async def get_member_embed(bot, interaction, member: discord.Member) -> discord.
         embed.add_field(name="Awards / Titles", value="None", inline=True)
 
     carpenter_emoji = "<:Planks:1256589596473692272>"
-    carpenter_points = modify_points(database_report.sailor.carpenter_points,
-                                     database_report.sailor.force_carpenter_points)
+    carpenter_points = modify_points(database_report.sailor.carpenter_points, database_report.sailor.force_carpenter_points)
+    carpenter_points_display = f"{carpenter_points} ({database_report.sailor.carpenter_points})" if database_report.sailor.force_carpenter_points != 0  else str(carpenter_points)
 
     flex_emoji = "<:Sword:1256589612202332313>"
     flex_points = modify_points(database_report.sailor.flex_points, database_report.sailor.force_flex_points)
+    flex_points_display = f"{flex_points} ({database_report.sailor.flex_points})" if database_report.sailor.force_flex_points != 0  else str(flex_points)
 
     cannoneer_emoji = "<:Cannon:1256589581894025236>"
-    cannoneer_points = modify_points(database_report.sailor.cannoneer_points,
-                                     database_report.sailor.force_cannoneer_points)
+    cannoneer_points = modify_points(database_report.sailor.cannoneer_points, database_report.sailor.force_cannoneer_points)
+    cannoneer_points_display = f"{cannoneer_points} ({database_report.sailor.cannoneer_points})" if database_report.sailor.force_cannoneer_points != 0  else str(cannoneer_points)
 
     helm_emoji = "<:Wheel:1256589625993068665>"
     helm_points = modify_points(database_report.sailor.helm_points, database_report.sailor.force_helm_points)
+    helm_points_display = f"{helm_points} ({database_report.sailor.helm_points})" if database_report.sailor.force_helm_points != 0  else str(helm_points)
 
     grenadier_emoji = "<:AthenaKeg:1030819975730040832>"
-    grenadier_points = modify_points(database_report.sailor.grenadier_points,
-                                     database_report.sailor.force_grenadier_points)
+    grenadier_points = modify_points(database_report.sailor.grenadier_points, database_report.sailor.force_grenadier_points)
+    grenadier_points_display = f"{grenadier_points} ({database_report.sailor.grenadier_points})" if database_report.sailor.force_grenadier_points != 0  else str(grenadier_points)
 
     surgeon_emoji = ":adhesive_bandage:"
     surgeon_points = modify_points(database_report.sailor.surgeon_points, database_report.sailor.force_surgeon_points)
+    surgeon_points_display = f"{surgeon_points} ({database_report.sailor.surgeon_points})" if database_report.sailor.force_surgeon_points != 0  else str(surgeon_points)
 
     embed.add_field(
         name="Subclasses",
-        value=f"{carpenter_emoji} Carpenter: {carpenter_points} \n"
-              f"{flex_emoji} Flex: {flex_points} \n"
-              f"{cannoneer_emoji} Cannoneer: {cannoneer_points} \n"
-              f"{helm_emoji} Helm: {helm_points} \n"
-              f"{grenadier_emoji} Grenadier: {grenadier_points} \n"
-              f"{surgeon_emoji} Surgeon: {surgeon_points}",
+        value=f"{carpenter_emoji} Carpenter: {carpenter_points_display} \n"
+              f"{flex_emoji} Flex: {flex_points_display} \n"
+              f"{cannoneer_emoji} Cannoneer: {cannoneer_points_display} \n"
+              f"{helm_emoji} Helm: {helm_points_display} \n"
+              f"{grenadier_emoji} Grenadier: {grenadier_points_display} \n"
+              f"{surgeon_emoji} Surgeon: {surgeon_points_display}",
         inline=True
     )
     coin_repository = CoinRepository()

@@ -30,6 +30,7 @@ O5_ROLES = [933909780639150101] # Commander
 O6_ROLES = [933909668550553630] # Captain
 O7_ROLES = [933909182711746570] # Commodore
 O8_ROLES = [1157429131416449134] # Rear Admiral
+AOTN_ROLES = [933914043935248424] # Admiral of the Navy
 RT_ROLES = [958152319424413726] # Retired
 
 ###############################################################################
@@ -38,6 +39,11 @@ RT_ROLES = [958152319424413726] # Retired
 NETC_ROLE = 1034233491707150376 # NETC Department
 NSC_ROLE = 1293725126562680985 # NSC Department
 NRC_ROLE = 944631719456284735 # NRC Department
+SCHEDULING_ROLE = 972551831655956580 # Scheduling Department
+LOGISTICS_ROLE = 1001313951931441172 # Logistics Department
+MEDIA_ROLE = 1083502355506540624 # Media Department
+
+SPD_ROLES = [NETC_ROLE, NSC_ROLE, NRC_ROLE, SCHEDULING_ROLE, LOGISTICS_ROLE, MEDIA_ROLE]
 
 ###############################################################################
 # Permissions
@@ -70,3 +76,8 @@ E4_AND_UP = E4_ROLES + E5_AND_UP
 E3_AND_UP = E3_ROLES + E4_AND_UP
 E2_AND_UP = E2_ROLES + E3_AND_UP
 E1_AND_UP = E1_ROLES + E2_AND_UP
+
+###############################################################################
+# Misc
+###############################################################################
+MARINE_ROLE = 1169308325586931753

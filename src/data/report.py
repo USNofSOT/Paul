@@ -168,3 +168,8 @@ def member_report(discord_id: int) -> MemberReport:
         session.rollback()
     finally:
         session.close()
+
+@dataclass
+class grab_top_list:
+    sailor_id: int
+    count: int
