@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Type
 
-from sqlalchemy import update, desc, and_, or_
+from sqlalchemy import update, desc, and_, or_, func
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql.functions import coalesce 
 
