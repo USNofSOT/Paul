@@ -1,9 +1,9 @@
 import logging
 from typing import Any, Type
 
-from sqlalchemy import update
+from sqlalchemy import update, desc, and_, or_
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.sql.functions import coalesce, func
+from sqlalchemy.sql.functions import coalesce 
 
 from src.data import SubclassType
 from src.data.engine import engine
@@ -168,6 +168,71 @@ class SailorRepository:
             self.session.rollback()
             return False
 
+    def get_top_members_by_subclass(self, subclass_name, limit, member_list):
+        """
+        Gets the top members by subclass points.
+
+        Args:
+            subclass_name: The name of the subclass.
+            limit: The maximum number of members to return.
+
+        Returns:
+            A list of tuples, where each tuple contains the discord_id and their subclass points.
+        """
+        if limit == None:
+                limit = 3
+        try:
+            subclass= subclass_name+"_points"
+            results = self.session.query(Sailor.discord_id, getattr(Sailor, subclass)).filter(Sailor.discord_id.in_(member_list)).order_by(desc(getattr(Sailor, subclass))).limit(limit).all()
+            return results
+        except Exception as e:
+            log.error(f"Error getting top members by subclass '{subclass_name}': {e}")
+            return []  # Return an empty list in case of an error
+
+
+    def get_top_members_by_hosting_count(self, limit,member_list):
+        """
+        Gets the top members by hosting count.
+
+        Args:
+            limit: The maximum number of members to return.
+
+        Returns:
+            A list of tuples, where each tuple contains the discord_id and their hosting count.
+        """
+        if limit == None:
+            limit = 3
+        try:
+            results = self.session.query(Sailor.discord_id, Sailor.hosted_count).filter(Sailor.discord_id.in_(member_list)).order_by(desc(Sailor.hosted_count)).limit(limit).all()
+            return results
+        except Exception as e:
+            log.error(f"Error getting top members by hosting count: {e}")
+            return []  # Return an empty list in case of an error
+
+
+    def get_top_members_by_voyage_count(self, limit, member_list):
+            """
+            Gets the top members by voyage count.
+
+            Args:
+                limit: The maximum number of members to return.
+                member_list: List of current server members
+
+            Returns:
+                A list of tuples, where each tuple contains the discord_id and their voyage count.
+            """
+            if limit == None:
+                limit = 3
+            try:
+                results = self.session.query(Sailor.discord_id, Sailor.voyage_count).filter(Sailor.discord_id.in_(member_list)).order_by(desc(Sailor.voyage_count)).limit(limit).all()
+                return results
+            except Exception as e:
+                log.error(f"Error getting top members by voyage count: {e}")
+                return []  # Return an empty list in case of an error
+ 
+ 
+ 
+ ###  ignore the rest of this!!!!  New functions above this line!!!
 
 def ensure_sailor_exists(target_id: int) -> Type[Sailor] | None:
     """
@@ -306,5 +371,3 @@ def decrement_voyage_count_by_discord_id(target_id: int) -> bool:
         return False
     finally:
         session.close()
-
-
