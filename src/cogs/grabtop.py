@@ -12,7 +12,14 @@ class GrabTop(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name="grabtop", description="Display the top members in various categories")
-    async def grabtop(self, interaction: discord.Interaction):
+    @app_commands.describe(category="Select a specific category to display, or leave blank for all")
+    @app_commands.choices(category=[
+    app_commands.Choice(name="Voyages and Hosting", value="voyages_hosting"),
+    app_commands.Choice(name="Subclass Points", value="subclass_points"),
+    app_commands.Choice(name="Coins", value="coins"),
+    app_commands.Choice(name="Subclass Masters", value="subclass_masters")
+])
+    async def grabtop(self, interaction: discord.Interaction, category: str = None):
         """Displays the top members in various categories."""
         await interaction.response.defer(ephemeral=False)
 
@@ -43,21 +50,15 @@ class GrabTop(commands.Cog):
                    subclass_masters.append((int(member.id)))
                    
             # Create embeds for each category
-            embeds = [
-                #create_leaderboard_embed(self.bot, GUILD_ID, top_voyage_count, title="Top Voyage Count"),
-                #create_leaderboard_embed(self.bot, GUILD_ID, top_hosting_count, title="Top Hosting Count"),
-                create_dual_leaderboard_embed(self.bot, GUILD_ID, top_voyage_count, "Top Voyage Count", top_hosting_count, "Top Hosting Count"),
-                #create_leaderboard_embed(self.bot, GUILD_ID, top_carpenter, title="Top Carpenter Points"),
-                #create_leaderboard_embed(self.bot, GUILD_ID, top_flex, title="Top Flex Points"),
-                #create_leaderboard_embed(self.bot, GUILD_ID, top_cannoneer, title="Top Cannoneer Points"),
-                #create_leaderboard_embed(self.bot, GUILD_ID, top_helm, title="Top Helm Points"),
-                #create_leaderboard_embed(self.bot, GUILD_ID, top_grenadier, title="Top Grenadier Points"),
-                #create_leaderboard_embed(self.bot, GUILD_ID, top_field_surgeon, title="Top Field Surgeon Points"),
-                create_subclass_leaderboard_embed(self.bot, GUILD_ID, top_helm,top_flex,top_cannoneer,top_carpenter,top_field_surgeon,top_grenadier),
-                create_leaderboard_embed(self.bot, GUILD_ID, top_coin_holder, title="Most Challenge Coins"),
-                create_master_embed(self.bot, GUILD_ID, subclass_masters, title="Subclass Masters")
-                
-            ]
+            embeds = []
+            if category is None or category == "voyages_hosting":
+                embeds.append(create_dual_leaderboard_embed(self.bot, GUILD_ID, top_voyage_count, "Top Voyage Count", top_hosting_count, "Top Hosting Count"))
+            if category is None or category == "subclass_points":
+                embeds.append(create_subclass_leaderboard_embed(self.bot, GUILD_ID, top_helm, top_flex, top_cannoneer, top_carpenter, top_field_surgeon, top_grenadier))
+            if category is None or category == "coins":
+                embeds.append(create_leaderboard_embed(self.bot, GUILD_ID, top_coin_holder, title="Most Challenge Coins"))
+            if category is None or category == "subclass_masters":
+                embeds.append(create_master_embed(self.bot, GUILD_ID, subclass_masters, title="Subclass Masters"))
 
             # Send the embeds
             for embed in embeds:
