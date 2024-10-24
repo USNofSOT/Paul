@@ -24,6 +24,13 @@ class VoyageRepository:
     def close_session(self):
         self.session.close()
 
+    def count_voyages_by_target_id(self, target_id: int) -> int:
+        try:
+            return self.session.query(Voyages).filter(Voyages.target_id == target_id).count()
+        except Exception as e:
+            log.error(f"Error counting voyage log entries for target: {e}")
+            raise e
+
     def get_voyages_by_log_id(self, log_id: int) -> list[Type[Voyages]]:
         try:
             return self.session.query(Voyages).filter(Voyages.log_id == log_id).all()

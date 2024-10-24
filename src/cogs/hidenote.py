@@ -25,7 +25,7 @@ class HideNote(commands.Cog):
         modnote_repository: ModNoteRepository = ModNoteRepository()
         sailor_repository: SailorRepository = SailorRepository()
         await interaction.response.defer (ephemeral=True)
-
+    
         # Quick exit if no target or note is provided
         if target is None:
             await interaction.followup.send("You didn't add a target.")
@@ -33,7 +33,9 @@ class HideNote(commands.Cog):
         if noteid is None:
             await interaction.followup.send("You didn't add a note id.")
             return
-
+        if interaction.user.id == target._user.id:
+            await interaction.followup.send("You cannot hide your own Notes.")
+            return
         # Attempt to update the information in the database
         try:
             # hide note
@@ -56,7 +58,7 @@ class HideNote(commands.Cog):
             note_embed.add_field(name="Hidden By", value=interaction.user.mention)
             await interaction.followup.send(embed=note_embed)
         else:
-            await interaction.followup.send(embed=error_embed("Failled to hide note, please try again."))
+            await interaction.followup.send(embed=error_embed("Failed to hide note, please try again."))
 
         modnote_repository.close_session()
         sailor_repository.close_session()

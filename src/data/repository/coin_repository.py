@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 
 from sqlalchemy.orm import sessionmaker
-
+from sqlalchemy import func
 from src.data.engine import engine
 from src.data.models import Coins
 
@@ -136,5 +136,28 @@ class CoinRepository:
             return regular_coins, commander_coins
         except Exception as e:
             log.error(f"Error retriving coins by user: {e}")
+        finally:
+            self.session.close()
+
+    def get_top_coin_holders(self, limit, member_list):
+        """
+         Gets the top coin holders.
+
+         Args:
+            limit: The maximum number of coin holders to return.
+
+         Returns:
+            A list of tuples, where each tuple contains the target_id and their total coin count.
+        """
+        if limit == None:
+            limit = 3
+        try:
+                results = self.session.query(
+            Coins.target_id, func.count(Coins.target_id).label('total_coins')
+        ).group_by(Coins.target_id).filter(Coins.target_id.in_(member_list)).order_by(func.count(Coins.target_id).desc()).limit(limit).all()
+                return results
+        
+        except Exception as e:
+            log.error(f"Error getting top coin holders: {e}")
         finally:
             self.session.close()
