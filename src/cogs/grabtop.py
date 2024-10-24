@@ -5,7 +5,7 @@ from discord import app_commands
 from src.config import GUILD_ID
 from src.data.repository.sailor_repository import SailorRepository
 from src.data.repository.coin_repository import CoinRepository
-from src.utils.leaderboard import create_leaderboard_embed, create_master_embed
+from src.utils.leaderboard import create_leaderboard_embed, create_master_embed, create_subclass_leaderboard_embed, create_dual_leaderboard_embed
 
 class GrabTop(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -22,7 +22,7 @@ class GrabTop(commands.Cog):
         id_list_of_members = [member.id for member in guild.members]
                 
         try:
-            # Get the top 3 current members for each category
+            # Get the top members for each category
             top_voyage_count = sailor_repo.get_top_members_by_voyage_count(3, id_list_of_members)  # Top 3 by voyage count
             top_hosting_count = sailor_repo.get_top_members_by_hosting_count(3, id_list_of_members)  # Top 3 by hosting count
             
@@ -43,17 +43,17 @@ class GrabTop(commands.Cog):
                    subclass_masters.append((int(member.id)))
                    
             # Create embeds for each category
-            print(f"Subclass Masters: {subclass_masters}")
-            print(f"Helm: {top_helm}")
             embeds = [
-                create_leaderboard_embed(self.bot, GUILD_ID, top_voyage_count, title="Top Voyage Count"),
-                create_leaderboard_embed(self.bot, GUILD_ID, top_hosting_count, title="Top Hosting Count"),
-                create_leaderboard_embed(self.bot, GUILD_ID, top_carpenter, title="Top Carpenter Points"),
-                create_leaderboard_embed(self.bot, GUILD_ID, top_flex, title="Top Flex Points"),
-                create_leaderboard_embed(self.bot, GUILD_ID, top_cannoneer, title="Top Cannoneer Points"),
-                create_leaderboard_embed(self.bot, GUILD_ID, top_helm, title="Top Helm Points"),
-                create_leaderboard_embed(self.bot, GUILD_ID, top_grenadier, title="Top Grenadier Points"),
-                create_leaderboard_embed(self.bot, GUILD_ID, top_field_surgeon, title="Top Field Surgeon Points"),
+                #create_leaderboard_embed(self.bot, GUILD_ID, top_voyage_count, title="Top Voyage Count"),
+                #create_leaderboard_embed(self.bot, GUILD_ID, top_hosting_count, title="Top Hosting Count"),
+                create_dual_leaderboard_embed(self.bot, GUILD_ID, top_voyage_count, "Top Voyage Count", top_hosting_count, "Top Hosting Count"),
+                #create_leaderboard_embed(self.bot, GUILD_ID, top_carpenter, title="Top Carpenter Points"),
+                #create_leaderboard_embed(self.bot, GUILD_ID, top_flex, title="Top Flex Points"),
+                #create_leaderboard_embed(self.bot, GUILD_ID, top_cannoneer, title="Top Cannoneer Points"),
+                #create_leaderboard_embed(self.bot, GUILD_ID, top_helm, title="Top Helm Points"),
+                #create_leaderboard_embed(self.bot, GUILD_ID, top_grenadier, title="Top Grenadier Points"),
+                #create_leaderboard_embed(self.bot, GUILD_ID, top_field_surgeon, title="Top Field Surgeon Points"),
+                create_subclass_leaderboard_embed(self.bot, GUILD_ID, top_helm,top_flex,top_cannoneer,top_carpenter,top_field_surgeon,top_grenadier),
                 create_leaderboard_embed(self.bot, GUILD_ID, top_coin_holder, title="Most Challenge Coins"),
                 create_master_embed(self.bot, GUILD_ID, subclass_masters, title="Subclass Masters")
                 
