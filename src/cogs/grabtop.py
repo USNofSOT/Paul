@@ -19,7 +19,19 @@ class GrabTop(commands.Cog):
     app_commands.Choice(name="Coins", value="coins"),
     app_commands.Choice(name="Subclass Masters", value="subclass_masters")
 ])
-    async def grabtop(self, interaction: discord.Interaction, category: str = None):
+    @app_commands.choices(limit=[  # Added choices for limit
+    app_commands.Choice(name="1", value=1),
+    app_commands.Choice(name="2", value=2),
+    app_commands.Choice(name="3", value=3),
+    app_commands.Choice(name="4", value=4),
+    app_commands.Choice(name="5", value=5),
+    app_commands.Choice(name="6", value=6),
+    app_commands.Choice(name="7", value=7),
+    app_commands.Choice(name="8", value=8),
+    app_commands.Choice(name="9", value=9),
+    app_commands.Choice(name="10", value=10)
+])
+    async def grabtop(self, interaction: discord.Interaction, category: str = None, limit: int=3):
         """Displays the top members in various categories."""
         await interaction.response.defer(ephemeral=False)
 
@@ -30,17 +42,17 @@ class GrabTop(commands.Cog):
                 
         try:
             # Get the top members for each category
-            top_voyage_count = sailor_repo.get_top_members_by_voyage_count(3, id_list_of_members)  # Top 3 by voyage count
-            top_hosting_count = sailor_repo.get_top_members_by_hosting_count(3, id_list_of_members)  # Top 3 by hosting count
+            top_voyage_count = sailor_repo.get_top_members_by_voyage_count(limit, id_list_of_members)  # Top voyage count
+            top_hosting_count = sailor_repo.get_top_members_by_hosting_count(limit, id_list_of_members)  # Top hosting count
             
-            top_carpenter = sailor_repo.get_top_members_by_subclass("carpenter", 3, id_list_of_members)  # Top 3 by carpenter points
-            top_flex = sailor_repo.get_top_members_by_subclass("flex", 3, id_list_of_members)  # Top 3 by flex points
-            top_cannoneer = sailor_repo.get_top_members_by_subclass("cannoneer", 3, id_list_of_members)  # Top 3 by cannoneer points
-            top_helm = sailor_repo.get_top_members_by_subclass("helm", 3, id_list_of_members)  # Top 3 by helm points
-            top_grenadier = sailor_repo.get_top_members_by_subclass("grenadier", 3, id_list_of_members)  # Top 3 by grenadier points
-            top_field_surgeon = sailor_repo.get_top_members_by_subclass("surgeon", 3, id_list_of_members)  # Top 3 by field surgeon points
+            top_carpenter = sailor_repo.get_top_members_by_subclass("carpenter", limit, id_list_of_members)  # Top carpenter points
+            top_flex = sailor_repo.get_top_members_by_subclass("flex", limit, id_list_of_members)  # Top flex points
+            top_cannoneer = sailor_repo.get_top_members_by_subclass("cannoneer", limit, id_list_of_members)  # Top cannoneer points
+            top_helm = sailor_repo.get_top_members_by_subclass("helm", limit, id_list_of_members)  # Top helm points
+            top_grenadier = sailor_repo.get_top_members_by_subclass("grenadier", limit, id_list_of_members)  # Top grenadier points
+            top_field_surgeon = sailor_repo.get_top_members_by_subclass("surgeon", limit, id_list_of_members)  # Top field surgeon points
 
-            top_coin_holder = coin_repo.get_top_coin_holders(3, id_list_of_members) #Top 3 Coin Holders
+            top_coin_holder = coin_repo.get_top_coin_holders(limit, id_list_of_members) #Top 3 Coin Holders
 
            # Get lists of members with over 50 points in ALL specified subclasses
             subclass_masters = []
