@@ -4,8 +4,11 @@ from logging import getLogger
 from typing import Optional
 
 from discord.ext import commands
+from discord.ext.commands import CommandNotFound
 
 from src.cogs import EXTENTIONS
+from src.data import BotInteractionType
+from src.data.repository.auditlog_repository import AuditLogRepository
 
 log= getLogger(__name__)
 import discord
@@ -44,8 +47,29 @@ class Bot(discord.ext.commands.Bot):
         """Sending error Message"""
         pass
 
+    async def on_command(self, context: commands.Context):
+        try:
+            audit_log_repository = AuditLogRepository()
+            log.info(f"[COMMAND] [{context.message.id}] Received Command:")
+            log.info(f"[COMMAND] [{context.message.id}] > Guild: {context.guild or 'None'}")
+            log.info(f"[COMMAND] [{context.message.id}] > Channel: {context.channel or 'None'}")
+            log.info(f"[COMMAND] [{context.message.id}] > User: {context.author or 'None'}")
+            log.info(f"[COMMAND] [{context.message.id}] > Command: {context.command or 'None'}")
+            log.info(f"[COMMAND] [{context.message.id}] > Arguments: {context.args or 'None'}")
+            audit_log_repository.log_interaction(
+                interaction_type=BotInteractionType.COMMAND,
+                guild_id=context.guild.id,
+                channel_id=context.channel.id,
+                user_id=context.author.id,
+                command_name=str(context.command) or 'None',
+                failed=context.command_failed
+            )
+        except CommandNotFound:
+            pass
+
     async def on_interaction(self, interaction: discord.Interaction):
         if interaction.type == discord.InteractionType.application_command:
+            audit_log_repository = AuditLogRepository()
             log.info(f"[INTERACTION] [{interaction.id}] Received Interaction:")
             log.info(f"[INTERACTION] [{interaction.id}] > Guild: {interaction.guild or 'None'}")
             log.info(f"[INTERACTION] [{interaction.id}] > Channel: {interaction.channel or 'None'}")
@@ -53,6 +77,15 @@ class Bot(discord.ext.commands.Bot):
 
             log.info(f"[INTERACTION] [{interaction.id}] > Command: {interaction.data['name'] or 'None'}")
             log.info(f"[INTERACTION] [{interaction.id}] > > Options: {interaction.data.get('options', [])}")
+            audit_log_repository.log_interaction(
+                interaction_type=BotInteractionType.INTERACTION,
+                guild_id=interaction.guild.id,
+                channel_id=interaction.channel.id,
+                user_id=interaction.user.id,
+                command_name=str(interaction.data['name']) or 'None',
+                failed=interaction.command_failed
+            )
+
 
     async def setup_hook(self):
         log.info(f"Loading {len(EXTENTIONS)} extensions")
