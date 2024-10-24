@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 
-import discord
+import discord, tempfile
+import asyncio
 from discord.ext import commands
 from discord import app_commands
 
@@ -8,7 +9,7 @@ from logging import getLogger
 
 from src.data.repository.voyage_repository import VoyageRepository
 from src.data.repository.hosted_repository import HostedRepository
-from src.config import NCO_AND_UP
+from src.config import NCO_AND_UP, NCO_AND_UP_PURE
 from src.utils.time_utils import get_time_difference_past, format_time
 
 import os
@@ -69,14 +70,18 @@ class CrewReport(commands.Cog):
             embed3, hosted_graph = self.send_hosted_graph(names_hosted, member_hosted, total_hosted_count)
             await interaction.followup.send(embeds=[embed1,embed2,embed3], files=[voyage_graph, hosted_graph])
 
-            os.remove("./voyage_pie_chart.png")
-            os.remove("./hosted_pie_chart.png")
+            
         except Exception as e:
             log.error(f"Error getting squad report: {e}")
             await interaction.followup.send("Error getting squad report", ephemeral=True)
         finally:
             self.voyage_repo.close_session()
             self.hosted_repo.close_session()
+        try:
+            os.remove("./voyage_pie_chart.png")
+            os.remove("./hosted_pie_chart.png")
+        except Exception as e:
+            log.error(f"Error removing file: {e}")
 
     def send_voyage_graph(self, names: list, member_voyages: list, total_voyage_count: int):
         embed = discord.Embed(title="", color=discord.Color.green())
@@ -169,10 +174,10 @@ class CrewReport(commands.Cog):
         embed.add_field(name="Members missing biweekly hosting requirement :prohibited:", value="", inline=False)
 
         last_hosted = self.hosted_repo.get_last_hosted_by_target_ids([member.id for member in members])
-
         no_members = True
         for member in members:
-            if member.display_name in names_hosted:
+            member_role_ids = [role.id for role in member.roles]
+            if any(role in member_role_ids for role in NCO_AND_UP_PURE):
                 if get_time_difference_past(last_hosted.get(member.id)).days >= 14:
                     embed.add_field(name="", value=f"{member.display_name} - Last hosted: {format_time(get_time_difference_past(last_hosted.get(member.id)))}", inline=False)
                     no_members = False
