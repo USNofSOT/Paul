@@ -172,14 +172,21 @@ We may refer to the Sailor class for the discord_id as
 - changed_by (the person who took the action)
 """
 
-class AuditLog(Base):
+class AuditLogBare(Base):
     __abstract__ = True
 
     id = Column(Integer, primary_key=True, autoincrement=True) # The internal identifier
+
     target_id = mapped_column(ForeignKey("sailor.discord_id"), nullable=False) # The person who the action was taken on
-    changed_by_id = mapped_column(ForeignKey("sailor.discord_id")) # The person who took the action
     guild_id = Column(BIGINT, nullable=False) # The guild the action was taken in
+
     log_time = Column(DATETIME, nullable=False)
+
+
+class AuditLog(AuditLogBare):
+    __abstract__ = True
+    changed_by_id = mapped_column(ForeignKey("sailor.discord_id")) # The person who took the action
+
 
 class NameChangeLog(AuditLog):
     __tablename__ = "log_name_change"
@@ -205,6 +212,18 @@ class TimeoutLog(AuditLog):
     timed_out_until_before = Column(DATETIME, nullable=True)
     # The timeout time after the new timeout was applied (current timeout)
     timed_out_until = Column(DATETIME, nullable=True)
+
+class BotInteractionType(enum.Enum):
+    INTERACTION = "Interaction"
+    COMMAND = "Command"
+
+class BotInteractionLog(AuditLogBare):
+    __tablename__ = "log_bot_interaction"
+
+    interaction_type = Column(Enum(BotInteractionType), nullable=False)
+    channel_id = Column(BIGINT, nullable=True)
+    command_name = Column(VARCHAR(32), nullable=True)
+    failed = Column(BOOLEAN, server_default="0")
 
     @property
     def timeout_removed(self) -> bool:
