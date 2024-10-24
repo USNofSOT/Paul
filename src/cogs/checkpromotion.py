@@ -70,6 +70,13 @@ class CheckPromotion(commands.Cog):
             pass
         current_rank: NavyRank = get_current_rank(guild_member)
 
+        if current_rank is None:
+            embed.add_field(
+                name="Current Rank",
+                value="No rank found",
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=False)
+            return
         current_rank_name = current_rank.name if not is_marine else current_rank.marine_name
         if E2_ROLES[1] in guild_member_role_ids:
             current_rank_name = "Seaman Apprentice"
