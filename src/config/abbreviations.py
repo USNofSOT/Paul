@@ -56,7 +56,7 @@ ABBREVIATION_CHIEF_PETTY_OFFICER = RankAbbreviation(
     associated_rank=CHIEF_PETTY_OFFICER
 )
 ABBREVIATION_MARINE_CAPTAIN = RankAbbreviation(
-    abbreviation="CPT",
+    abbreviation="MCAPT",
     meaning="Marine Captain",
     associated_rank=LIEUTENANT
 )
