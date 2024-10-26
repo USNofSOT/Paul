@@ -20,7 +20,7 @@ def get_next_award(
     for award in member_awards:
         if highest_award is None or award.threshold > highest_award.threshold:
             highest_award = award
-
+    next_award = None
     for award in category_awards:
         if highest_award is None or award.threshold > highest_award.threshold:
             if next_award is None or award.threshold < next_award.threshold:
