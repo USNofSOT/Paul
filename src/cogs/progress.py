@@ -21,13 +21,13 @@ def handle_award_progress(target: discord.Member, medal_list: [Award], embed: di
     next_medal = get_next_award(target, medal_list)
     number_in_list = medal_list.index(current_medal) + 1 if current_medal else 0
     total_achievable_awards = len(medal_list)
-    previous_threshold = current_medal.threshold if current_medal else 0
+    #previous_threshold = current_medal.threshold if current_medal else 0
     next_threshold = next_medal.threshold if next_medal else 0
 
     if next_medal:
         result_string = (
             f"Next {medal_type} Award: <@&{next_medal.role_id}>\n"
-            f"> {progres_bar(current_count-previous_threshold, next_threshold-previous_threshold)} ({current_count}/{next_threshold}) "
+            f"> {progres_bar(current_count, next_threshold)} ({current_count}/{next_threshold}) "
         )
     else:
         result_string = f":white_check_mark: All {medal_type} Awards achieved!"
