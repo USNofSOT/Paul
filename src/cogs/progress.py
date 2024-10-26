@@ -61,7 +61,7 @@ class Progress(commands.Cog):
         if target is None:
             target = interaction.user
 
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.defer(ephemeral=False)
 
         # Get sailor
         sailor_repository = SailorRepository()
