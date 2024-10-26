@@ -27,7 +27,7 @@ def handle_award_progress(target: discord.Member, medal_list: [Award], embed: di
     if next_medal:
         result_string = (
             f"Next {medal_type} Award: <@&{next_medal.role_id}>\n"
-            f"> {progres_bar(current_count, next_threshold)} ({current_count}/{next_threshold})"
+            f"> {progres_bar(current_count-previous_threshold, next_threshold-previous_threshold)} ({current_count}/{next_threshold}) "
         )
     else:
         result_string = f":white_check_mark: All {medal_type} Awards achieved!"
@@ -78,7 +78,7 @@ class Progress(commands.Cog):
         handle_award_progress(target, VOYAGE_MEDALS, embed, "Voyage", sailor.voyage_count+sailor.force_voyage_count)
         if any(role_id in target_role_ids for role_id in NCO_AND_UP_PURE):
             handle_award_progress(target, HOSTED_MEDALS, embed, "Hosted", sailor.hosted_count+sailor.force_hosted_count)
-        handle_award_progress(target, SERVICE_STRIPES, embed, "Service Stripes", (discord.utils.utcnow() - target.joined_at).days // 30)
+        #handle_award_progress(target, SERVICE_STRIPES, embed, "Service Stripes", (discord.utils.utcnow() - target.joined_at).days // 30)
 
         handle_award_progress(target, CARPENTER_SUBCLASSES, embed, "Carpenter", sailor.carpenter_points+sailor.force_carpenter_points)
         handle_award_progress(target, FLEX_SUBCLASSES, embed, "Flex", sailor.flex_points+sailor.force_flex_points)
