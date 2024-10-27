@@ -1,10 +1,11 @@
 import enum
 import logging
+from typing import List
 
 from sqlalchemy import Column, Integer, BIGINT, ForeignKey, VARCHAR
 from sqlalchemy.dialects.mysql import TINYTEXT
-from sqlalchemy.orm import declarative_base, mapped_column
-from sqlalchemy.sql.sqltypes import BOOLEAN, TEXT, DATETIME, Enum, DateTime
+from sqlalchemy.orm import declarative_base, mapped_column, relationship, Mapped
+from sqlalchemy.sql.sqltypes import BOOLEAN, TEXT, DATETIME, Enum
 
 from src.utils.time_utils import get_time_difference
 from .engine import engine
@@ -65,6 +66,13 @@ class Hosted(Base):
     # amount = Column(Integer, server_default="1") Note: no longer needed
     log_time = Column(DATETIME)
 
+    # One-To-Many relationship with Voyages
+    voyages: Mapped[List["Voyages"]] = relationship("Voyages", back_populates="hosted")
+    # One-To-Many relationship with Subclasses
+    subclasses: Mapped[List["Subclasses"]] = relationship("Subclasses", back_populates="hosted")
+    # Many-to-One relationship with Sailor
+    target: Mapped["Sailor"] = relationship("Sailor", foreign_keys=[target_id])
+
 
 class ModNotes(Base):
     __tablename__ = "mod_notes"
@@ -78,6 +86,35 @@ class ModNotes(Base):
     who_hid = mapped_column(ForeignKey("sailor.discord_id"))
     hide_time = Column(DATETIME)
 
+class Subclasses(Base):
+    __tablename__ = "subclasses"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    author_id = mapped_column(ForeignKey("sailor.discord_id"))
+    log_id = mapped_column(ForeignKey("hosted.log_id"))
+    target_id = mapped_column(ForeignKey("sailor.discord_id"))
+    subclass = Column(Enum(SubclassType))
+    subclass_count = Column(Integer, server_default="1")
+    log_time = Column(DATETIME)
+
+    # Many-to-One relationship with Hosted
+    hosted: Mapped["Hosted"] = relationship("Hosted", back_populates="subclasses", foreign_keys=[log_id])
+    # Many-to-One relationship with Sailor for both the author and the target
+    target: Mapped["Sailor"] = relationship("Sailor", foreign_keys=[target_id])
+    author: Mapped["Sailor"] = relationship("Sailor", foreign_keys=[author_id])
+
+class Voyages(Base):
+    __tablename__ = "voyages"
+
+    log_id = mapped_column(ForeignKey("hosted.log_id"), primary_key=True)
+    target_id = mapped_column(ForeignKey("sailor.discord_id"), primary_key=True)
+    # amount = Column(Integer, server_default="1") Note: no longer needed
+    log_time = Column(DATETIME)
+
+    # Many-to-One relationship with Hosted
+    hosted: Mapped["Hosted"] = relationship("Hosted", back_populates="voyages", foreign_keys=[log_id])
+    # Many-to-One relationship with Sailor
+    target: Mapped["Sailor"] = relationship("Sailor", foreign_keys=[target_id])
 
 class Sailor(Base):
     __tablename__ = "sailor"
@@ -103,27 +140,16 @@ class Sailor(Base):
     force_voyage_count = Column(Integer, server_default="0")
     force_hosted_count = Column(Integer, server_default="0")
 
+    # One-to-Many relationship with Hosted
+    hosted: Mapped[List["Hosted"]] = relationship("Hosted", back_populates="target", foreign_keys=[Hosted.target_id])
+    # One-to-Many relationship with Subclasses
+    subclasses: Mapped[List["Subclasses"]] = relationship("Subclasses", back_populates="target", foreign_keys=[Subclasses.target_id])
+    # One-to-Many relationship with Voyages
+    voyages: Mapped[List["Voyages"]] = relationship("Voyages", back_populates="target", foreign_keys=[Voyages.target_id])
+
     def __str__(self):
         return f"[Sailor] {self.gamertag} ({self.discord_id})"
 
-class Subclasses(Base):
-    __tablename__ = "subclasses"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    author_id = mapped_column(ForeignKey("sailor.discord_id"))
-    log_id = Column(BIGINT)
-    target_id = mapped_column(ForeignKey("sailor.discord_id"))
-    subclass = Column(Enum(SubclassType))
-    subclass_count = Column(Integer, server_default="1")
-    log_time = Column(DATETIME)
-
-class Voyages(Base):
-    __tablename__ = "voyages"
-
-    log_id = Column(BIGINT, primary_key=True)
-    target_id = mapped_column(ForeignKey("sailor.discord_id"), primary_key=True)
-    # amount = Column(Integer, server_default="1") Note: no longer needed
-    log_time = Column(DATETIME)
 
 class TrainingRecord(Base):
     __tablename__ = "training_records"
