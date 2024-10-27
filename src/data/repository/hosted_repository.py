@@ -58,10 +58,9 @@ class HostedRepository:
             self.session.rollback()
             return False
         
-    def get_host_by_log_id(self, log_id: int) -> Sailor | None:
+    def get_host_by_log_id(self, log_id: int) -> Hosted | None:
         try:
-            host: Hosted | None = self.session.query(Hosted).filter(Hosted.log_id == log_id).first()
-            return self.session.query(Sailor).filter(Sailor.discord_id == host.target_id).first()
+            return self.session.query(Hosted).filter(Hosted.log_id == log_id).first()
         except Exception as e:
             log.error(f"Error getting hosted log entry: {e}")
             raise e    
