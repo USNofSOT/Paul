@@ -8,6 +8,7 @@ from discord.ext import commands
 from src.config import VOYAGE_LOGS, NSC_ROLE, CANNONEER_SYNONYMS, FLEX_SYNONYMS, CARPENTER_SYNONYMS, HELM_SYNONYMS, \
     SURGEON_SYNONYMS, GRENADIER_SYNONYMS, NCO_AND_UP, GUILD_ID
 from src.data import SubclassType
+from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.sailor_repository import ensure_sailor_exists
 from src.data.repository.subclass_repository import SubclassRepository
 from src.utils.discord_utils import get_best_display_name
@@ -112,6 +113,14 @@ class ConfirmView(discord.ui.View):
                 # ensure the sailor exists in the database
                 ensure_sailor_exists(discord_id)
                 subclass_repository.delete_subclasses_for_target_in_log(discord_id, self.log_id)
+
+                hosted_repository = HostedRepository()
+                host = hosted_repository.get_host_by_log_id(self.log_id)
+                if not host:
+                    return await interaction.followup.send(
+                        embed=error_embed(description="No hosted entry found for this voyage log"), ephemeral=True)
+                hosted_repository.close_session()
+
                 try:
                     log.info(f"[{self.log_id}] [Confirm] Adding subclasses for {discord_id}")
                     subclass_repository.save_subclass(self.author_id, self.log_id, discord_id, main_subclass)
