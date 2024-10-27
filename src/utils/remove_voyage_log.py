@@ -8,7 +8,7 @@ from src.utils.discord_utils import alert_engineers
 
 log = logging.getLogger(__name__)
 
-async def remove_voyage_log_data(bot, log_id, hosted_repository, voyage_repository):
+async def remove_voyage_log_data(bot, log_id, hosted_repository, voyage_repository, subclass_repository = None):
     log_txt = f"[{log_id}] remove_voyage_log_data called. \n"
     try:
         host = hosted_repository.get_host_by_log_id(log_id)
@@ -21,6 +21,10 @@ async def remove_voyage_log_data(bot, log_id, hosted_repository, voyage_reposito
                 log_txt += f" Removing voyage count for {participant_id}. \n"
                 decrement_voyage_count_by_discord_id(participant_id)
                 log_txt += f" Removed voyage count for {participant_id}. \n"
+                if subclass_repository:
+                    log_txt += f" Removing subclass entries for {participant_id}. \n"
+                    subclass_repository.remove_subclass_entries_by_discord_id(participant_id)
+                    log_txt += f" Removed subclass entries for {participant_id}. \n"
 
             log_txt += f" Removing voyage log entries for {log_id}. \n"
             remove_voyage_log_entries(log_id)

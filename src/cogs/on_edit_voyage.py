@@ -52,8 +52,16 @@ class On_Edit_Voyages(commands.Cog):
                         )
                 return
 
-
-            await remove_voyage_log_data(self.bot, log_id, hosted_repository, voyage_repository)
+            try:
+                await remove_voyage_log_data(self.bot, log_id, hosted_repository, voyage_repository)
+            except Exception as e:
+                log.error(f"[{log_id}] [ON_EDIT] Error removing old data: {e}")
+                await alert_engineers(
+                            bot=self.bot,
+                            message=f"Error removing old data for voyage log message {log_id}",
+                            exception=e
+                        )
+                return
 
             # Process the new message
             try:
