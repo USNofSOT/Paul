@@ -23,7 +23,7 @@ async def remove_voyage_log_data(bot, log_id, hosted_repository, voyage_reposito
                 log_txt += f" Removed voyage count for {participant_id}. \n"
                 if subclass_repository:
                     log_txt += f" Removing subclass entries for {participant_id}. \n"
-                    subclass_repository.remove_subclass_entries_by_discord_id(participant_id)
+                    subclass_repository.delete_subclasses_for_target_in_log(participant_id, log_id)
                     log_txt += f" Removed subclass entries for {participant_id}. \n"
 
             log_txt += f" Removing voyage log entries for {log_id}. \n"
