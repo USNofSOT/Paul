@@ -3,9 +3,20 @@ Generic embeds for the bot.
 """
 import discord
 
-from discord.ext import commands
-from discord.ext.commands.parameters import empty
+def member_embed(member: discord.Member) -> discord.Embed:
+    embed = default_embed(
+        title=f"{member.display_name or member.name}",
+        description=f"{member.mention}",
+        author=False
+    )
 
+    try:
+        avatar_url = member.guild_avatar.url if member.guild_avatar else member.avatar.url
+        embed.set_thumbnail(url=avatar_url)
+    except AttributeError:
+        pass
+
+    return embed
 
 def default_embed(title: str = None, description: str = None, author: bool  = True) -> discord.Embed:
     """
