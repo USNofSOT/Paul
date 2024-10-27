@@ -1,11 +1,34 @@
+from datetime import datetime
 from logging import getLogger
 
 import discord
 from discord.ext import commands
 
-from src.config import GUILD_ID
+from src.config import GUILD_ID, ENGINEERS
+from src.utils.embeds import error_embed
 
 log= getLogger(__name__)
+
+async def alert_engineers(bot: commands.Bot, message: str, exception: Exception = None):
+    guild = bot.get_guild(GUILD_ID)
+    engineers = ENGINEERS
+
+    embed = error_embed(
+        title="Unexpected Error Occurred",
+        description=f"{message}",
+        exception=exception
+    )
+    embed.timestamp = datetime.now()
+
+    # DM all engineers
+    for engineer_id in engineers:
+        engineer = guild.get_member(engineer_id)
+        if engineer:
+            try:
+                await engineer.send(embed=embed)
+            except discord.HTTPException:
+                log.error(f"Error sending alert to engineer {engineer_id}")
+
 
 def get_best_display_name(bot: commands.Bot, discord_id: int):
     """
