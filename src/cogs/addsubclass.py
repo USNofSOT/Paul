@@ -16,7 +16,7 @@ from src.utils.embeds import error_embed, default_embed
 log = getLogger(__name__)
 
 
-def retrieve_discord_id_from_process_line(line: str) -> int:
+def retrieve_discord_id_from_process_line(line: str) -> int or None:
     """
     Retrieve the Discord ID from a line of text.
 
@@ -25,9 +25,9 @@ def retrieve_discord_id_from_process_line(line: str) -> int:
     Returns:
         int: The Discord ID extracted from the line of text.
     """
-    pattern = r"<@!?(\d+)>"
+    pattern = r"^<@!?(\d+)>"
     match = re.search(pattern, line)
-    return int(match.group(1))
+    return int(match.group(1)) if match else None
 
 
 subclass_map = {**{alias: SubclassType.CANNONEER for alias in CANNONEER_SYNONYMS},
@@ -217,6 +217,8 @@ class AddSubclass(commands.Cog):
                 log.info(f"[{log_id}] Processing line: {process_line}")
                 # Retrieve the Discord ID from the line
                 discord_id = retrieve_discord_id_from_process_line(process_line)
+                if not discord_id:
+                    continue
 
                 # Get users name from GUILD or Anonymous
                 user_name = get_best_display_name(self.bot, discord_id)
