@@ -166,6 +166,6 @@ def remove_hosted_entry_by_log_id(log_id: int) -> bool:
     except Exception as e:
         print(f"Error removing hosted entry: {e}")
         session.rollback()
-        return False
+        raise e
     finally:
         session.close()

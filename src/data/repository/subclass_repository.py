@@ -128,6 +128,7 @@ class SubclassRepository:
 
         except Exception as e:
             log.error(f"Error clearing subclass entries for target {target_id} in log {log_id}: {e}")
+            raise e
 
     def delete_all_subclass_entries_for_log_id(self, log_id: int):
         """

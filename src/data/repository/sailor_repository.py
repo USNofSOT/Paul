@@ -271,7 +271,7 @@ def save_sailor(target_id: int) -> bool:
     except Exception as e:
         log.error(f"Error adding discord ID: {e}")
         session.rollback()
-        return False
+        raise e
     finally:
         session.close()
 
@@ -338,7 +338,7 @@ def decrement_hosted_count_by_discord_id(target_id: int) -> bool:
     except Exception as e:
         log.error(f"Error decrementing hosted count: {e}")
         session.rollback()
-        return False
+        raise e
     finally:
         session.close()
         
@@ -368,6 +368,6 @@ def decrement_voyage_count_by_discord_id(target_id: int) -> bool:
     except Exception as e:
         log.error(f"Error decrementing voyage count: {e}")
         session.rollback()
-        return False
+        raise e
     finally:
         session.close()
