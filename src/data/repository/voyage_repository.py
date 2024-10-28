@@ -223,7 +223,7 @@ def remove_voyage_by_log_id(log_id: int) -> bool:
     except Exception as e:
         print(f"Error removing voyage log entries: {e}")
         session.rollback()
-        return False
+        raise e
     finally:
         session.close()
 
@@ -246,7 +246,7 @@ def remove_voyage_log_entries(log_id: int) -> bool:
     except Exception as e:
         log.error(f"Error removing voyage log entries: {e}")
         session.rollback()
-        return False
+        raise e
     finally:
         session.close()
 
@@ -270,6 +270,6 @@ def remove_voyage_log_entry(log_id: int, target_id: int) -> bool:
     except Exception as e:
         log.error(f"Error removing voyage log entry: {e}")
         session.rollback()
-        return False
+        raise e
     finally:
         session.close()

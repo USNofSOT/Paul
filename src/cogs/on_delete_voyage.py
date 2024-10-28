@@ -57,7 +57,16 @@ class On_Delete_Voyages(commands.Cog):
                 )
                 return
 
-            await remove_voyage_log_data(self.bot, log_id, hosted_repository, voyage_repository)
+            try:
+                await remove_voyage_log_data(self.bot, log_id, hosted_repository, voyage_repository, subclass_repository)
+            except Exception as e:
+                log.error(f"[{log_id}] [ON_DELETE] Error removing old data: {e}")
+                await alert_engineers(
+                    bot=self.bot,
+                    message=f"Error removing data from voyage log message {log_id}",
+                    exception=e
+                )
+                return
 
         subclass_repository.close_session()
         hosted_repository.close_session()

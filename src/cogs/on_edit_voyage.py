@@ -2,9 +2,11 @@ from logging import getLogger
 
 import discord
 from discord.ext import commands
+from sqlalchemy.orm import make_transient, make_transient_to_detached
 from utils.process_voyage_log import Process_Voyage_Log
 
 from src.config import VOYAGE_LOGS, GUILD_ID
+from src.data import Subclasses
 from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.subclass_repository import SubclassRepository
 from src.data.repository.voyage_repository import VoyageRepository
@@ -52,8 +54,17 @@ class On_Edit_Voyages(commands.Cog):
                         )
                 return
 
-
-            await remove_voyage_log_data(self.bot, log_id, hosted_repository, voyage_repository)
+            try:
+                to_be_removed_subclasses : [Subclasses] = subclass_repository.entries_for_log_id(log_id)
+                await remove_voyage_log_data(self.bot, log_id, hosted_repository, voyage_repository, subclass_repository)
+            except Exception as e:
+                log.error(f"[{log_id}] [ON_EDIT] Error removing old data: {e}")
+                await alert_engineers(
+                            bot=self.bot,
+                            message=f"Error removing old data for voyage log message {log_id}",
+                            exception=e
+                        )
+                return
 
             # Process the new message
             try:
@@ -62,6 +73,18 @@ class On_Edit_Voyages(commands.Cog):
                 log_message = await logs_channel.fetch_message(int(log_id))
                 await Process_Voyage_Log.process_voyage_log(log_message)
                 log.info(f"[{log_id}] [ON_EDIT] Voyage log message successfully processed.")
+                if len(to_be_removed_subclasses):
+                    log.info(f"[{log_id}] [ON_EDIT] Found subclasses that need to be re-added: {to_be_removed_subclasses}")
+                    subclass_session = subclass_repository.get_session()
+                    for removed_subclass in to_be_removed_subclasses:
+                        subclass_repository.save_subclass(
+                            removed_subclass.author_id,
+                            removed_subclass.log_id,
+                            removed_subclass.target_id,
+                            removed_subclass.subclass,
+                            removed_subclass.subclass_count
+                        )
+                    log.info(f"[{log_id}] Re-added subclasses successfully")
             except Exception as e:
                 log.error(f"[{log_id}] [ON_EDIT] Error processing new data: {e}")
                 await alert_engineers(
