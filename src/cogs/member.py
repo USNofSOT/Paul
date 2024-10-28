@@ -21,11 +21,12 @@ class Member(commands.Cog):
     @app_commands.describe(target="Select the user you want to get information about")
     @app_commands.checks.has_any_role(*JE_AND_UP)
     async def addinfo(self, interaction: discord.interactions, target: Union[discord.Member, discord.Role] = None):
+        await interaction.response.defer()
         # If no mention is provided, get the information of the user who used the command
         if target is None:
             embed = await get_member_embed(self.bot, interaction, interaction.user)
             log.info(f"Member information requested for self {interaction.user.display_name or interaction.user.name}")
-            await interaction.response.send_message(embed=embed)
+            await interaction.followup.send(embed=embed)
             return
         else:
             # Check if it's a valid mention
@@ -35,14 +36,14 @@ class Member(commands.Cog):
                     description="Please provide a valid mention.",
                     footer=False
                 )
-                await interaction.response.send_message(embed=embed, ephemeral=True)
+                await interaction.followup.send(embed=embed, ephemeral=True)
                 return
 
         # Check if user is a user mention or a role mention
         if isinstance(target, discord.Member):
             embed = await get_member_embed(self.bot, interaction, target)
             log.info(f"Member information requested for {target.display_name or target.name}")
-            await interaction.response.send_message(embed=embed)
+            await interaction.followup.send(embed=embed)
             return
 
 
@@ -61,7 +62,7 @@ class Member(commands.Cog):
                     description="Please provide a role with less than 30 members.",
                     footer=False
                 )
-                await interaction.response.send_message(embed=embed, ephemeral=True)
+                await interaction.followup.send(embed=embed, ephemeral=True)
                 return
 
 
@@ -75,7 +76,7 @@ class Member(commands.Cog):
             #     await interaction.response.send_message(embed=embed, ephemeral=True)
             #     return
 
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 embed=discord.Embed(
                     title=f"Retrieving all members with the role {role.name}",
                     description=f"Processing {len(members)} members, this may take a while.",
@@ -96,7 +97,7 @@ class Member(commands.Cog):
             description="Please provide a valid mention.",
             footer=False
         )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
     @addinfo.error
     async def addinfo_error(self, interaction: discord.Interaction, error: commands.CommandError):
@@ -107,7 +108,7 @@ class Member(commands.Cog):
                 description="You do not have the required permissions to use this command.",
                 footer=False
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await interaction.followup.send(embed=embed, ephemeral=True)
         else:
             embed = error_embed(exception=error)
 

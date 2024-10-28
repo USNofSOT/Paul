@@ -7,6 +7,43 @@ from src.data.structs import NavyRank, Award
 
 log = logging.getLogger(__name__)
 
+def get_next_award(
+        target: discord.Member,
+        category_awards: [Award]
+) -> Award or None:
+    """
+    Given the current member, return the next award that the member will achieve.
+    """
+    member_role_ids = [role.id for role in target.roles]
+    member_awards = [award for award in category_awards if award.role_id in member_role_ids]
+    highest_award = None
+    for award in member_awards:
+        if highest_award is None or award.threshold > highest_award.threshold:
+            highest_award = award
+    next_award = None
+    for award in category_awards:
+        if highest_award is None or award.threshold > highest_award.threshold:
+            if next_award is None or award.threshold < next_award.threshold:
+                next_award = award
+    if highest_award is None and category_awards:
+        return category_awards[0]
+    return next_award
+
+def get_current_award(
+        target: discord.Member,
+        category_awards: [Award]
+) -> Award:
+    """
+    Given the current member, return the award with the highest index that the member has.
+    """
+    highest_award = None
+    member_role_ids = [role.id for role in target.roles]
+    member_awards = [award for award in category_awards if award.role_id in member_role_ids]
+    for award in member_awards:
+        if highest_award is None or award.threshold < highest_award.threshold:
+            highest_award = award
+    return highest_award
+
 def has_award_or_higher(
     target: discord.Member,
     required_award: Award,
