@@ -119,7 +119,7 @@ class CheckPromotion(commands.Cog):
                     else:
                         ### Prerequisites ###
                         ## Complete 5 total voyages ##
-                        if voyage_count > 5:
+                        if voyage_count >= 5:
                             requirements += f":white_check_mark: Go on five voyages ({voyage_count}/5) \n"
                         else:
                             requirements += f":x: Go on five voyages ({voyage_count}/5) \n"
