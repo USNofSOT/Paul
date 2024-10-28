@@ -64,6 +64,7 @@ class Bot(discord.ext.commands.Bot):
                 command_name=str(context.command) or 'None',
                 failed=context.command_failed
             )
+            await audit_log_repository.close_session()
         except CommandNotFound:
             pass
 
@@ -85,6 +86,7 @@ class Bot(discord.ext.commands.Bot):
                 command_name=str(interaction.data['name']) or 'None',
                 failed=interaction.command_failed
             )
+            audit_log_repository.close_session()
 
 
     async def setup_hook(self):
