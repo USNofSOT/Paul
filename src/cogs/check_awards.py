@@ -33,7 +33,7 @@ class CheckAwards(commands.Cog):
             log.info(f"Checking awards for {target.name}")
 
         # Get the repositories
-        self.sailor_repo = SailorRepository()
+        sailor_repo = SailorRepository()
 
         try:
             role_has_sailors = False
@@ -42,7 +42,7 @@ class CheckAwards(commands.Cog):
                 if isinstance(target, discord.Role):
                     log.info(f"Checking member {member.name}")
                 # Check if member in database
-                sailor = self.sailor_repo.get_sailor(member.id)
+                sailor = sailor_repo.get_sailor(member.id)
                 if sailor is None:
                     continue
                 else:
@@ -69,7 +69,7 @@ class CheckAwards(commands.Cog):
             await interaction.followup.send("Error checking awards", ephemeral=True)
 
         finally:
-            self.sailor_repo.close_session()
+            sailor_repo.close_session()
 
     def check_sailor(self, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> list[str]:
         # Assert these are the same person
