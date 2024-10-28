@@ -4,14 +4,15 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.config.awards import VOYAGE_MEDALS, COMBAT_MEDALS, HOSTED_MEDALS, TRAINING_MEDALS, SERVICE_STRIPES
-from src.config.ranks_roles import JE_AND_UP, NCO_AND_UP, NCO_AND_UP_PURE, NETC_ROLE, NRC_ROLE
+from src.config import NSC_ROLES
+from src.config.awards import VOYAGE_MEDALS, HOSTED_MEDALS, TRAINING_MEDALS
+from src.config.ranks_roles import NCO_AND_UP_PURE, NETC_ROLE, NRC_ROLE
 from src.config.subclasses import HELM_SUBCLASSES, CANNONEER_SUBCLASSES, CARPENTER_SUBCLASSES, FLEX_SUBCLASSES
 from src.data.repository.sailor_repository import SailorRepository
 from src.data.repository.training_records_repository import TrainingRecordsRepository
 from src.data.structs import Award
-from src.utils.embeds import member_embed
-from src.utils.rank_and_promotion_utils import get_current_rank, get_current_award, get_next_award
+from src.utils.embeds import member_embed, error_embed
+from src.utils.rank_and_promotion_utils import get_current_award, get_next_award
 
 log = getLogger(__name__)
 
@@ -56,7 +57,7 @@ class Progress(commands.Cog):
 
     @app_commands.command(name="progress", description="Track your or another member's progress towards different awards")
     @app_commands.describe(target="Select the user you want to get information about")
-    # @app_commands.has_any_role(*JE_AND_UP)
+    @app_commands.checks.has_any_role(*NSC_ROLES)
     async def progress(self, interaction: discord.Interaction, target: discord.Member = None):
         if target is None:
             target = interaction.user
@@ -92,5 +93,21 @@ class Progress(commands.Cog):
                 handle_award_progress(target, TRAINING_MEDALS, embed, "Training", training.nrc_training_points+training.netc_training_points)
         await interaction.followup.send(embed=embed)
 
+    @progress.error
+    async def progress_error(self, interaction: discord.Interaction, error):
+        if isinstance(error, app_commands.errors.MissingAnyRole):
+            await interaction.response.send_message(
+                embed=error_embed(
+                    title="Not Authorized",
+                    description="You are not authorized to use this command.",
+                )
+            )
+        else:
+            await interaction.response.send_message(
+                embed=error_embed(
+                    title="Error",
+                    description="An error occurred while processing the command.",
+                )
+            )
 async def setup(bot: commands.Bot):
     await bot.add_cog(Progress(bot))
