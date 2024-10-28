@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import functools
 from logging import getLogger
 from typing import Optional
 
@@ -16,6 +18,15 @@ import discord
 __all__ = (
     "Bot",
 )
+
+def create_low_priority_task(func):
+    async def wrapper(*args, **kwargs):
+        try:
+            await asyncio.to_thread(functools.partial(func, *args, **kwargs))
+        except Exception as e:
+            log.error(f"Error in low priority task: {e}")
+
+    return lambda *args, **kwargs: asyncio.create_task(wrapper(*args, **kwargs), name=f"low_priority_task_{func.__name__}")
 
 class Bot(discord.ext.commands.Bot):
     def __init__(self):
@@ -49,6 +60,7 @@ class Bot(discord.ext.commands.Bot):
 
     async def on_command(self, context: commands.Context):
         try:
+            # Await the command
             audit_log_repository = AuditLogRepository()
             log.info(f"[COMMAND] [{context.message.id}] Received Command:")
             log.info(f"[COMMAND] [{context.message.id}] > Guild: {context.guild or 'None'}")
@@ -56,14 +68,15 @@ class Bot(discord.ext.commands.Bot):
             log.info(f"[COMMAND] [{context.message.id}] > User: {context.author or 'None'}")
             log.info(f"[COMMAND] [{context.message.id}] > Command: {context.command or 'None'}")
             log.info(f"[COMMAND] [{context.message.id}] > Arguments: {context.args or 'None'}")
-            audit_log_repository.log_interaction(
+            create_low_priority_task(audit_log_repository.log_interaction)(
                 interaction_type=BotInteractionType.COMMAND,
                 guild_id=context.guild.id,
                 channel_id=context.channel.id,
                 user_id=context.author.id,
-                command_name=str(context.command) or 'None',
+                command_name=context.command or 'None',
                 failed=context.command_failed
             )
+            audit_log_repository.close_session()
         except CommandNotFound:
             pass
 
@@ -77,7 +90,7 @@ class Bot(discord.ext.commands.Bot):
 
             log.info(f"[INTERACTION] [{interaction.id}] > Command: {interaction.data['name'] or 'None'}")
             log.info(f"[INTERACTION] [{interaction.id}] > > Options: {interaction.data.get('options', [])}")
-            audit_log_repository.log_interaction(
+            create_low_priority_task(audit_log_repository.log_interaction)(
                 interaction_type=BotInteractionType.INTERACTION,
                 guild_id=interaction.guild.id,
                 channel_id=interaction.channel.id,
@@ -85,6 +98,7 @@ class Bot(discord.ext.commands.Bot):
                 command_name=str(interaction.data['name']) or 'None',
                 failed=interaction.command_failed
             )
+            audit_log_repository.close_session()
 
 
     async def setup_hook(self):
