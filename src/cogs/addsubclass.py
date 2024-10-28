@@ -295,7 +295,11 @@ class AddSubclass(commands.Cog):
                 requires_update = (not any(entry.subclass == main_subclass for entry in relative_entries) or (
                             surgeon and not any(
                         entry.subclass == SubclassType.SURGEON for entry in relative_entries)) or (0 < grenadier != sum(
-                    entry.subclass_count for entry in relative_entries if entry.subclass == SubclassType.GRENADIER)))
+                    entry.subclass_count for entry in relative_entries if entry.subclass == SubclassType.GRENADIER)) or
+                   (grenadier == 0 and any(
+                       entry.subclass == SubclassType.GRENADIER for entry in relative_entries))
+                   )
+
 
                 if not surgeon and any(entry.subclass == SubclassType.SURGEON for entry in relative_entries):
                     requires_update = True
