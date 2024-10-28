@@ -26,7 +26,7 @@ def retrieve_discord_id_from_process_line(line: str) -> int or None:
     Returns:
         int: The Discord ID extracted from the line of text.
     """
-    pattern = r"^<@!?(\d+)>"
+    pattern = r"<@!?(\d+)>"
     match = re.search(pattern, line)
     return int(match.group(1)) if match else None
 
