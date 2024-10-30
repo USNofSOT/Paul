@@ -27,6 +27,7 @@ class TrainingCategory(enum.Enum):
 
 class TraingType(enum.Enum):
     NRC = "NRC"
+    ST = "ST"
     NETC = "NETC"
     JLA = "JLA"
     SNLA = "SNLA"
@@ -157,6 +158,8 @@ class TrainingRecord(Base):
     target_id = mapped_column(BIGINT, ForeignKey("sailor.discord_id"), primary_key=True)
     nrc_training_points = Column(Integer, nullable=False, server_default="0")
     netc_training_points = Column(Integer, nullable=False, server_default="0")
+
+    st_training_points = Column(Integer, nullable=False, server_default="0")
 
     jla_training_points = Column(Integer, nullable=False, server_default="0")
     # jla_graduation_date = Column(DATETIME, nullable=True, server_default=None) - No longer being tracked

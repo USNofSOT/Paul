@@ -4,7 +4,8 @@ import discord.ext.commands
 from discord.ext import commands
 
 from src.config import NSC_ROLES
-from src.utils.training_utils import populate_nrc_training_records, populate_netc_training_records
+from src.utils.training_utils import populate_nrc_training_records, populate_netc_training_records, \
+    populate_st_training_records
 
 log = getLogger(__name__)
 
@@ -14,7 +15,7 @@ class PopulateTrainingRecords(commands.Cog):
 
     @commands.command(name="populate_training_records")
     @commands.has_any_role(*NSC_ROLES)
-    async def populate_voyages(self, context, amount: int = 50, nrc: bool = True, netc: bool = True):
+    async def populate_voyages(self, context, amount: int = 50, nrc: bool = True, netc: bool = True, st: bool = True,):
         if amount == -1:
             max_voyages = None
         else:
@@ -37,8 +38,13 @@ class PopulateTrainingRecords(commands.Cog):
             await context.send("Attempting to populate NETC training records.")
             await populate_netc_training_records(self.bot, amount=max_voyages)
             await context.send("Finished populating NETC training records.")
-            log.info("[TRAINING] Finished populating training records.")
 
+        if st:
+            await context.send("Attempting to populate ST training records.")
+            await populate_st_training_records(self.bot, amount=max_voyages)
+            await context.send("Finished populating ST training records.")
+
+        log.info("[TRAINING] Finished populating training records.")
         await context.send("Finished populating training records.")
 
 
