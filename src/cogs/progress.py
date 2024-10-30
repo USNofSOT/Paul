@@ -6,7 +6,7 @@ from discord.ext import commands
 
 from src.config import NSC_ROLES
 from src.config.awards import VOYAGE_MEDALS, HOSTED_MEDALS, TRAINING_MEDALS
-from src.config.ranks_roles import NCO_AND_UP_PURE, NETC_ROLE, NRC_ROLE
+from src.config.ranks_roles import NCO_AND_UP_PURE, NETC_ROLE, NRC_ROLE, JE_AND_UP
 from src.config.subclasses import HELM_SUBCLASSES, CANNONEER_SUBCLASSES, CARPENTER_SUBCLASSES, FLEX_SUBCLASSES
 from src.data.repository.sailor_repository import SailorRepository
 from src.data.repository.training_records_repository import TrainingRecordsRepository
@@ -57,7 +57,7 @@ class Progress(commands.Cog):
 
     @app_commands.command(name="progress", description="Track your or another member's progress towards different awards")
     @app_commands.describe(target="Select the user you want to get information about")
-    @app_commands.checks.has_any_role(*NSC_ROLES)
+    @app_commands.checks.has_any_role(*JE_AND_UP)
     async def progress(self, interaction: discord.Interaction, target: discord.Member = None):
         if target is None:
             target = interaction.user
