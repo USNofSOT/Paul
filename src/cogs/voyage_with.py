@@ -38,7 +38,7 @@ class VoyageWith(commands.Cog):
 
         embed.add_field(
             name=f":sailboat: Voyages together",
-            value=f"{count} times",
+            value=f"{count} time{'s' if count > 1 else ''}",
             inline=True
         )
 
@@ -55,7 +55,7 @@ class VoyageWith(commands.Cog):
 
         embed.add_field(
             name=":clock1: Most common playtime",
-            value=f"{most_common_time_timestamp}:00 UTC - {most_common_time[0][1]} times",
+            value=f"{most_common_time_timestamp}:00 UTC - {most_common_time[0][1]} time{'s' if most_common_time[0][1] > 1 else ''}",
             inline=True
         )
 
