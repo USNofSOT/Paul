@@ -167,12 +167,12 @@ class TrainingRecordsRepository:
 
             log.info(f"Decrementing training points for {training.target_id}")
 
-            if training.training_category == TrainingCategory.NRC:
-                training_record.nrc_training_points = max(0, training_record.nrc_training_points - 1)
-                log.info(f"Decremented NRC training points for {training.target_id} from {training_record.nrc_training_points + 1} to {training_record.nrc_training_points}")
-            elif training.training_type == TraingType.ST:
+            if training.training_type == TraingType.ST:
                 training_record.st_training_points = max(0, training_record.st_training_points - 1)
                 log.info(f"Decremented ST training points for {training.target_id} from {training_record.st_training_points + 1} to {training_record.st_training_points}")
+            elif training.training_category == TrainingCategory.NRC:
+                training_record.nrc_training_points = max(0, training_record.nrc_training_points - 1)
+                log.info(f"Decremented NRC training points for {training.target_id} from {training_record.nrc_training_points + 1} to {training_record.nrc_training_points}")
             elif training.training_category == TrainingCategory.NETC:
                 training_record.netc_training_points = max(0, training_record.netc_training_points - 1)
                 log.info(f"Decremented NETC training points for {training.target_id} from {training_record.netc_training_points + 1} to {training_record.netc_training_points}")
