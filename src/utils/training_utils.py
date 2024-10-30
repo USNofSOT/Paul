@@ -7,6 +7,7 @@ from typing_extensions import deprecated
 from src.config.main_server import NRC_RECORDS_CHANNEL, GUILD_ID
 from src.config.netc_server import NETC_GUILD_ID, SNLA_GRADUATE_ROLE, JLA_GRADUATE_ROLE, OCS_GRADUATE_ROLE, \
     SOCS_GRADUATE_ROLE, NETC_RECORDS_CHANNELS
+from src.config.spd_servers import SPD_GUILD_ID, ST_RECORDS_CHANNEL
 from src.config.training import TRAINING_POPULATE_FROM_DATE
 from src.data.repository.training_records_repository import TrainingRecordsRepository
 
@@ -69,6 +70,24 @@ async def populate_nrc_training_records(bot: commands.Bot, amount: int = 50):
         await asyncio.sleep(1)
 
     log.info("[TRAINING] Finished populating NRC training records.")
+
+async def populate_st_training_records(bot: commands.Bot, amount: int = 50):
+    guild = bot.get_guild(SPD_GUILD_ID)
+    channel = guild.get_channel(ST_RECORDS_CHANNEL)
+    count = 0
+    log.info(f"[TRAINING] Attempting to populate ST training records from {channel.name}.")
+    async for message in channel.history(limit=amount, oldest_first=False, after=TRAINING_POPULATE_FROM_DATE):
+
+        try:
+            await process_training_record(message, channel)
+        except ValueError as e:
+            log.warning(f"[TRAINING] Skipping training record {message.id} as it already exists.")
+            continue
+
+        count += 1
+        log.info(f"[TRAINING] Processed ST training record #{count}.")
+        await asyncio.sleep(1)
+
 
 async def populate_netc_training_records(bot: commands.Bot, amount: int = 50):
     guild = bot.get_guild(NETC_GUILD_ID)

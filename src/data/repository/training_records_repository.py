@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker
 from src.config.main_server import NRC_RECORDS_CHANNEL
 from src.config.netc_server import NETC_RECORDS_CHANNELS, SNLA_RECORDS_CHANNEL, JLA_RECORDS_CHANNEL, \
     OCS_RECORDS_CHANNEL, SOCS_RECORDS_CHANNEL
+from src.config.spd_servers import ST_RECORDS_CHANNEL
 from src.data import engine, TrainingRecord, Sailor, Training, TraingType, TrainingCategory
 
 log = logging.getLogger(__name__)
@@ -81,6 +82,8 @@ class TrainingRecordsRepository:
                 NRC_RECORDS_CHANNEL: TraingType.NRC,
             }
             training_type = training_type_map.get(log_channel_id, TraingType.NRC)
+            if log_channel_id == ST_RECORDS_CHANNEL:
+                training_type = TraingType.ST
             training = Training(log_id=log_id, target_id=target_id, log_channel_id=log_channel_id, log_time=log_time, training_type=training_type, training_category=training_category)
             self.session.add(training)
             self.session.commit()
@@ -128,7 +131,11 @@ class TrainingRecordsRepository:
 
             log.info(f"Incrementing training points for {training.target_id}")
 
-            if training.training_category == TrainingCategory.NRC:
+            if training.training_type == TraingType.ST:
+                training_record.st_training_points = max(0, training_record.st_training_points + 1)
+                log.info(
+                    f"Incremented ST training points for {training.target_id} from {training_record.st_training_points - 1} to {training_record.st_training_points}")
+            elif training.training_category == TrainingCategory.NRC:
                 training_record.nrc_training_points = max(0, training_record.nrc_training_points + 1)
                 log.info(f"Incremented NRC training points for {training.target_id} from {training_record.nrc_training_points - 1} to {training_record.nrc_training_points}")
             elif training.training_category == TrainingCategory.NETC:
@@ -147,6 +154,7 @@ class TrainingRecordsRepository:
                     training_record.socs_training_points = max(0, training_record.socs_training_points + 1)
                     log.info(f"Incremented SOCS training points for {training.target_id} from {training_record.socs_training_points - 1} to {training_record.socs_training_points}")
 
+
             log.info(f"Committing training points for {training.target_id}")
             self.session.commit()
         except Exception as e:
@@ -159,7 +167,10 @@ class TrainingRecordsRepository:
 
             log.info(f"Decrementing training points for {training.target_id}")
 
-            if training.training_category == TrainingCategory.NRC:
+            if training.training_type == TraingType.ST:
+                training_record.st_training_points = max(0, training_record.st_training_points - 1)
+                log.info(f"Decremented ST training points for {training.target_id} from {training_record.st_training_points + 1} to {training_record.st_training_points}")
+            elif training.training_category == TrainingCategory.NRC:
                 training_record.nrc_training_points = max(0, training_record.nrc_training_points - 1)
                 log.info(f"Decremented NRC training points for {training.target_id} from {training_record.nrc_training_points + 1} to {training_record.nrc_training_points}")
             elif training.training_category == TrainingCategory.NETC:
