@@ -1,13 +1,13 @@
 import logging
 from datetime import datetime
 from datetime import timedelta
-from typing import Type
+from typing import Type, List
 
 from sqlalchemy import delete
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, InstrumentedAttribute
 from sqlalchemy.sql.functions import count
 
-from src.data import Sailor
+from src.data import Sailor, Voyages
 from src.data.engine import engine
 from src.data.models import Voyages
 
@@ -23,6 +23,23 @@ class VoyageRepository:
 
     def close_session(self):
         self.session.close()
+
+    def get_incommon_voyages(self, target_one: int, target_two: int) -> list[Type[Voyages]]:
+        try:
+            # Get all incoming voyages for target_one and target_two but only return voyages once (unique log_id)
+            return self.session.query(Voyages).filter(
+                    Voyages.log_id.in_(
+                        self.session.query(Voyages.log_id)
+                        .filter(Voyages.target_id == target_one)
+                        .intersect(
+                            self.session.query(Voyages.log_id)
+                            .filter(Voyages.target_id == target_two)
+                        )
+                    )
+                ).distinct(Voyages.log_id).group_by(Voyages.log_id).all()
+        except Exception as e:
+            log.error(f"Error getting incommon voyage log entries: {e}")
+            raise e
 
     def count_voyages_by_target_id(self, target_id: int) -> int:
         try:
