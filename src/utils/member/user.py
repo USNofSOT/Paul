@@ -2,13 +2,16 @@ from warnings import catch_warnings
 
 import discord
 
+from src.data.repository.auditlog_repository import AuditLogRepository
 from src.data.repository.coin_repository import CoinRepository
 from src.config import NCO_AND_UP, GUILD_OWNER_ID
 from src.data import MemberReport, member_report
 from src.data.repository.sailor_repository import ensure_sailor_exists
+from src.data.structs import NavyRank
 from src.utils.embeds import error_embed, default_embed
+from src.utils.rank_and_promotion_utils import get_current_rank
 from src.utils.report_utils import tiered_medals, other_medals, identify_role_index, process_role_index
-from src.utils.time_utils import get_time_difference_past, format_time
+from src.utils.time_utils import get_time_difference_past, format_time, get_time_difference
 
 
 def modify_points(base_points: int, force_points: int) -> int:
@@ -31,10 +34,19 @@ async def get_member_embed(bot, interaction, member: discord.Member) -> discord.
     except AttributeError:
         pass
 
+    audit_log_repository = AuditLogRepository()
+    current_rank: NavyRank = get_current_rank(member)
+    current_rank_role_id = next((role.id for role in member.roles if role.id in current_rank.role_ids), None)
+
+    rank_audit_log = audit_log_repository.get_latest_role_log_for_target_and_role(member.id, current_rank_role_id)
+    ranked_at = format_time(get_time_difference_past(rank_audit_log.log_time)) if rank_audit_log else ""
+
     embed.add_field(
         name="Time in Server",
-        value=f"{format_time(get_time_difference_past(member.joined_at))}",
+        value=f"{format_time(get_time_difference_past(member.joined_at))} \n {'**Time in rank:** \n' + ranked_at if ranked_at else ''}",
     )
+
+    audit_log_repository.close_session()
 
     role_index = identify_role_index(interaction, member)
     next_in_command = process_role_index(interaction, member, role_index)
