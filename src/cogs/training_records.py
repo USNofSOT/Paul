@@ -48,7 +48,7 @@ class TrainingRecords(commands.Cog):
         )
         embed.add_field(
             name="Training Points",
-            value=f"{training_record.netc_training_points+training_record.nrc_training_points}",
+            value=f"{training_record.netc_training_points+training_record.nrc_training_points + training_record.st_training_points}",
         )
         # if user NRC and NETC Department member
         if NETC_ROLE in [role.id for role in target.roles] and NRC_ROLE in [role.id for role in target.roles]:
@@ -107,6 +107,26 @@ class TrainingRecords(commands.Cog):
                     inline=True
                 )
 
+        if training_record.nrc_training_points > 0 or training_record.st_training_points > 0:
+            embed.add_field(
+                name="NRC Points Breakdown:",
+                value="\u200b",
+                inline=False
+            )
+            if training_record.nrc_training_points > 0:
+                embed.add_field(
+                    name="Total NRC Points",
+                    value=f"{training_record.nrc_training_points}",
+                    inline=True
+                )
+            if training_record.st_training_points > 0:
+                embed.add_field(
+                    name="Total ST Points",
+                    value=f"{training_record.st_training_points}",
+                    inline=True
+                )
+
+
         if not netc_member is None:
             netc_member_roles = [role.id for role in netc_member.roles]
             if any(role in netc_member_roles for role in [JLA_INSTRUCTOR_ROLE, SNLA_INSTRUCTOR_ROLE, OCS_INSTRUCTOR_ROLE, SOCS_INSTRUCTOR_ROLE]):
@@ -120,25 +140,25 @@ class TrainingRecords(commands.Cog):
                     value="\u200b",
                     inline=False
                 )
-            if JLA_INSTRUCTOR_ROLE in netc_member_roles:
+            if training_record.jla_training_points > 0:
                 embed.add_field(
                     name="Total JLA Points",
                     value=f"{training_record.jla_training_points}",
                     inline=True
                 )
-            if SNLA_INSTRUCTOR_ROLE in netc_member_roles:
+            if training_record.snla_training_points > 0:
                 embed.add_field(
                     name="Total SNLA Points",
                     value=f"{training_record.snla_training_points}",
                     inline=True
                 )
-            if OCS_INSTRUCTOR_ROLE in netc_member_roles:
+            if training_record.ocs_training_points > 0:
                 embed.add_field(
                     name="Total OCS Points",
                     value=f"{training_record.ocs_training_points}",
                     inline=True
                 )
-            if SOCS_INSTRUCTOR_ROLE in netc_member_roles:
+            if training_record.socs_training_points > 0:
                 embed.add_field(
                     name="SOCS Points",
                     value=f"{training_record.socs_training_points}",
