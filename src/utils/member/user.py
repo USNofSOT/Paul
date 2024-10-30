@@ -43,7 +43,7 @@ async def get_member_embed(bot, interaction, member: discord.Member) -> discord.
 
     embed.add_field(
         name="Time in Server",
-        value=f"{format_time(get_time_difference_past(member.joined_at))} \n {'**Time in rank:** \n' + ranked_at if ranked_at else ''}",
+        value=f"{format_time(get_time_difference_past(member.joined_at))} \n {'**Time in rank** \n' + ranked_at if ranked_at else ''}",
     )
 
     audit_log_repository.close_session()
