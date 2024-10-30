@@ -11,7 +11,7 @@ from src.config.main_server import GUILD_ID, VOYAGE_LOGS
 from src.data import SubclassType
 from src.data.repository.voyage_repository import VoyageRepository
 from src.utils.discord_utils import get_best_display_name
-from src.utils.embeds import default_embed
+from src.utils.embeds import default_embed, error_embed
 from src.utils.time_utils import format_time, get_time_difference_past
 
 log = getLogger(__name__)
@@ -25,11 +25,17 @@ class VoyageWith(commands.Cog):
     @app_commands.describe(target="The user you want to compare against yourself")
     @app_commands.checks.has_any_role(*JE_AND_UP)
     async def voyage_together(self, interaction: discord.interactions, target: discord.Member):
-        await interaction.response.defer(ephemeral=False)
+        await interaction.response.defer(ephemeral=True)
 
         voyage_repository = VoyageRepository()
         voyages = voyage_repository.get_incommon_voyages(interaction.user.id, target.id)
         count = len(voyages)
+
+        if count == 0:
+            await interaction.followup.send(embed=default_embed(
+                title="Voyages with",
+                description=f"You have not voyaged with <@{target.id}>"
+            ), ephemeral=True)
 
         embed = default_embed(
             title="Voyages with",
@@ -129,9 +135,15 @@ class VoyageWith(commands.Cog):
                 inline=False
             )
 
-        await interaction.followup.send(embed=embed, ephemeral=False)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
 
+    @voyage_together.error
+    async def voyage_together_error(self, interaction: discord.interactions, error: Exception):
+        if isinstance(error, discord.app_commands.errors.TransformerError) or isinstance(error, discord.errors.NotFound):
+            await interaction.response.send_message(embed=error_embed(
+                description="User could not be found"
+            ), ephemeral=True)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(VoyageWith(bot))
