@@ -5,7 +5,7 @@ import discord
 from src.data.repository.auditlog_repository import AuditLogRepository
 from src.data.repository.coin_repository import CoinRepository
 from src.config import NCO_AND_UP, GUILD_OWNER_ID
-from src.data import MemberReport, member_report
+from src.data import MemberReport, member_report, RoleChangeType
 from src.data.repository.sailor_repository import ensure_sailor_exists
 from src.data.structs import NavyRank
 from src.utils.embeds import error_embed, default_embed
@@ -40,6 +40,8 @@ async def get_member_embed(bot, interaction, member: discord.Member) -> discord.
 
     rank_audit_log = audit_log_repository.get_latest_role_log_for_target_and_role(member.id, current_rank_role_id)
     ranked_at = format_time(get_time_difference_past(rank_audit_log.log_time)) if rank_audit_log else ""
+    if rank_audit_log.change_type == RoleChangeType.REMOVED:
+        ranked_at = ""
 
     embed.add_field(
         name="Time in Server",
