@@ -23,7 +23,7 @@ class VoyageTogether(commands.Cog):
     @app_commands.command(name="voyagetogether", description="Statistics on how often two users have voyaged together")
     @app_commands.describe(target_one="Select the user you want to compare against the other user")
     @app_commands.describe(target_two="Select the user you want to compare against the other user (optional)")
-    @app_commands.checks.has_any_role(*SNCO_AND_UP)
+    @app_commands.checks.has_any_role(*JE_AND_UP)
     async def voyage_together(self, interaction: discord.interactions, target_one: discord.Member, target_two: discord.Member = None):
         await interaction.response.defer(ephemeral=True)
 
@@ -37,7 +37,7 @@ class VoyageTogether(commands.Cog):
 
         generic = default_embed(
             title="Voyage Together",
-            description=f"{get_best_display_name(self.bot, target_one.id)} and {get_best_display_name(self.bot, target_two.id)} have voyaged together {count} times.",
+            description=f"{get_best_display_name(self.bot, target_one.id)} and {get_best_display_name(self.bot, target_two.id)} have voyaged together {count} time{'s' if count > 1 else ''}.",
         )
 
         embeds = []
