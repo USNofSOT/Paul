@@ -40,7 +40,7 @@ async def get_member_embed(bot, interaction, member: discord.Member) -> discord.
 
     rank_audit_log = audit_log_repository.get_latest_role_log_for_target_and_role(member.id, current_rank_role_id)
     ranked_at = format_time(get_time_difference_past(rank_audit_log.log_time)) if rank_audit_log else ""
-    if rank_audit_log.change_type == RoleChangeType.REMOVED:
+    if rank_audit_log is not None and rank_audit_log.change_type == RoleChangeType.REMOVED:
         ranked_at = ""
 
     embed.add_field(
