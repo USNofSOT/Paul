@@ -242,6 +242,23 @@ class TimeoutLog(AuditLog):
     # The timeout time after the new timeout was applied (current timeout)
     timed_out_until = Column(DATETIME, nullable=True)
 
+    @property
+    def timeout_removed(self) -> bool:
+        """Returns True if this timeout log was for a removal of a timeout."""
+        return self.timed_out_until is None
+
+    @property
+    def timeout_added(self) -> bool:
+        """Returns True if this timeout log was for an addition of a timeout."""
+        return self.timed_out_until_before is None
+
+    @property
+    def length(self) -> float:
+        """Calculates the length of the timeout. Given log_time is the time the timeout was applied."""
+        if self.timeout_removed:
+            return 0
+        return get_time_difference(self.timed_out_until, self.log_time)
+
 class BotInteractionType(enum.Enum):
     INTERACTION = "Interaction"
     COMMAND = "Command"
