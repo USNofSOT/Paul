@@ -50,7 +50,7 @@ class VoyageWith(commands.Cog):
 
         embed.add_field(
             name=":calendar: Last Voyage",
-            value=f"{format_time(get_time_difference_past(voyages[0].log_time))} ago",
+            value=f"{format_time(get_time_difference_past(sorted(voyages, key=lambda v: v.log_time, reverse=True)[0].log_time))} ago",
             inline=True
         )
 
