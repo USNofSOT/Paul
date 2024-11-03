@@ -89,8 +89,8 @@ class Progress(commands.Cog):
         if NRC_ROLE in target_role_ids or NETC_ROLE in target_role_ids:
             training_records_repository = TrainingRecordsRepository()
             training = training_records_repository.get_or_create_training_record(target.id)
-            if training.nrc_training_points + training.netc_training_points >= 0:
-                handle_award_progress(target, TRAINING_MEDALS, embed, "Training", training.nrc_training_points+training.netc_training_points)
+            if training.nrc_training_points + training.netc_training_points + training.st_training_points >= 0:
+                handle_award_progress(target, TRAINING_MEDALS, embed, "Training", training.nrc_training_points+training.netc_training_points + training.st_training_points)
         await interaction.followup.send(embed=embed)
 
     @progress.error
