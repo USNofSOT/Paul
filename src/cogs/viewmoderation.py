@@ -46,6 +46,8 @@ class ViewModeration(commands.Cog):
 
         if target.id == GUILD_OWNER_ID:
             embed.add_field(name="Next in Command", value="Dungeon Master", inline=True)
+        elif next_in_command is None:  # Check if next_in_command is None
+            embed.add_field(name="Next in Command", value="None", inline=True)  # Handle No CO
         elif len(next_in_command) == 1:
             if next_in_command is None or not isinstance(next_in_command, list):
                 embed.add_field(name="Next in Command", value=next_in_command, inline=True)
