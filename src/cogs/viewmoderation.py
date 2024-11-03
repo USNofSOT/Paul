@@ -147,7 +147,7 @@ class ViewModeration(commands.Cog):
                 value=f"{mod_notes_total} total notes \n \n run the command `/shownotes` to see up to 25 notes",
             )
 
-        await interaction.followup.send(aembed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
 
 
