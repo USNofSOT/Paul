@@ -21,6 +21,8 @@ class ViewModeration(commands.Cog):
     @app_commands.command(name="viewmoderation", description="Moderation overview for a user")
     @app_commands.checks.has_any_role(*SNCO_AND_UP)
     async def view_moderation(self, interaction: discord.interactions, target: discord.Member = None):
+        await interaction.response.defer(ephemeral=True)
+
         if target is None:
             target = interaction.user
 
@@ -143,7 +145,7 @@ class ViewModeration(commands.Cog):
                 value=f"{mod_notes_total} total notes \n \n run the command `/shownotes` to see up to 25 notes",
             )
 
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.followup.send(aembed=embed, ephemeral=True)
 
 
 
