@@ -158,7 +158,7 @@ def process_role_index(ctx, member, role_index):
     if role_index == -1 or role_index == 10:  #Checks if Owns Server Returns STR
         return "Owns Server (No CO)"
     elif role_index == 0 or role_index == 1  or role_index == 2:  #Checks for Vet, Deckhand, Ret. Returns No CO
-        if role_index == 1 and any(role_id in member_role_ids for role_id in DH_ROLES):
+        if any(role_id in member_role_ids for role_id in VT_ROLES) or any(role_id in member_role_ids for role_id in DH_ROLES) or any(role_id in member_role_ids for role_id in RT_ROLES):
             return None
         return process_role_index(ctx, member, role_index + 1)
     elif role_index == 8 or role_index == 9:
