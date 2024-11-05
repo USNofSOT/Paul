@@ -7,9 +7,14 @@ from discord import app_commands
 
 from logging import getLogger
 
+from fontTools.merge.util import first
+
+from src.config.main_server import GUILD_ID
+from src.config.ranks_roles import BOA_ROLE, NRC_ROLE
 from src.data.repository.voyage_repository import VoyageRepository
 from src.data.repository.hosted_repository import HostedRepository
-from src.config import NCO_AND_UP, NCO_AND_UP_PURE
+from src.config import NCO_AND_UP, NCO_AND_UP_PURE, NSC_ROLES
+from src.utils.discord_utils import get_best_display_name
 from src.utils.time_utils import get_time_difference_past, format_time
 
 import os
@@ -34,10 +39,14 @@ class CrewReport(commands.Cog):
             await interaction.followup.send("Please mention a squad or a ship", ephemeral=True)
             return
 
+        member_role_ids = [role.id for role in interaction.user.roles]
         if not crew.name.endswith("Squad") and not crew.name.startswith("USS"):
-            log.warning("Invalid squad or ship mentioned")
-            await interaction.followup.send("Please mention a squad or a ship", ephemeral=True)
-            return
+            if any(role in member_role_ids for role in [BOA_ROLE, *NSC_ROLES]):
+                pass
+            else:
+                log.warning("Invalid squad or ship mentioned")
+                await interaction.followup.send("Please mention a squad or a ship", ephemeral=True)
+                return
 
         # Get the members of the squad
         members = crew.members
@@ -64,15 +73,15 @@ class CrewReport(commands.Cog):
             total_voyage_count = sum(member_voyages)
             total_hosted_count = sum(member_hosted)
 
-            embed1 = self.report(crew.name, total_voyage_count, total_hosted_count, members, names_hosted)
+            embed1 = await self.report(crew.name, total_voyage_count, total_hosted_count, members, names_hosted, interaction)
 
             embed2, voyage_graph = self.send_voyage_graph(names_voyage, member_voyages, total_voyage_count)
             embed3, hosted_graph = self.send_hosted_graph(names_hosted, member_hosted, total_hosted_count)
-            await interaction.followup.send(embeds=[embed1,embed2,embed3], files=[voyage_graph, hosted_graph])
+            await interaction.followup.send(embeds=[embed1,embed2,embed3], files=[voyage_graph, hosted_graph], ephemeral=True)
 
             
         except Exception as e:
-            log.error(f"Error getting squad report: {e}")
+            log.error(f"Error getting squad report: {e}", exc_info=True)
             await interaction.followup.send("Error getting squad report", ephemeral=True)
         finally:
             self.voyage_repo.close_session()
@@ -150,7 +159,7 @@ class CrewReport(commands.Cog):
 
         return embed, discord_file
 
-    def report(self, crew_name: str, total_voyage_count: int, total_hosted_count: int, members: list, names_hosted: list):
+    async def report(self, crew_name: str, total_voyage_count: int, total_hosted_count: int, members: list, names_hosted: list, interaction: discord.Interaction):
         embed = discord.Embed(title=f"Crew Report for {crew_name}", color=discord.Color.green())
         embed.add_field(name="Attended voyages", value=f"Total: {total_voyage_count}", inline=True)
         embed.add_field(name="Hosted voyages", value=f"Total: {total_hosted_count}", inline=True)
@@ -160,13 +169,27 @@ class CrewReport(commands.Cog):
         last_voyages = self.voyage_repo.get_last_voyage_by_target_ids([member.id for member in members])
 
         no_members = True
+        voyager_dictionary = {}
+
         for member in members:
-            if member.id not in last_voyages:
-                embed.add_field(name="", value=f"{member.display_name} - Last voyage: N/A", inline=False)
+            if last_voyages.get(member.id) is None:
+                voyager_dictionary[member.id] = "N/A"
                 no_members = False
             elif get_time_difference_past(last_voyages.get(member.id)).days >= 30:
-                embed.add_field(name="", value=f"{member.display_name} - Last voyage: {format_time(get_time_difference_past(last_voyages.get(member.id)))}", inline=False)
+                voyager_dictionary[member.id] = get_time_difference_past(last_voyages.get(member.id))
                 no_members = False
+
+        if len(voyager_dictionary) > 15:
+            embed.add_field(name="", value="Too many members to display, see csv file", inline=False)
+            with open("voyager_report.csv", "w") as file:
+                file.write("Member,Last Voyage\n")
+                for voyager in voyager_dictionary:
+                    file.write(f"{get_best_display_name(self.bot, voyager)},{voyager_dictionary[voyager]}\n")
+            await interaction.followup.send(file=discord.File("voyager_report.csv"), content="CSV file with all members that have not voyaged in the last 30 days")
+        else:
+            for voyager in voyager_dictionary:
+                embed.add_field(name="", value=f"{get_best_display_name(self.bot, voyager)} - Last voyage: {voyager_dictionary[voyager]}", inline=False)
+
 
         if no_members:
             embed.add_field(name="", value="All members have voyaged :white_check_mark:", inline=False)
@@ -175,12 +198,38 @@ class CrewReport(commands.Cog):
 
         last_hosted = self.hosted_repo.get_last_hosted_by_target_ids([member.id for member in members])
         no_members = True
+
+        hoster_dictionary = {}
+
         for member in members:
-            member_role_ids = [role.id for role in member.roles]
+            member_roles = [role for role in member.roles]
+            member_role_ids = [role.id for role in member_roles]
             if any(role in member_role_ids for role in NCO_AND_UP_PURE):
-                if get_time_difference_past(last_hosted.get(member.id)).days >= 14:
-                    embed.add_field(name="", value=f"{member.display_name} - Last hosted: {format_time(get_time_difference_past(last_hosted.get(member.id)))}", inline=False)
+                if last_hosted.get(member.id) is None:
+                    ship_name = [role.name for role in member_roles if role.name.startswith("USS")]
+                    hoster_dictionary[member.id] = {
+                        "last_hosted": "N/A",
+                        "ship": ship_name[0] if ship_name else "N/A"
+                    }
                     no_members = False
+                elif get_time_difference_past(last_hosted.get(member.id)).days >= 14:
+                    ship_name = [role.name for role in member_roles if role.name.startswith("USS")]
+                    hoster_dictionary[member.id] = {
+                        "last_hosted": get_time_difference_past(last_hosted.get(member.id)),
+                        "ship": ship_name[0] if ship_name else "N/A"
+                    }
+                    no_members = False
+
+        if len(hoster_dictionary) > 24:
+            embed.add_field(name="", value="Too many members to display, see csv file", inline=False)
+            with open("hoster_report.csv", "w") as file:
+                file.write("Member,Last Hosted,Ship\n")
+                for hoster in hoster_dictionary:
+                    file.write(f"{get_best_display_name(self.bot, hoster)},{hoster_dictionary[hoster]['last_hosted']},{hoster_dictionary[hoster]['ship']}\n")
+                await interaction.followup.send(file=discord.File("crew_report.csv"), content="CSV file with all members that have not hosted in the last 14 days")
+        else:
+            for hoster in hoster_dictionary:
+                embed.add_field(name="", value=f"{get_best_display_name(self.bot, hoster)} - Last hosted: {hoster_dictionary[hoster]['last_hosted']} on {hoster_dictionary[hoster]['ship']}", inline=False)
 
         if no_members:
             embed.add_field(name="", value="All members have hosted :white_check_mark:", inline=False)
