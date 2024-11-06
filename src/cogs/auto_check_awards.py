@@ -7,7 +7,7 @@ from discord.ext import commands, tasks
 from discord.ext.commands.view import StringView
 
 from src.config import MAX_MESSAGE_LENGTH
-from src.config.main_server import GUILD_ID
+from src.config.main_server import GUILD_ID, BC_ORIGIN, BC_LUSTY, BC_MAELSTROM
 from src.data.repository.sailor_repository import SailorRepository
 from src.utils.check_awards import check_sailor
 from src.utils.discord_utils import alert_engineers
@@ -39,16 +39,24 @@ class AutoCheckAwards(commands.Cog):
         self.my_task.cancel()
 
     # TODO: Move this into configuration as well
-    @tasks.loop(time=datetime.time(hour=14, minute=53, tzinfo=datetime.timezone.utc))
+    @tasks.loop(time=datetime.time(hour=15, minute=00, tzinfo=datetime.timezone.utc))
     async def my_task(self):
         GUILD = self.bot.get_guild(GUILD_ID)
 
         # TODO: Move this into configuration
         channels = {
-            "USS Venom": {
-                "channel": 1291589569602650154,
-                "role": 1237838106711822457
-            }
+            "USS Origin": {
+                "channel": BC_ORIGIN,
+                "role": 977935623774162954
+            },
+            "USS Illustrious": {
+                "channel": BC_LUSTY,
+                "role": 933919139700019222
+            },
+            # "USS Maelstorm": {
+            #     "channel": BC_MAELSTROM,
+            #     "role": 1002303636522680391
+            # }
         }
 
         sailor_repo = SailorRepository()
