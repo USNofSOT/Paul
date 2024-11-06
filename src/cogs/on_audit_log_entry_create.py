@@ -16,7 +16,7 @@ class OnAuditLogEntryCreate(commands.Cog):
 
     @commands.Cog.listener()
     async def on_audit_log_entry_create(self, entry: discord.AuditLogEntry):
-        if hasattr(entry.target, 'id') and entry.target.id.isdigit():
+        if hasattr(entry.target, 'id') and isinstance(entry.target.id, int):
             ensure_sailor_exists(int(entry.target.id))
 
         # Check if member has been updated
