@@ -5,6 +5,7 @@ from src.config.awards import MEDALS_AND_RIBBONS
 from src.config.main_server import GUILD_ID
 from src.config.subclasses import SUBCLASS_AWARDS
 from src.data import Sailor
+from src.data.repository.sailor_repository import SailorRepository
 from src.data.structs import Award
 from src.utils.ranks import rank_to_roles
 from src.utils.report_utils import identify_role_index, process_role_index
@@ -109,24 +110,20 @@ def _find_highest_award(bot : Bot, count : int, medals : list[Award]) -> None | 
             break
     return highest
 
-def _higher_award_message(bot : Bot, award : Award, member: discord.Member) -> str:
-    """The user has a higher award than the one they are eligible for."""
-    msg_str = ""
-    msg_str += f"{member.mention} is already eligible for {award.role_id}.\n"
-    msg_str += f"\tDetails: {award.embed_url}\n"
-    msg_str += f"Please ensure that the award and or user information is correct.\n"
-    msg_str += f"If not please contact NCS.\n"
-    msg_str += f"\n"
-    return msg_str
-
 def _award_message(bot : Bot, award : Award | None, award_role : discord.Role, interaction: discord.Interaction, member: discord.Member) -> str:
     responsible_co = _get_responsible_co(bot, interaction, member, award.ranks_responsible)
 
     msg_str = ""
-    msg_str += f"{member.mention} is now eligible for {award_role.mention}.\n"
+    msg_str += f"{member.mention} is eligible for **{bot.get_guild(GUILD_ID).get_role(award.role_id).name}**.\n"
     msg_str += f"\tRanks Responsible: {award.ranks_responsible}\n"
     if responsible_co is not None:
-        msg_str += f"\tResponsible CO: {responsible_co.mention}\n"
+        sailor_repo = SailorRepository()
+        co = sailor_repo.get_sailor(responsible_co.id)
+        if co.award_ping_enabled:
+            msg_str += f"\tResponsible CO: {responsible_co.mention}\n"
+        else:
+            msg_str += f"\tResponsible CO: {responsible_co.display_name}\n"
+        sailor_repo.close_session()
     msg_str += f"\tDetails: {award.embed_url}\n"
     msg_str += f"\n"
     return msg_str
