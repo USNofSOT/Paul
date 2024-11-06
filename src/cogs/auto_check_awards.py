@@ -25,6 +25,8 @@ def fake_context(bot, channel_name="test-channel"):
     ctx = commands.Context(bot=bot, message=message, view=StringView(buffer=""))
     ctx.guild.name = GUILD.name
     ctx.guild.roles = GUILD.roles
+    ctx.guild.members = GUILD.members
+    ctx.guild.get_member = GUILD.get_member
     ctx.send = AsyncMock()
     return ctx
 
@@ -37,7 +39,7 @@ class AutoCheckAwards(commands.Cog):
         self.my_task.cancel()
 
     # TODO: Move this into configuration as well
-    @tasks.loop(time=datetime.time(hour=12, minute=00, tzinfo=datetime.timezone.utc))
+    @tasks.loop(time=datetime.time(hour=14, minute=53, tzinfo=datetime.timezone.utc))
     async def my_task(self):
         GUILD = self.bot.get_guild(GUILD_ID)
 
