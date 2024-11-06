@@ -45,6 +45,10 @@ class AutoCheckAwards(commands.Cog):
 
         # TODO: Move this into configuration
         channels = {
+            "USS Venom": { # Does not send to BC_VENOM send to test channel instead
+                "channel": 1291589569602650154, # bot-test-command
+                "role": 1237838585265258726
+            },
             "USS Origin": {
                 "channel": BC_ORIGIN,
                 "role": 977935623774162954
@@ -53,10 +57,10 @@ class AutoCheckAwards(commands.Cog):
                 "channel": BC_LUSTY,
                 "role": 933919139700019222
             },
-            # "USS Maelstorm": {
-            #     "channel": BC_MAELSTROM,
-            #     "role": 1002303636522680391
-            # }
+            "USS Maelstorm": {
+                "channel": BC_MAELSTROM,
+                "role": 1002303636522680391
+            }
         }
 
         sailor_repo = SailorRepository()
