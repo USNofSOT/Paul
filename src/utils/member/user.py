@@ -121,7 +121,7 @@ async def get_member_embed(bot, interaction, member: discord.Member) -> discord.
         last_hosted = "N/A"
     else:
         last_hosted_format = format_time(get_time_difference_past(database_report.last_hosted))
-        if get_time_difference_past(database_report.last_hosted).days >= 14:
+        if get_time_difference_past(database_report.last_hosted).days >= 21:
             last_hosted = ":x: " + last_hosted_format
         else:
             last_hosted = ":white_check_mark: " + last_hosted_format
