@@ -212,7 +212,7 @@ class CrewReport(commands.Cog):
                         "ship": ship_name[0] if ship_name else "N/A"
                     }
                     no_members = False
-                elif get_time_difference_past(last_hosted.get(member.id)).days >= 14:
+                elif get_time_difference_past(last_hosted.get(member.id)).days >= 21:
                     ship_name = [role.name for role in member_roles if role.name.startswith("USS")]
                     hoster_dictionary[member.id] = {
                         "last_hosted": get_time_difference_past(last_hosted.get(member.id)),
@@ -226,7 +226,7 @@ class CrewReport(commands.Cog):
                 file.write("Member,Last Hosted,Ship\n")
                 for hoster in hoster_dictionary:
                     file.write(f"{get_best_display_name(self.bot, hoster)},{hoster_dictionary[hoster]['last_hosted']},{hoster_dictionary[hoster]['ship']}\n")
-                await interaction.followup.send(file=discord.File("crew_report.csv"), content="CSV file with all members that have not hosted in the last 14 days")
+                await interaction.followup.send(file=discord.File("crew_report.csv"), content="CSV file with all members that have not hosted in the last 21 days")
         else:
             for hoster in hoster_dictionary:
                 embed.add_field(name="", value=f"{get_best_display_name(self.bot, hoster)} - Last hosted: {hoster_dictionary[hoster]['last_hosted']} on {hoster_dictionary[hoster]['ship']}", inline=False)
