@@ -7,7 +7,8 @@ from discord.ext import commands, tasks
 from discord.ext.commands.view import StringView
 
 from src.config import MAX_MESSAGE_LENGTH
-from src.config.main_server import GUILD_ID, BC_ORIGIN, BC_LUSTY, BC_MAELSTROM
+from src.config.main_server import GUILD_ID
+from src.config.ships import SHIPS
 from src.data.repository.sailor_repository import SailorRepository
 from src.utils.check_awards import check_sailor
 from src.utils.discord_utils import alert_engineers
@@ -43,32 +44,12 @@ class AutoCheckAwards(commands.Cog):
     async def my_task(self):
         GUILD = self.bot.get_guild(GUILD_ID)
 
-        # TODO: Move this into configuration
-        channels = {
-            "USS Venom": { # Does not send to BC_VENOM send to test channel instead
-                "channel": 1291589569602650154, # bot-test-command
-                "role": 1237838585265258726
-            },
-            "USS Origin": {
-                "channel": BC_ORIGIN,
-                "role": 977935623774162954
-            },
-            "USS Illustrious": {
-                "channel": BC_LUSTY,
-                "role": 933919139700019222
-            },
-            "USS Maelstorm": {
-                "channel": BC_MAELSTROM,
-                "role": 1002303636522680391
-            }
-        }
-
         sailor_repo = SailorRepository()
         try:
-            for i in channels:
-                log.info(f"Checking awards for {i}")
-                channel = GUILD.get_channel(channels[i]["channel"])
-                role = GUILD.get_role(channels[i]["role"])
+            for ship in SHIPS:
+                log.info(f"Checking awards for {ship}")
+                channel = GUILD.get_channel(ship.boat_command_channel_id)
+                role = GUILD.get_role(ship.role_id)
                 members = role.members
                 msg_str = ""
                 for member in members:
@@ -78,7 +59,7 @@ class AutoCheckAwards(commands.Cog):
                         continue
 
                     # Check for award messages for sailor
-                    sailor_strs = check_sailor(self.bot, fake_context(self.bot, f"{i}"), sailor, member)
+                    sailor_strs = check_sailor(self.bot, fake_context(self.bot, f"{ship.name}"), sailor, member)
                     # Add strings to message, printing early if message would be too long
                     for sailor_str in sailor_strs:
                         if len(msg_str + sailor_str) <= MAX_MESSAGE_LENGTH:
