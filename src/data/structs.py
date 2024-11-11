@@ -4,6 +4,12 @@ from dataclasses import dataclass
 from config.main_server import GUILD_ID
 
 @dataclass
+class Ship:
+    name: str = None # Ship name e.g. "USS Venom"
+    role_id: int = None # Role ID of the ship
+    boat_command_channel_id: int = None # Channel ID of the ship's boat command channel (e.g. BC_VENOM)
+
+@dataclass
 class Abbreviation:
     abbreviation: str = None # The abbreviation
     meaning: str = None # The meaning of the abbreviation
