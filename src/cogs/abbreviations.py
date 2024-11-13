@@ -5,7 +5,9 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.config.abbreviations import ABBREVIATION_CATEGORIES, RANK_ABBREVIATIONS, MISC_ABBREVIATIONS
+from src.config.abbreviations import ABBREVIATION_CATEGORIES, RANK_ABBREVIATIONS, MISC_ABBREVIATIONS, \
+    NAVY_ENLISTED_RANKS_ABBREVIATIONS, MARINE_ENLISTED_RANKS_ABBREVIATIONS, NAVY_OFFICER_RANKS_ABBREVIATIONS, \
+    MARINE_OFFICER_RANKS_ABBREVIATIONS, SPD_ABBREVIATIONS
 from src.config.ranks_roles import JE_AND_UP
 from src.data.structs import Abbreviation, RankAbbreviation
 from src.utils.embeds import error_embed, default_embed
@@ -73,14 +75,23 @@ class Abbreviation(commands.Cog):
             description="Here is a list of all the abbreviations and their meanings."
         )
         abbreviations_category_map = {
-            "Rank Abbreviations": RANK_ABBREVIATIONS,
-            "Miscellaneous Abbreviations": MISC_ABBREVIATIONS
+            "Navy Enlisted": NAVY_ENLISTED_RANKS_ABBREVIATIONS,
+            "Marine Enlisted" : MARINE_ENLISTED_RANKS_ABBREVIATIONS,
+            "spacer1" : [],
+            "Navy Officers": NAVY_OFFICER_RANKS_ABBREVIATIONS,
+            "Marine Officers": MARINE_OFFICER_RANKS_ABBREVIATIONS,
+            "spacer2": [],
+            "SPD Abbreviations": SPD_ABBREVIATIONS,
+            "Miscellaneous Abbreviations": MISC_ABBREVIATIONS,
         }
         for category in abbreviations_category_map:
             abbreviations = []
             for abbreviation in abbreviations_category_map[category]:
                 abbreviations.append(f"`{abbreviation.abbreviation}` - {abbreviation.meaning}")
-            embed.add_field(name=category, value="\n".join(abbreviations), inline=True)
+            if abbreviations:
+                embed.add_field(name=category, value="\n".join(abbreviations), inline=True)
+            else:
+                embed.add_field(name="\u200b", value="\u200b", inline=False)
         await interaction.response.send_message(embed=embed)
 
 
