@@ -129,6 +129,30 @@ class VoyageRepository:
             log.error(f"Error getting hosted log entries: {e}")
             raise e
 
+    def get_unique_voyages_by_target_id_month_count(self, target_ids: list) -> int:
+        """
+        Get count of voyage log entries for a target IDs in last 30 days
+
+        Args:
+            target_ids (list): The discord IDs of the target users
+        Returns:
+            Voyages: Count of all voyage log entries for the target IDs
+        """
+        self.session = Session()
+        try:
+            # log_time must be within the last 30 days
+            thirty_days_ago = datetime.now() - timedelta(days=30)
+
+            # select each log_id only once
+            ret = (self.session.query(Voyages.log_id).distinct()
+                    .filter(Voyages.target_id.in_(target_ids), Voyages.log_time >= thirty_days_ago)
+                    .all())
+
+            return len(ret)
+        except Exception as e:
+            log.error(f"Error getting hosted log entries: {e}")
+            raise e
+
     def get_last_voyage_by_target_ids(self, target_ids: list) -> dict:
         """
         Get the last voyage log entry for a list of target IDs
