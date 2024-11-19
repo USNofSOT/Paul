@@ -29,7 +29,7 @@ class Ships(commands.Cog):
         self.top_voyage_ships = {}
         self.top_hosts_ships = {}
         self.ships = {}
-        self.selected_ship = None
+        self.selected_ships = set()
         self.total_voyages = 0
 
     @app_commands.command(name="ships", description="Get a report of ship activity")
@@ -52,21 +52,14 @@ class Ships(commands.Cog):
         self.top_voyage_ships = {}
         self.top_hosts_ships = {}
         self.ships = {}
-        self.selected_ship = None
+        self.selected_ships = set()
         self.total_voyages = 0
 
         try:
             await interaction.response.defer(ephemeral=hidden)
 
-            if ship and ship.id not in [s.role_id for s in SHIPS]:
-                await interaction.followup.send(embeds=error_embed("Invalid ship"), ephemeral=True)
-                return
-
             self.hosted_repository = HostedRepository()
             self.voyage_repository = VoyageRepository()
-
-            if ship:
-                self.selected_ship = ship.id
 
             # 1. Load in all information
             roles = []
@@ -74,6 +67,16 @@ class Ships(commands.Cog):
                 roles.append(discord.utils.get(interaction.guild.roles, id=role_id))
             for role in roles:
                 self.get_info(role)
+
+            if ship and ship.id not in [s.role_id for s in SHIPS]:
+                for member in ship.members:
+                    for role in member.roles:
+                        if role.id in [s.role_id for s in SHIPS]:
+                            self.selected_ships.add(role.id)
+            elif ship and ship.id in [s.role_id for s in SHIPS]:
+                self.selected_ships.add(ship.id)
+            if self.selected_ships:
+                self.ships = {ship: self.ships[ship] for ship in self.selected_ships}
 
             if only == "performers":
                 performers_embed = self.get_performers_embed()
@@ -102,13 +105,13 @@ class Ships(commands.Cog):
             # 3. Get the embed for displaying the ship statistics
             ships_embed = self.get_ships_embed()
 
-            # 3.2
+            # 3.2 Get the embed for displaying the ship trends
             trend_voyages_embed, trend_voyages_file = await self.trend_voyages_past_months(interaction)
             trend_hosted_embed, trend_hosted_file = await self.trend_hosted_past_month(interaction)
 
             # 4. Check if a ship was provided
             ship_embed = None
-            if ship and ship.id in [role.id for role in SHIPS]:
+            if ship and ship.id in [s.role_id for s in SHIPS]:
                 ship_embed = self.get_ship_embed(ship.id)
 
             if ship_embed:
@@ -124,7 +127,7 @@ class Ships(commands.Cog):
 
     def get_performers_embed(self):
         embed = discord.Embed(
-            title="Ship Performers Report",
+            title="Navy Wide Ship Performers Report",
             color=discord.Color.yellow(),
             description=f"Report for ship activity from **{(datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')}** to **{datetime.now().strftime('%Y-%m-%d')}**"
         )
@@ -261,9 +264,6 @@ class Ships(commands.Cog):
         plt.xlabel('Date')
         plt.ylabel('Voyages')
 
-        if self.selected_ship:
-            self.ships = {self.selected_ship: self.ships[self.selected_ship]}
-
         for ship in self.ships:
             role = self.bot.get_guild(GUILD_ID).get_role(ship)
             x_dates, y_voyages = [], []
@@ -308,9 +308,6 @@ class Ships(commands.Cog):
         plt.title('Ship Hosted Trend')
         plt.xlabel('Date')
         plt.ylabel('Hosted')
-
-        if self.selected_ship:
-            self.ships = {self.selected_ship: self.ships[self.selected_ship]}
 
         for ship in self.ships:
             role = self.bot.get_guild(GUILD_ID).get_role(ship)
