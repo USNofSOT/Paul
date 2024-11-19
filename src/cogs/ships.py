@@ -8,8 +8,9 @@ from discord.app_commands import Choice
 from discord.ext import commands
 from matplotlib import pyplot as plt
 
+from src.config import NSC_ROLES
 from src.config.main_server import GUILD_ID
-from src.config.ranks_roles import SNCO_AND_UP
+from src.config.ranks_roles import SNCO_AND_UP, E8_AND_UP, E6_AND_UP
 from src.config.ships import SHIPS
 from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.voyage_repository import VoyageRepository
@@ -43,7 +44,7 @@ class Ships(commands.Cog):
         ]
     )
     @app_commands.describe(only="Optionally provide a specific report to get")
-    @app_commands.checks.has_any_role(*SNCO_AND_UP)
+    @app_commands.checks.has_any_role(*E6_AND_UP, 1143324589968068619, *NSC_ROLES)
     @app_commands.checks.cooldown(1, 60)
     async def ships(self, interaction: discord.Interaction, ship: discord.Role = None, hidden: bool = True, only: str = None):
         self.top_voyagers = {}
@@ -352,13 +353,12 @@ class Ships(commands.Cog):
                 title="Command on cooldown",
                 description=f"Please wait {round(error.retry_after)} seconds before using this command again."
             ), ephemeral=True)
-        elif isinstance(error, app_commands.errors.MissingAnyRole):
-            embed = error_embed(
+        elif isinstance(error, discord.app_commands.errors.MissingAnyRole):
+            await interaction.response.send_message(embed=error_embed(
                 title="Missing Permissions",
                 description="You do not have the required permissions to use this command.",
                 footer=False
-            )
-            await interaction.followup.send(embed=embed, ephemeral=True)
+            ), ephemeral=True)
 
     def get_ship_by_role_id(self, id):
         for ship in SHIPS:
