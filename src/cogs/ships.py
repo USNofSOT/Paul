@@ -10,7 +10,7 @@ from matplotlib import pyplot as plt
 
 from src.config.main_server import GUILD_ID
 from src.config.ranks_roles import SNCO_AND_UP
-from src.config.ship_roles import ALL_SHIP_ROLES
+from src.config.ships import SHIPS
 from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.voyage_repository import VoyageRepository
 from src.utils.embeds import error_embed
@@ -57,7 +57,7 @@ class Ships(commands.Cog):
         try:
             await interaction.response.defer(ephemeral=hidden)
 
-            if ship and ship.id not in ALL_SHIP_ROLES:
+            if ship and ship.id not in [s.role_id for s in SHIPS]:
                 await interaction.followup.send(embeds=error_embed("Invalid ship"), ephemeral=True)
                 return
 
@@ -69,7 +69,7 @@ class Ships(commands.Cog):
 
             # 1. Load in all information
             roles = []
-            for role_id in ALL_SHIP_ROLES:
+            for role_id in [s.role_id for s in SHIPS]:
                 roles.append(discord.utils.get(interaction.guild.roles, id=role_id))
             for role in roles:
                 self.get_info(role)
@@ -107,7 +107,7 @@ class Ships(commands.Cog):
 
             # 4. Check if a ship was provided
             ship_embed = None
-            if ship and ship.id in self.ships:
+            if ship and ship.id in [role.id for role in SHIPS]:
                 ship_embed = self.get_ship_embed(ship.id)
 
             if ship_embed:
@@ -115,7 +115,7 @@ class Ships(commands.Cog):
             else:
                 await interaction.followup.send(embeds=[performers_embed, ships_embed, trend_voyages_embed, trend_hosted_embed], files=[trend_voyages_file, trend_hosted_file])
         except Exception as e:
-            log.error(f"Error getting ships: {e}")
+            log.error(f"Error getting ships: {e}", exc_info=True)
             await interaction.followup.send(embed=error_embed("Error getting ships"), ephemeral=True)
         finally:
             self.hosted_repository.close_session()
@@ -161,9 +161,11 @@ class Ships(commands.Cog):
             color=discord.Color.blue(),
             description=f"Report for ship activity from **{(datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')}** to **{datetime.now().strftime('%Y-%m-%d')}**"
         )
+
         for ship, stats in sorted(self.ships.items(), key=lambda item: item[1]['Voyages'] + item[1]['Hosted'], reverse=True):
+            ship_emoji = self.get_ship_by_role_id(ship).emoji or ":ship:"
             role_name = self.bot.get_guild(GUILD_ID).get_role(int(ship)).name
-            embed.add_field(name=f"{role_name}", value=f"Total Members: {stats['Total Members']}\nTotal Hosts: {stats['Total Hosts']}\nVoyages: {stats['Voyages']}\nHosted: {stats['Hosted']}", inline=True)
+            embed.add_field(name=f"{ship_emoji} {role_name}", value=f"Total Members: {stats['Total Members']}\nTotal Hosts: {stats['Total Hosts']}\nVoyages: {stats['Voyages']}\nHosted: {stats['Hosted']}", inline=True)
         return embed
 
     def get_ship_embed(self, ship):
@@ -234,7 +236,8 @@ class Ships(commands.Cog):
             "Total Members": len(member_ids),
             "Total Hosts": len(host_ids),
             "Voyages": voyages_count,
-            "Hosted": hosted_count
+            "Hosted": hosted_count,
+            "Ship": self.get_ship_by_role_id(role.id)
         }
 
     def perc(self, pct, total, abs=True):
@@ -356,6 +359,13 @@ class Ships(commands.Cog):
                 footer=False
             )
             await interaction.followup.send(embed=embed, ephemeral=True)
+
+    def get_ship_by_role_id(self, id):
+        for ship in SHIPS:
+            if ship.role_id == id:
+                return ship
+        pass
+
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Ships(bot))
