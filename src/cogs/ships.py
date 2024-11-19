@@ -4,6 +4,7 @@ from logging import getLogger
 import discord
 from dateutil.relativedelta import relativedelta
 from discord import app_commands
+from discord.app_commands import Choice
 from discord.ext import commands
 from matplotlib import pyplot as plt
 
@@ -33,9 +34,18 @@ class Ships(commands.Cog):
     @app_commands.command(name="ships", description="Get a report of ship activity")
     @app_commands.describe(ship="Optionally provide a ship to get more detailed information about")
     @app_commands.describe(hidden="Should only you be able to see the response?")
+    @app_commands.choices(
+        only=[
+            Choice(name="Performers", value="performers"),
+            Choice(name="Ships", value="ships"),
+            Choice(name="Drilldown", value="drilldown"),
+            Choice(name="Trends", value="trends")
+        ]
+    )
+    @app_commands.describe(only="Optionally provide a specific report to get")
     @app_commands.checks.has_any_role(*SNCO_AND_UP)
     @app_commands.checks.cooldown(1, 60)
-    async def ships(self, interaction: discord.Interaction, ship: discord.Role = None, hidden: bool = True):
+    async def ships(self, interaction: discord.Interaction, ship: discord.Role = None, hidden: bool = True, only: str = None):
         self.top_voyagers = {}
         self.top_hosts = {}
         self.top_voyage_ships = {}
@@ -63,6 +73,27 @@ class Ships(commands.Cog):
                 roles.append(discord.utils.get(interaction.guild.roles, id=role_id))
             for role in roles:
                 self.get_info(role)
+
+            if only == "performers":
+                performers_embed = self.get_performers_embed()
+                await interaction.followup.send(embed=performers_embed)
+                return
+            elif only == "ships":
+                ships_embed = self.get_ships_embed()
+                await interaction.followup.send(embed=ships_embed)
+                return
+            elif only == "drilldown":
+                if not ship:
+                    await interaction.followup.send(embed=error_embed("No ship provided"), ephemeral=True)
+                    return
+                ship_embed = self.get_ship_embed(ship.id)
+                await interaction.followup.send(embed=ship_embed)
+                return
+            elif only == "trends":
+                trend_voyages_embed, trend_voyages_file = await self.trend_voyages_past_months(interaction)
+                trend_hosted_embed, trend_hosted_file = await self.trend_hosted_past_month(interaction)
+                await interaction.followup.send(embeds=[trend_voyages_embed, trend_hosted_embed], files=[trend_voyages_file, trend_hosted_file])
+                return
 
             # 2. Get the embed for displaying the best performers
             performers_embed = self.get_performers_embed()
