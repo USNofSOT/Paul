@@ -2,8 +2,10 @@ from datetime import datetime, timedelta
 from logging import getLogger
 
 import discord
+from dateutil.relativedelta import relativedelta
 from discord import app_commands
 from discord.ext import commands
+from matplotlib import pyplot as plt
 
 from src.config.main_server import GUILD_ID
 from src.config.ship_roles import ALL_SHIP_ROLES
@@ -29,8 +31,9 @@ class Ships(commands.Cog):
 
     @app_commands.command(name="ships", description="Get a report of ship activity")
     @app_commands.describe(ship="Optionally provide a ship to get more detailed information about")
+    @app_commands.describe(hidden="Should only you be able to see the response?")
     @app_commands.checks.cooldown(1, 60)
-    async def ships(self, interaction: discord.Interaction, ship: discord.Role = None):
+    async def ships(self, interaction: discord.Interaction, ship: discord.Role = None, hidden: bool = True):
         self.top_voyagers = {}
         self.top_hosts = {}
         self.top_voyage_ships = {}
@@ -40,7 +43,7 @@ class Ships(commands.Cog):
         self.total_voyages = 0
 
         try:
-            await interaction.response.defer(ephemeral=False)
+            await interaction.response.defer(ephemeral=hidden)
 
             if ship and ship.id not in ALL_SHIP_ROLES:
                 await interaction.followup.send(embeds=error_embed("Invalid ship"), ephemeral=True)
@@ -65,15 +68,19 @@ class Ships(commands.Cog):
             # 3. Get the embed for displaying the ship statistics
             ships_embed = self.get_ships_embed()
 
+            # 3.2
+            trend_voyages_embed, trend_voyages_file = await self.trend_voyages_past_months(interaction)
+            trend_hosted_embed, trend_hosted_file = await self.trend_hosted_past_month(interaction)
+
             # 4. Check if a ship was provided
             ship_embed = None
             if ship and ship.id in self.ships:
                 ship_embed = self.get_ship_embed(ship.id)
 
             if ship_embed:
-                await interaction.followup.send(embeds=[performers_embed, ships_embed, ship_embed])
+                await interaction.followup.send(embeds=[performers_embed, ships_embed, ship_embed, trend_voyages_embed, trend_hosted_embed], files=[trend_voyages_file, trend_hosted_file])
             else:
-                await interaction.followup.send(embeds=[performers_embed, ships_embed])
+                await interaction.followup.send(embeds=[performers_embed, ships_embed, trend_voyages_embed, trend_hosted_embed], files=[trend_voyages_file, trend_hosted_file])
         except Exception as e:
             log.error(f"Error getting ships: {e}")
             await interaction.followup.send(embed=error_embed("Error getting ships"), ephemeral=True)
@@ -203,6 +210,104 @@ class Ships(commands.Cog):
             return f'{absolute} ({pct:.1f}%)'
         else:
             return f'{pct:.1f}%'
+
+    async def trend_voyages_past_months(self, interaction: discord.Interaction):
+        embed = discord.Embed(
+            title="Ship Voyages",
+            color=discord.Color.purple(),
+            description=f"Report for amount of voyages per month per ship for the last 6 months"
+        )
+
+        months = 6
+        plt.figure(figsize=(15, 12))
+        plt.title('Ship Voyages Trend')
+        plt.xlabel('Date')
+        plt.ylabel('Voyages')
+
+        if self.selected_ship:
+            self.ships = {self.selected_ship: self.ships[self.selected_ship]}
+
+        for ship in self.ships:
+            role = self.bot.get_guild(GUILD_ID).get_role(ship)
+            x_dates, y_voyages = [], []
+
+            for month in range(months):
+                first_day_of_month = datetime.now().replace(day=1)
+                date = first_day_of_month - relativedelta(months=month)
+                start_date = date.replace(hour=0, minute=0, second=0, microsecond=0)
+                end_date = (date + relativedelta(months=1)) - timedelta(seconds=1)
+
+                voyages = self.voyage_repository.get_voyages_by_target_ids_and_between_dates(
+                    [member.id for member in role.members],
+                    start_date,
+                    end_date
+                )
+                voyages = len(voyages) if voyages else 0
+                x_dates.append(date)
+                y_voyages.append(voyages)
+
+            plt.plot(x_dates, y_voyages, marker='o', label=f"{role.name}", linewidth=2)
+
+        plt.legend()
+        file_path = "./ship_voyages_trend.png"
+        plt.savefig(file_path)
+        plt.close()
+
+        with open(file_path, 'rb') as file:
+            discord_file = discord.File(file)
+            embed.set_image(url="attachment://ship_voyages_trend.png")
+
+        return embed, discord_file
+
+    async def trend_hosted_past_month(self, interaction: discord.Interaction):
+        embed = discord.Embed(
+            title="Ship Hosted",
+            color=discord.Color.pink(),
+            description=f"Report for amount of hosted per month per ship for the last 6 months"
+        )
+
+        months = 6
+        plt.figure(figsize=(15, 12))
+        plt.title('Ship Hosted Trend')
+        plt.xlabel('Date')
+        plt.ylabel('Hosted')
+
+        if self.selected_ship:
+            self.ships = {self.selected_ship: self.ships[self.selected_ship]}
+
+        for ship in self.ships:
+            role = self.bot.get_guild(GUILD_ID).get_role(ship)
+            x_dates, y_hosted = [], []
+
+            for month in range(months):
+                first_day_of_month = datetime.now().replace(day=1)
+                date = first_day_of_month - relativedelta(months=month)
+                start_date = date.replace(hour=0, minute=0, second=0, microsecond=0)
+                end_date = (date + relativedelta(months=1)) - timedelta(seconds=1)
+
+                hosted = self.hosted_repository.get_hosted_by_target_ids_and_between_dates(
+                    [member.id for member in role.members],
+                    start_date,
+                    end_date
+                )
+                hosted = len(hosted) if hosted else 0
+                x_dates.append(date)
+                y_hosted.append(hosted)
+
+            plt.plot(x_dates, y_hosted, marker='o', label=f"{role.name}", linewidth=2)
+
+        plt.legend()
+        file_path = "./ship_hosted_trend.png"
+        plt.savefig(file_path)
+        plt.close()
+
+        with open(file_path, 'rb') as file:
+            discord_file = discord.File(file)
+            embed.set_image(url="attachment://ship_hosted_trend.png")
+
+        return embed, discord_file
+
+
 
     @ships.error
     async def ships_error(self, interaction: discord.Interaction, error):
