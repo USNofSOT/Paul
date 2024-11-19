@@ -141,12 +141,12 @@ class Ships(commands.Cog):
         for member_id, voyages in list(self.top_voyagers.items()):
             if member_id in [member.id for member in ship_members]:
                 top_voyagers[member_id] = voyages
-        embed.add_field(name=":trophy: Top Voyagers", value="\n".join([f"{list(self.top_voyagers.keys()).index(member_id) + 1}. <@{member_id}>: \n {voyages} ({round(voyages / ship['Voyages'] * 100, 1)}%)"for member_id, voyages in top_voyagers.items()][:5]),inline=True)
+        embed.add_field(name=":trophy: Top Voyagers", value="\n".join([f"**{list(self.top_voyagers.keys()).index(member_id) + 1}\.** <@{member_id}>: \n {voyages} ({round(voyages / ship['Voyages'] * 100, 1)}%)"for member_id, voyages in top_voyagers.items()][:5]),inline=True)
         top_hosts = {}
         for member_id, hosted in list(self.top_hosts.items()):
             if member_id in [member.id for member in ship_members]:
                 top_hosts[member_id] = hosted
-        embed.add_field(name=":trophy: Top Hosts", value="\n".join([f"{list(self.top_hosts.keys()).index(member_id) + 1}. <@{member_id}>: \n {hosted} ({round(hosted / ship['Hosted'] * 100, 1)}%)"for member_id, hosted in top_hosts.items()][:5]),inline=True)
+        embed.add_field(name=":trophy: Top Hosts", value="\n".join([f"**{list(self.top_hosts.keys()).index(member_id) + 1}\.** <@{member_id}>: \n {hosted} ({round(hosted / ship['Hosted'] * 100, 1)}%)"for member_id, hosted in top_hosts.items()][:5]),inline=True)
         embed.add_field(name="\u200b", value="\u200b", inline=True)  # Spacer
 
         return embed
