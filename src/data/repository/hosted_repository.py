@@ -24,6 +24,13 @@ class HostedRepository:
     def close_session(self):
         self.session.close()
 
+    def get_hosted_by_target_ids_and_between_dates(self, target_ids: list, start_date: datetime, end_date: datetime) -> list[Type[Hosted]]:
+        try:
+            return self.session.query(Hosted).filter(Hosted.target_id.in_(target_ids), Hosted.log_time >= start_date, Hosted.log_time <= end_date).all()
+        except Exception as e:
+            log.error(f"Error getting voyage log entries by target IDs and between dates: {e}")
+            raise e
+
     def save_hosted_data(self, log_id: int, target_id: int, log_time: datetime = datetime.now()) -> bool:
         """
         Adds a hosted data entry to the Hosted table. Also increments the hosted count for the target.
