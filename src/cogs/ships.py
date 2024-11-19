@@ -8,6 +8,7 @@ from discord.ext import commands
 from matplotlib import pyplot as plt
 
 from src.config.main_server import GUILD_ID
+from src.config.ranks_roles import SNCO_AND_UP
 from src.config.ship_roles import ALL_SHIP_ROLES
 from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.voyage_repository import VoyageRepository
@@ -32,6 +33,7 @@ class Ships(commands.Cog):
     @app_commands.command(name="ships", description="Get a report of ship activity")
     @app_commands.describe(ship="Optionally provide a ship to get more detailed information about")
     @app_commands.describe(hidden="Should only you be able to see the response?")
+    @app_commands.checks.has_any_role(*SNCO_AND_UP)
     @app_commands.checks.cooldown(1, 60)
     async def ships(self, interaction: discord.Interaction, ship: discord.Role = None, hidden: bool = True):
         self.top_voyagers = {}
@@ -316,6 +318,13 @@ class Ships(commands.Cog):
                 title="Command on cooldown",
                 description=f"Please wait {round(error.retry_after)} seconds before using this command again."
             ), ephemeral=True)
+        elif isinstance(error, app_commands.errors.MissingAnyRole):
+            embed = error_embed(
+                title="Missing Permissions",
+                description="You do not have the required permissions to use this command.",
+                footer=False
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Ships(bot))
