@@ -185,17 +185,21 @@ class Ships(commands.Cog):
 
         ship_members = [member for member in self.bot.get_guild(GUILD_ID).members if ship_role in member.roles]
 
+        total_hosted_in_ship = sum([self.top_hosts[member.id] for member in ship_members if member.id in self.top_hosts])
+        embed.add_field(name="Total Hosted", value=total_hosted_in_ship, inline=True)
+        embed.add_field(name="Total Voyages", value=ship['Voyages'], inline=True)
+        embed.add_field(name="\u200b", value="\u200b", inline=True) # Spacer
+
         top_hosts = {}
         for member_id, hosted in list(self.top_hosts.items()):
             if member_id in [member.id for member in ship_members]:
                 top_hosts[member_id] = hosted
-        embed.add_field(name=":trophy: Top Ship Hosts", value="\n".join([f"- **#{list(self.top_hosts.keys()).index(member_id) + 1}/{len(self.top_hosts)}** <@{member_id}>: \n {hosted} ({round(hosted / ship['Hosted'] * 100, 1)}%)"for member_id, hosted in top_hosts.items()][:5]),inline=True)
+        embed.add_field(name=":trophy: Top Ship Hosts", value="\n".join([f"- <@{member_id}>: \n Monthly rank: **#{list(self.top_hosts.keys()).index(member_id) + 1}** \n Total hosted: **{hosted}** \n Percentage Hosted (Ship): **{round(hosted/total_hosted_in_ship * 100, 1)}%** \n Percentage Hosted (Navy): **{round(hosted/self.total_voyages * 100, 1)}%**" for member_id, hosted in top_hosts.items()][:5]), inline=True)
         top_voyagers = {}
         for member_id, voyages in list(self.top_voyagers.items()):
             if member_id in [member.id for member in ship_members]:
                 top_voyagers[member_id] = voyages
-        embed.add_field(name=":trophy: Top Ship Voyagers", value="\n".join([f"- **#{list(self.top_voyagers.keys()).index(member_id) + 1}/{len(self.top_voyagers)}** <@{member_id}>: \n  {voyages} ({round(voyages / ship['Voyages'] * 100, 1)}%)"for member_id, voyages in top_voyagers.items()][:5]),inline=True)
-        embed.add_field(name="\u200b", value="\u200b", inline=True)  # Spacer
+        embed.add_field(name=":trophy: Top Ship Voyagers", value="\n".join([f"- <@{member_id}>: \n Monthly rank: **#{list(self.top_voyagers.keys()).index(member_id) + 1}**  \n Total voyages: **{voyages}** \n Percentage Voyages (Ship): **{round(voyages/ship['Voyages'] * 100, 1)}%** \n Percentage Voyages (Navy): **{round(voyages/self.total_voyages * 100, 1)}%**" for member_id, voyages in top_voyagers.items()][:5]), inline=True)
 
         return embed
 
@@ -342,8 +346,6 @@ class Ships(commands.Cog):
             embed.set_image(url="attachment://ship_hosted_trend.png")
 
         return embed, discord_file
-
-
 
     @ships.error
     async def ships_error(self, interaction: discord.Interaction, error):
