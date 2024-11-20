@@ -274,8 +274,8 @@ class Ships(commands.Cog):
                 start_date = date.replace(hour=0, minute=0, second=0, microsecond=0)
                 end_date = (date + relativedelta(months=1)) - timedelta(seconds=1)
 
-                voyages = self.voyage_repository.get_voyages_by_target_ids_and_between_dates(
-                    [member.id for member in role.members],
+                voyages = self.voyage_repository.get_voyages_by_role_ids_and_between_dates(
+                    [role.id],
                     start_date,
                     end_date
                 )
@@ -319,8 +319,8 @@ class Ships(commands.Cog):
                 start_date = date.replace(hour=0, minute=0, second=0, microsecond=0)
                 end_date = (date + relativedelta(months=1)) - timedelta(seconds=1)
 
-                hosted = self.hosted_repository.get_hosted_by_target_ids_and_between_dates(
-                    [member.id for member in role.members],
+                hosted = self.hosted_repository.get_hosted_by_role_ids_and_between_dates(
+                    [role.id],
                     start_date,
                     end_date
                 )

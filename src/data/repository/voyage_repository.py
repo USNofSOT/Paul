@@ -105,6 +105,13 @@ class VoyageRepository:
             log.error(f"Error getting voyage log entries by target IDs and between dates: {e}")
             raise e
 
+    def get_voyages_by_role_ids_and_between_dates(self, role_id: list[int], start_date: datetime, end_date: datetime) -> list[Type[Voyages]]:
+        try:
+            return self.session.query(Voyages).filter(Voyages.ship_role_id.in_(role_id), Voyages.log_time >= start_date, Voyages.log_time <= end_date).all()
+        except Exception as e:
+            log.error(f"Error getting voyage log entries by role IDs and between dates: {e}")
+            raise e
+
     def get_voyages_by_target_id_month_count(self, target_ids: list) -> dict:
         """
         Get count of voyage log entries for a target IDs in last 30 days
