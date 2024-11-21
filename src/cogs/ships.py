@@ -10,7 +10,7 @@ from matplotlib import pyplot as plt
 
 from src.config import NSC_ROLES
 from src.config.main_server import GUILD_ID
-from src.config.ranks_roles import SNCO_AND_UP, E8_AND_UP, E6_AND_UP
+from src.config.ranks_roles import SNCO_AND_UP, E8_AND_UP, E6_AND_UP, BOA_ROLE
 from src.config.ships import SHIPS
 from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.voyage_repository import VoyageRepository
@@ -31,6 +31,7 @@ class Ships(commands.Cog):
         self.ships = {}
         self.selected_ships = set()
         self.total_voyages = 0
+        self.total_hosted = 0
 
     @app_commands.command(name="ships", description="Get a report of ship activity")
     @app_commands.describe(ship="Optionally provide a ship to get more detailed information about")
@@ -44,8 +45,8 @@ class Ships(commands.Cog):
         ]
     )
     @app_commands.describe(only="Optionally provide a specific report to get")
-    @app_commands.checks.has_any_role(*E6_AND_UP, 1143324589968068619, *NSC_ROLES)
-    @app_commands.checks.cooldown(1, 60)
+    @app_commands.checks.has_any_role(BOA_ROLE, *NSC_ROLES)
+    @app_commands.checks.cooldown(1, 30)
     async def ships(self, interaction: discord.Interaction, ship: discord.Role = None, hidden: bool = True, only: str = None):
         self.top_voyagers = {}
         self.top_hosts = {}
@@ -54,6 +55,7 @@ class Ships(commands.Cog):
         self.ships = {}
         self.selected_ships = set()
         self.total_voyages = 0
+        self.total_hosted = 0
 
         try:
             await interaction.response.defer(ephemeral=hidden)
@@ -132,7 +134,9 @@ class Ships(commands.Cog):
             description=f"Report for ship activity from **{(datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')}** to **{datetime.now().strftime('%Y-%m-%d')}**"
         )
 
-        embed.add_field(name="Total Hosted", value=self.total_voyages, inline=False)
+        embed.add_field(name="Total Hosted", value=self.total_hosted, inline=True)
+        embed.add_field(name="Total Voyages", value=self.total_voyages, inline=True)
+        embed.add_field(name="\u200b", value="\u200b", inline=True)
 
         top_hosts = {}
         for member_id, hosted in list(self.top_hosts.items())[:5]:
@@ -185,7 +189,7 @@ class Ships(commands.Cog):
 
         ship_members = [member for member in self.bot.get_guild(GUILD_ID).members if ship_role in member.roles]
 
-        total_hosted_in_ship = sum([self.top_hosts[member.id] for member in ship_members if member.id in self.top_hosts])
+        total_hosted_in_ship = len(self.hosted_repository.get_hosted_by_role_ids_and_between_dates([ship_role.id], datetime.now() - timedelta(days=30), datetime.now()))
         embed.add_field(name="Total Hosted", value=total_hosted_in_ship, inline=True)
         embed.add_field(name="Total Voyages", value=ship['Voyages'], inline=True)
         embed.add_field(name="\u200b", value="\u200b", inline=True) # Spacer
@@ -193,13 +197,27 @@ class Ships(commands.Cog):
         top_hosts = {}
         for member_id, hosted in list(self.top_hosts.items()):
             if member_id in [member.id for member in ship_members]:
-                top_hosts[member_id] = hosted
-        embed.add_field(name=":trophy: Top Ship Hosts", value="\n".join([f"- <@{member_id}>: \n Monthly rank: **#{list(self.top_hosts.keys()).index(member_id) + 1}** \n Total hosted: **{hosted}** \n Percentage Hosted (Ship): **{round(hosted/total_hosted_in_ship * 100, 1)}%** \n Percentage Hosted (Navy): **{round(hosted/self.total_voyages * 100, 1)}%**" for member_id, hosted in top_hosts.items()][:5]), inline=True)
+                top_hosts[member_id] = len(
+                    self.hosted_repository.get_hosted_by_role_ids_and_target_ids_and_between_dates(
+                        [ship_role.id],
+                        [member_id],
+                        datetime.now() - timedelta(days=30),
+                        datetime.now()
+                    )
+                )
+        embed.add_field(name=":trophy: Top Ship Hosts", value="\n".join([f"- <@{member_id}>: \n Monthly rank: **#{list(self.top_hosts.keys()).index(member_id) + 1}** \n Total hosted: **{hosted}** \n Percentage Hosted (Ship): **{round(hosted/total_hosted_in_ship * 100, 1) if total_hosted_in_ship > 0 else 0}%** \n Percentage Hosted (Navy): **{round(hosted/self.total_voyages * 100, 1) if self.total_voyages > 0 else 0}%**" for member_id, hosted in top_hosts.items()][:5]), inline=True)
         top_voyagers = {}
         for member_id, voyages in list(self.top_voyagers.items()):
             if member_id in [member.id for member in ship_members]:
-                top_voyagers[member_id] = voyages
-        embed.add_field(name=":trophy: Top Ship Voyagers", value="\n".join([f"- <@{member_id}>: \n Monthly rank: **#{list(self.top_voyagers.keys()).index(member_id) + 1}**  \n Total voyages: **{voyages}** \n Percentage Voyages (Ship): **{round(voyages/ship['Voyages'] * 100, 1)}%** \n Percentage Voyages (Navy): **{round(voyages/self.total_voyages * 100, 1)}%**" for member_id, voyages in top_voyagers.items()][:5]), inline=True)
+                top_voyagers[member_id] = len(
+                    self.voyage_repository.get_voyages_by_role_ids_and_target_ids_and_between_dates(
+                        [ship_role.id],
+                        [member_id],
+                        datetime.now() - timedelta(days=30),
+                        datetime.now()
+                    )
+                )
+        embed.add_field(name=":trophy: Top Ship Voyagers", value="\n".join([f"- <@{member_id}>: \n Monthly rank: **#{list(self.top_voyagers.keys()).index(member_id) + 1}**  \n Total voyages: **{voyages}** \n Percentage Voyages (Ship): **{round(voyages/ship['Voyages'] * 100, 1) if ship['Voyages'] > 0 else 0}%** \n Percentage Voyages (Navy): **{round(voyages/self.total_voyages * 100, 1) if self.total_voyages > 0 else 0}%**" for member_id, voyages in top_voyagers.items()][:5]), inline=True)
 
         return embed
 
@@ -214,24 +232,35 @@ class Ships(commands.Cog):
             member_ids.append(member.id)
 
         hosted = self.hosted_repository.get_hosted_by_target_ids_month_count(host_ids)
-        hosted_count = 0
-        for host_id in host_ids:
-            if host_id in hosted:
-                hosted_count += hosted[host_id]
+        hosted_count = len(self.hosted_repository.get_hosted_by_role_ids_and_between_dates([role.id], datetime.now() - timedelta(days=30), datetime.now()))
 
 
         voyages = self.voyage_repository.get_voyages_by_target_id_month_count(member_ids)
-        voyages_count = self.voyage_repository.get_unique_voyages_by_target_id_month_count(member_ids)
+        voyages_count = len(self.voyage_repository.get_voyages_by_role_ids_and_between_dates([role.id], datetime.now() - timedelta(days=30), datetime.now()))
 
         for member_id in member_ids:
             if member_id in voyages:
-                self.top_voyagers[member_id] = voyages[member_id]
+                self.top_voyagers[member_id] = len(
+                    self.voyage_repository.get_voyages_by_role_ids_and_target_ids_and_between_dates(
+                        [role.id],
+                        [member_id],
+                        datetime.now() - timedelta(days=30),
+                        datetime.now()
+                    )
+                )
 
         self.top_voyagers = dict(sorted(self.top_voyagers.items(), key=lambda item: item[1], reverse=True))
 
         for host_id in host_ids:
             if host_id in hosted:
-                self.top_hosts[host_id] = hosted[host_id]
+                self.top_hosts[host_id] = len(
+                    self.hosted_repository.get_hosted_by_role_ids_and_target_ids_and_between_dates(
+                        [role.id],
+                        [host_id],
+                        datetime.now() - timedelta(days=30),
+                        datetime.now()
+                    )
+                )
 
         self.top_hosts = dict(sorted(self.top_hosts.items(), key=lambda item: item[1], reverse=True))
 
@@ -240,7 +269,8 @@ class Ships(commands.Cog):
         self.top_voyage_ships = dict(sorted(self.top_voyage_ships.items(), key=lambda item: item[1], reverse=True))
         self.top_hosts_ships = dict(sorted(self.top_hosts_ships.items(), key=lambda item: item[1], reverse=True))
 
-        self.total_voyages += hosted_count
+        self.total_hosted += hosted_count
+        self.total_voyages += voyages_count
 
         self.ships[role.id] = {
             "Total Members": len(member_ids),
