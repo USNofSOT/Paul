@@ -54,7 +54,7 @@ class TrainingRecords(commands.Cog):
         if NETC_ROLE in [role.id for role in target.roles] and NRC_ROLE in [role.id for role in target.roles]:
             embed.add_field(
                 name="NRC / NETC Points",
-                value=f"{training_record.nrc_training_points} / {training_record.netc_training_points}",
+                value=f"{training_record.nrc_training_points + training_record.st_training_points} / {training_record.netc_training_points}",
             )
         # if user is NRC Department member
         elif NETC_ROLE in [role.id for role in target.roles]:
@@ -66,7 +66,7 @@ class TrainingRecords(commands.Cog):
         elif NRC_ROLE in [role.id for role in target.roles]:
             embed.add_field(
                 name="NRC Points",
-                value=f"{training_record.nrc_training_points}",
+                value=f"{training_record.nrc_training_points + training_record.st_training_points}",
             )
         else:
             embed.add_field(
@@ -115,7 +115,7 @@ class TrainingRecords(commands.Cog):
             )
             if training_record.nrc_training_points > 0:
                 embed.add_field(
-                    name="Total NRC Points",
+                    name="Total RT Points",
                     value=f"{training_record.nrc_training_points}",
                     inline=True
                 )
