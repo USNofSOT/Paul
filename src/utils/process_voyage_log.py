@@ -5,6 +5,7 @@ import discord
 from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.sailor_repository import SailorRepository
 from src.data.repository.voyage_repository import VoyageRepository
+from src.utils.ship_utils import get_ship_role_id_by_member
 
 log = getLogger(__name__)
 
@@ -37,7 +38,7 @@ class Process_Voyage_Log:
 
         # 2. If not, process the log. But first, ensure the host is in the Sailor table
         sailor_repository.update_or_create_sailor_by_discord_id(host_id)
-        hosted_repository.save_hosted_data(log_id, host_id, log_time)
+        hosted_repository.save_hosted_data(log_id, host_id, log_time, get_ship_role_id_by_member(message.author))
         # 3.Log Voyage Count
 
         voyage_data = []
@@ -46,7 +47,7 @@ class Process_Voyage_Log:
                     # Ensure the participant is in the Sailor table
                     sailor_repository.update_or_create_sailor_by_discord_id(participant_id)
                     # Add the voyage data to the list
-                    voyage_data.append((log_id, participant_id, log_time))
+                    voyage_data.append((log_id, participant_id, log_time, get_ship_role_id_by_member(message.guild.get_member(participant_id))))
                     # Increment the voyage count for the participant
                     sailor_repository.increment_voyage_count_by_discord_id(participant_id)
 
