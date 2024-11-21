@@ -18,4 +18,4 @@ db_config = {
 # Initialize the engine used to connect to the data
 # See: https://docs.sqlalchemy.org/en/20/core/engines.html
 engine_string = f"mysql+pymysql://{db_config['user']}:{db_config['password']}@{db_config['host']}/{db_config['data']}"
-engine: Engine = create_engine(engine_string, max_overflow=20)
+engine: Engine = create_engine(engine_string, pool_size=10, max_overflow=30, pool_recycle=1800, pool_timeout=30, pool_pre_ping=True)
