@@ -5,7 +5,7 @@ from typing import Type
 from sqlalchemy.orm import sessionmaker
 
 from src.data import NameChangeLog, AuditLog, RoleChangeLog, RoleChangeType, TimeoutLog, BotInteractionType, \
-    BotInteractionLog
+    BotInteractionLog, LeaveChangeLog, BanChangeLog
 from src.data.engine import engine
 from src.data.repository.sailor_repository import ensure_sailor_exists
 from src.utils.time_utils import utc_time_now
@@ -51,6 +51,41 @@ class AuditLogRepository:
             return self.session.query(RoleChangeLog).filter(RoleChangeLog.target_id == target_id).order_by(RoleChangeLog.log_time.desc()).limit(limit).all()
         else:
             return self.session.query(RoleChangeLog).order_by(RoleChangeLog.log_time.desc()).limit(limit).all()
+
+    def log_ban(self, target_id: int, changed_by_id: int, guild_id: int, reason: str = "No reason provided.") -> AuditLog:
+        try:
+            log_entry = BanChangeLog(
+                target_id=target_id,
+                changed_by_id=changed_by_id,
+                guild_id=guild_id,
+                reason=reason,
+                log_time=utc_time_now()
+            )
+
+            self.session.add(log_entry)
+            self.session.commit()
+            log.info(f"Member banned logged for {target_id}.")
+            return log_entry
+        except Exception as e:
+            log.error(f"Error logging member banned: {e}")
+            self.session.rollback()
+
+    def log_member_removed(self, target_id: int, guild_id: int, e2_or_above: bool = False) -> LeaveChangeLog:
+        try:
+            log_entry = LeaveChangeLog(
+                target_id=target_id,
+                guild_id=guild_id,
+                e2_or_above=e2_or_above,
+                log_time=utc_time_now()
+            )
+
+            self.session.add(log_entry)
+            self.session.commit()
+            log.info(f"Member removed logged for {target_id}.")
+            return log_entry
+        except Exception as e:
+            log.error(f"Error logging member removed: {e}")
+            self.session.rollback()
 
     def log_role_change(self, target_id: int, changed_by_id: int, guild_id: int, role_id: int, role_name: str, action: RoleChangeType) -> RoleChangeLog:
         try:
