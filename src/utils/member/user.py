@@ -147,20 +147,6 @@ async def get_member_embed(bot, interaction, member: discord.Member) -> discord.
             inline=True
         )
 
-    tiered_awards = await tiered_medals(member)
-
-    if tiered_awards != "":
-        embed.add_field(name="Tiered Awards", value=tiered_awards, inline=True)
-    else:
-        embed.add_field(name="Tiered Awards", value="None", inline=True)
-
-    awards_and_titles = await other_medals(member)
-    if awards_and_titles:
-        formatted = "\n".join(awards_and_titles)
-        embed.add_field(name="Awards / Titles", value=formatted, inline=True)
-    else:
-        embed.add_field(name="Awards / Titles", value="None", inline=True)
-
     carpenter_emoji = "<:Planks:1256589596473692272>"
     carpenter_points = modify_points(database_report.sailor.carpenter_points, database_report.sailor.force_carpenter_points)
     carpenter_points_display = f"{carpenter_points} ({database_report.sailor.carpenter_points})" if database_report.sailor.force_carpenter_points != 0  else str(carpenter_points)
@@ -195,20 +181,37 @@ async def get_member_embed(bot, interaction, member: discord.Member) -> discord.
               f"{surgeon_emoji} Surgeon: {surgeon_points_display}",
         inline=True
     )
+
     coin_repository = CoinRepository()
     # Get coins 
     regular_coins, commander_coins = coin_repository.get_coins_by_target(member.id)
 
     embed.add_field(
-        name="Commander's Challenge Coins",
-        value="\n".join([str(coin.old_name+ "'s Commander Coin") for coin in commander_coins]) or "None",  # Display commander_coins
+        name="Commander's Coins",
+        value="\n".join([str(coin.old_name + "'s Coin") for coin in commander_coins[:5]]) + (
+            f"\n...and {len(commander_coins) - 5} more coins" if len(commander_coins) > 5 else "") or "None",
         inline=True
     )
 
     embed.add_field(
-        name="Regular Challenge Coins",
-        value="\n".join([str(coin.old_name+ "'s Challenge Coin") for coin in regular_coins]) or "None",  # Display regular_coins
+        name="Regular Coins",
+        value="\n".join([str(coin.old_name + "'s Coin") for coin in regular_coins[:5]]) + (
+            f"\n...and {len(regular_coins) - 5} more coins" if len(regular_coins) > 5 else "") or "None",
         inline=True
     )
+
+    tiered_awards = await tiered_medals(member)
+    if tiered_awards != "":
+        embed.add_field(name="Tiered Awards", value=tiered_awards, inline=True)
+    else:
+        embed.add_field(name="Tiered Awards", value="None", inline=True)
+
+    awards_and_titles, awards_and_titles_roles = await other_medals(member)
+    if awards_and_titles:
+        formatted = "\n".join([f"<@&{award.id}>" for award in awards_and_titles_roles])
+        embed.add_field(name="Awards / Titles", value=formatted, inline=True)
+    else:
+        embed.add_field(name="Awards / Titles", value="None", inline=True)
+
     coin_repository.close_session()
     return embed

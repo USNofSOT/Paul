@@ -77,37 +77,41 @@ async def tiered_medals(member: discord.Member) -> str:
 
     return result
 
-async def other_medals(member: discord.Member) -> list[str]:
+async def other_medals(member: discord.Member) -> (list[str], list[discord.Role]):
     found_titles = []
+    found_roles = []
 
     titles = [
         # High Ranking Medals
         "Medal of Honor",
         "Distinguished Service Cross",
         "Admiralty Medal",
-        "Officer Improvement Ribbon",
+        "Valor and Courage",
+        "Legion of Merit",
         "Marine Exceptional Service Medal",
         "Medal of Exceptional Service",
-        "Leadership Accolade",
-        "Legion of Merit",
+        "Officer Improvement Ribbon",
         "NCO Improvement Ribbon",
-        "Valor and Courage",
+        "Leadership Accolade",
         "Recruitment Ribbon",
         "Career Intelligence Medal",
         "Unit Commendation Medal",
+        "Legends of the Fleets",
     ]
     count = 0
 
-    for role in member.roles:
-        if role.name in titles:
-            found_titles.append((titles.index(role.name), role.name))
+    member_roles = [role.name for role in member.roles]
+
+    for title in titles:
+        if title in member_roles:
+            found_titles.append((count, title))
+            found_roles.append(discord.utils.get(member.guild.roles, name=title))
             count += 1
-        if count == 6:
-            break
+
     found_titles.sort(key=lambda x: x[0])
     found_titles = [title[1] for title in found_titles]
 
-    return found_titles
+    return found_titles, found_roles
 
 # Trigs: The code below here is super messy, so good luck trying to understand it.
 # For usage, I refer you to the legacy codebase. Sowwy
