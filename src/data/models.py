@@ -66,6 +66,7 @@ class Hosted(Base):
     target_id = mapped_column(ForeignKey("sailor.discord_id"))
     # amount = Column(Integer, server_default="1") Note: no longer needed
     log_time = Column(DATETIME)
+    ship_role_id = Column(BIGINT, nullable=True)
 
     # One-To-Many relationship with Voyages
     voyages: Mapped[List["Voyages"]] = relationship("Voyages", back_populates="hosted")
@@ -111,6 +112,7 @@ class Voyages(Base):
     target_id = mapped_column(ForeignKey("sailor.discord_id"), primary_key=True)
     # amount = Column(Integer, server_default="1") Note: no longer needed
     log_time = Column(DATETIME)
+    ship_role_id = Column(BIGINT, nullable=True)
 
     # Many-to-One relationship with Hosted
     hosted: Mapped["Hosted"] = relationship("Hosted", back_populates="voyages", foreign_keys=[log_id])
