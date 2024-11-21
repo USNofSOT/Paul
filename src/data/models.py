@@ -218,6 +218,14 @@ class AuditLog(AuditLogBare):
     __abstract__ = True
     changed_by_id = mapped_column(ForeignKey("sailor.discord_id")) # The person who took the action
 
+class BanChangeLog(AuditLog):
+    __tablename__ = "log_ban_change"
+
+    reason = Column(TEXT, nullable=True)
+
+class LeaveChangeLog(AuditLogBare):
+    __tablename__ = "log_leave_change"
+    e2_or_above = Column(BOOLEAN, server_default="0")
 
 class NameChangeLog(AuditLog):
     __tablename__ = "log_name_change"
