@@ -24,7 +24,28 @@ class HostedRepository:
     def close_session(self):
         self.session.close()
 
-    def save_hosted_data(self, log_id: int, target_id: int, log_time: datetime = datetime.now()) -> bool:
+    def get_hosted_by_target_ids_and_between_dates(self, target_ids: list, start_date: datetime, end_date: datetime) -> list[Type[Hosted]]:
+        try:
+            return self.session.query(Hosted).filter(Hosted.target_id.in_(target_ids), Hosted.log_time >= start_date, Hosted.log_time <= end_date).all()
+        except Exception as e:
+            log.error(f"Error getting voyage log entries by target IDs and between dates: {e}")
+            raise e
+
+    def get_hosted_by_role_ids_and_between_dates(self, role_id: list[int], start_date: datetime, end_date: datetime) -> list[Type[Hosted]]:
+        try:
+            return self.session.query(Hosted).filter(Hosted.ship_role_id.in_(role_id), Hosted.log_time >= start_date, Hosted.log_time <= end_date).all()
+        except Exception as e:
+            log.error(f"Error getting voyage log entries by role IDs and between dates: {e}")
+            raise e
+
+    def get_hosted_by_role_ids_and_target_ids_and_between_dates(self, role_id: list[int], target_ids: list[int], start_date: datetime, end_date: datetime) -> list[Type[Hosted]]:
+        try:
+            return self.session.query(Hosted).filter(Hosted.ship_role_id.in_(role_id), Hosted.target_id.in_(target_ids), Hosted.log_time >= start_date, Hosted.log_time <= end_date).all()
+        except Exception as e:
+            log.error(f"Error getting voyage log entries by role IDs, target IDs, and between dates: {e}")
+            raise e
+
+    def save_hosted_data(self, log_id: int, target_id: int, log_time: datetime = datetime.now(), ship_role_id: int = 0) -> bool:
         """
         Adds a hosted data entry to the Hosted table. Also increments the hosted count for the target.
 
@@ -32,6 +53,7 @@ class HostedRepository:
             log_id (int): The log ID of the hosted data.
             target_id (int): The Discord ID of the host.
             log_time (datetime): The time of the hosted data. Defaults to the current time.
+            ship_role_id (int): The role ID of the ship. Defaults to 0.
         Returns:
             bool: True if the operation was successful, False otherwise.
         """
@@ -40,7 +62,7 @@ class HostedRepository:
             if self.check_hosted_log_id_exists(log_id):
                 raise ValueError(f"Log ID {log_id} already exists in the Hosted table.")
             else:
-                self.session.add(Hosted(log_id=log_id, target_id=target_id, log_time=log_time))
+                self.session.add(Hosted(log_id=log_id, target_id=target_id, log_time=log_time, ship_role_id=ship_role_id))
 
                 # Increment the host count for the target
                 self.session.execute(
@@ -127,25 +149,6 @@ class HostedRepository:
         except Exception as e:
             log.error(f"Error getting hosted log entries: {e}")
             raise e
-
-
-def get_hosted_by_target_id(target_id: int) -> list[Type[Hosted]]:
-    """
-    Get all hosted log entries for a specific target ID
-
-    Args:
-        target_id (int): The discord ID of the target user
-    Returns:
-        Hosted: A list of all hosted log entries for the target ID
-    """
-    session = Session()
-    try:
-        return session.query(Hosted).filter(Hosted.target_id == target_id).all()
-    except Exception as e:
-        log.error(f"Error getting hosted log entries: {e}")
-        raise e
-    finally:
-        session.close()
 
 def remove_hosted_entry_by_log_id(log_id: int) -> bool:
     """
