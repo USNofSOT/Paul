@@ -93,7 +93,10 @@ async def other_medals(member: discord.Member) -> (list[str], list[discord.Role]
         "Officer Improvement Ribbon",
         "NCO Improvement Ribbon",
         "Leadership Accolade",
+        "Recruitment Ribbon",
+        "Career Intelligence Medal",
         "Unit Commendation Medal",
+        "Legends of the Fleets",
     ]
     count = 0
 
