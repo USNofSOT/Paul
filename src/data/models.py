@@ -220,7 +220,7 @@ class AuditLog(AuditLogBare):
 
 class BanChangeLog(AuditLog):
     __tablename__ = "log_ban_change"
-
+    e2_or_above = Column(BOOLEAN, server_default="0")
     reason = Column(TEXT, nullable=True)
 
 class LeaveChangeLog(AuditLogBare):

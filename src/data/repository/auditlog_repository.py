@@ -23,6 +23,27 @@ class AuditLogRepository:
     def close_session(self):
         self.session.close()
 
+    def get_bans_changes_for_e2_or_above_and_between_dates(self, e2_or_above: bool, start_date: datetime, end_date: datetime) -> [BanChangeLog]:
+        try:
+            return self.session.query(BanChangeLog).filter(BanChangeLog.e2_or_above == e2_or_above, BanChangeLog.log_time >= start_date, BanChangeLog.log_time <= end_date).all()
+        except Exception as e:
+            log.error(f"Error getting ban changes for E2 or above and between dates: {e}")
+            raise e
+
+    def get_leave_changes_for_e2_or_above_and_between_dates(self, e2_or_above: bool, start_date: datetime, end_date: datetime) -> [LeaveChangeLog]:
+        try:
+            return self.session.query(LeaveChangeLog).filter(LeaveChangeLog.e2_or_above == e2_or_above, LeaveChangeLog.log_time >= start_date, LeaveChangeLog.log_time <= end_date).all()
+        except Exception as e:
+            log.error(f"Error getting leave changes for E2 or above and between dates: {e}")
+            raise e
+
+    def get_role_changes_for_role_and_action_between_dates(self, role_id: int, action: RoleChangeType, start_date: datetime, end_date: datetime) -> [RoleChangeLog]:
+        try:
+            return self.session.query(RoleChangeLog).filter(RoleChangeLog.role_id == role_id, RoleChangeLog.change_type == action, RoleChangeLog.log_time >= start_date, RoleChangeLog.log_time <= end_date).all()
+        except Exception as e:
+            log.error(f"Error getting role changes for role and action between dates: {e}")
+            raise e
+
     def get_latest_role_log_for_target_and_role(self, target_id: int, role_id: int) -> Type[RoleChangeLog] | None:
         try:
             return self.session.query(RoleChangeLog).filter(RoleChangeLog.target_id == target_id, RoleChangeLog.role_id == role_id).order_by(RoleChangeLog.log_time.desc()).first()
@@ -52,13 +73,14 @@ class AuditLogRepository:
         else:
             return self.session.query(RoleChangeLog).order_by(RoleChangeLog.log_time.desc()).limit(limit).all()
 
-    def log_ban(self, target_id: int, changed_by_id: int, guild_id: int, reason: str = "No reason provided.") -> AuditLog:
+    def log_ban(self, target_id: int, changed_by_id: int, guild_id: int, reason: str = "No reason provided.", e2_or_above: bool = False) -> BanChangeLog:
         try:
             log_entry = BanChangeLog(
                 target_id=target_id,
                 changed_by_id=changed_by_id,
                 guild_id=guild_id,
                 reason=reason,
+                e2_or_above=e2_or_above,
                 log_time=utc_time_now()
             )
 

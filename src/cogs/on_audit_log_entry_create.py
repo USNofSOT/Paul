@@ -4,6 +4,7 @@ import discord
 from discord import AuditLogDiff
 from discord.ext import commands
 
+from src.config.ranks_roles import E2_ROLES
 from src.data import RoleChangeType
 from src.data.repository.auditlog_repository import AuditLogRepository
 from src.data.repository.sailor_repository import ensure_sailor_exists
@@ -57,13 +58,18 @@ class OnAuditLogEntryCreate(commands.Cog):
 
         if entry.action == discord.AuditLogAction.ban:
             auditlog_repository = AuditLogRepository()
+
+            member_roles = [role.id for role in entry.target.roles]
+            e2_or_above = any(role in member_roles for role in E2_ROLES)
+
             try:
                 log.info(f"[AUDIT LOG] [{entry.id}] Member banned detected.")
                 auditlog_repository.log_ban(
                     target_id=int(entry.target.id),
                     changed_by_id=entry.user_id,
                     guild_id=entry.guild.id,
-                    reason=entry.reason or "No reason provided."
+                    reason=entry.reason or "No reason provided.",
+                    e2_or_above=e2_or_above
                 )
             except Exception as e:
                 log.error(f"[AUDIT LOG] Error logging audit log entry: {e}")
