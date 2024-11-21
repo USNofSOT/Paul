@@ -142,24 +142,22 @@ class Ships(commands.Cog):
         for member_id, hosted in list(self.top_hosts.items())[:5]:
             member = discord.utils.get(self.bot.get_guild(GUILD_ID).members, id=member_id)
             top_hosts[member_id] = hosted
-        embed.add_field(name=":trophy: Top 5 Hosts", value="\n".join([f"{index + 1}. <@{member_id}>: \n {hosted} ({round(hosted/self.total_voyages * 100, 1)}%)" for index, (member_id, hosted) in enumerate(top_hosts.items())]), inline=True)
+        embed.add_field(name=":trophy: Top 5 Hosts", value="\n".join([f"{index + 1}. <@{member_id}>: \n {hosted} ({round(hosted/self.total_hosted * 100, 1) if self.total_hosted > 0 else 0}%)" for index, (member_id, hosted) in enumerate(top_hosts.items())]), inline=True)
         top_voyagers = {}
         for member_id, voyages in list(self.top_voyagers.items())[:5]:
             member = discord.utils.get(self.bot.get_guild(GUILD_ID).members, id=member_id)
             top_voyagers[member_id] = voyages
-        embed.add_field(name=":trophy: Top 5 Voyagers", value="\n".join([f"{index + 1}. <@{member_id}>: \n {voyages} ({round(voyages/self.total_voyages * 100, 1)}%)" for index, (member_id, voyages) in enumerate(top_voyagers.items())]), inline=True)
+        embed.add_field(name=":trophy: Top 5 Voyagers", value="\n".join([f"{index + 1}. <@{member_id}>: \n {voyages} ({round(voyages/self.total_voyages * 100, 1) if self.total_voyages > 0 else 0}%)" for index, (member_id, voyages) in enumerate(top_voyagers.items())]), inline=True)
         embed.add_field(name="\u200b", value="\u200b", inline=True) # Spacer
 
         top_hosting = {}
         for ship, hosted in list(self.top_hosts_ships.items())[:5]:
             top_hosting[ship] = hosted
-        embed.add_field(name=":ship: Top 5 Hosting Ships", value="\n".join(
-            [f"{index + 1}. <@&{ship}>: \n {hosted} ({round(hosted / self.total_voyages * 100, 1)}%)" for
-             index, (ship, hosted) in enumerate(top_hosting.items())]), inline=True)
+        embed.add_field(name=":ship: Top 5 Hosting Ships", value="\n".join([f"{index + 1}. <@&{ship}>: \n {hosted} ({round(hosted / self.total_voyages * 100, 1) if self.total_voyages > 0 else 0}%)" for index, (ship, hosted) in enumerate(top_hosting.items())]), inline=True)
         top_voyages = {}
         for ship, voyages in list(self.top_voyage_ships.items())[:5]:
             top_voyages[ship] = voyages
-        embed.add_field(name=":ship: Top 5 Voyaging Ships", value="\n".join([f"{index + 1}. <@&{ship}>: \n {voyages} ({round(voyages/self.total_voyages * 100, 1)}%)" for index, (ship, voyages) in enumerate(top_voyages.items())]), inline=True)
+        embed.add_field(name=":ship: Top 5 Voyaging Ships", value="\n".join([f"{index + 1}. <@&{ship}>: \n {voyages} ({round(voyages / self.total_voyages * 100, 1) if self.total_voyages > 0 else 0}%)" for index, (ship, voyages) in enumerate(top_voyages.items())]), inline=True)
         embed.add_field(name="\u200b", value="\u200b", inline=True) # Spacer
 
         return embed
@@ -205,7 +203,7 @@ class Ships(commands.Cog):
                         datetime.now()
                     )
                 )
-        embed.add_field(name=":trophy: Top Ship Hosts", value="\n".join([f"- <@{member_id}>: \n Monthly rank: **#{list(self.top_hosts.keys()).index(member_id) + 1}** \n Total hosted: **{hosted}** \n Percentage Hosted (Ship): **{round(hosted/total_hosted_in_ship * 100, 1) if total_hosted_in_ship > 0 else 0}%** \n Percentage Hosted (Navy): **{round(hosted/self.total_voyages * 100, 1) if self.total_voyages > 0 else 0}%**" for member_id, hosted in top_hosts.items()][:5]), inline=True)
+        embed.add_field(name=":trophy: Top Ship Hosts", value="\n".join([f"- <@{member_id}>: \n Monthly rank: **#{list(self.top_hosts.keys()).index(member_id) + 1}** \n Total hosted: **{hosted}** \n Percentage Hosted (Ship): **{round(hosted/total_hosted_in_ship * 100, 1) if total_hosted_in_ship > 0 else 0}%** \n Percentage Hosted (Navy): **{round(hosted/self.total_hosted * 100, 1) if self.total_hosted > 0 else 0}%**" for member_id, hosted in top_hosts.items()][:5]), inline=True)
         top_voyagers = {}
         for member_id, voyages in list(self.top_voyagers.items()):
             if member_id in [member.id for member in ship_members]:
