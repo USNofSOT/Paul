@@ -23,9 +23,9 @@ class AuditLogRepository:
     def close_session(self):
         self.session.close()
 
-    def get_bans_changes_for_e2_or_above_and_between_dates(self, e2_or_above: bool, start_date: datetime, end_date: datetime) -> [BanChangeLog]:
+    def get_bans_changes_for_e2_or_above_and_between_dates(self, start_date: datetime, end_date: datetime) -> [BanChangeLog]:
         try:
-            return self.session.query(BanChangeLog).filter(BanChangeLog.e2_or_above == e2_or_above, BanChangeLog.log_time >= start_date, BanChangeLog.log_time <= end_date).all()
+            return self.session.query(BanChangeLog).filter(BanChangeLog.log_time >= start_date, BanChangeLog.log_time <= end_date).all()
         except Exception as e:
             log.error(f"Error getting ban changes for E2 or above and between dates: {e}")
             raise e
@@ -73,14 +73,13 @@ class AuditLogRepository:
         else:
             return self.session.query(RoleChangeLog).order_by(RoleChangeLog.log_time.desc()).limit(limit).all()
 
-    def log_ban(self, target_id: int, changed_by_id: int, guild_id: int, reason: str = "No reason provided.", e2_or_above: bool = False) -> BanChangeLog:
+    def log_ban(self, target_id: int, changed_by_id: int, guild_id: int, reason: str = "No reason provided.") -> BanChangeLog:
         try:
             log_entry = BanChangeLog(
                 target_id=target_id,
                 changed_by_id=changed_by_id,
                 guild_id=guild_id,
                 reason=reason,
-                e2_or_above=e2_or_above,
                 log_time=utc_time_now()
             )
 
@@ -92,12 +91,13 @@ class AuditLogRepository:
             log.error(f"Error logging member banned: {e}")
             self.session.rollback()
 
-    def log_member_removed(self, target_id: int, guild_id: int, e2_or_above: bool = False) -> LeaveChangeLog:
+    def log_member_removed(self, target_id: int, guild_id: int, e2_or_above: bool = False, ship_id: int = None) -> LeaveChangeLog:
         try:
             log_entry = LeaveChangeLog(
                 target_id=target_id,
                 guild_id=guild_id,
                 e2_or_above=e2_or_above,
+                ship_role_id=ship_id,
                 log_time=utc_time_now()
             )
 
