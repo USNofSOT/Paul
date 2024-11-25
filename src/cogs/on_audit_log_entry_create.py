@@ -54,6 +54,23 @@ class OnAuditLogEntryCreate(commands.Cog):
             finally:
                 auditlog_repository.close_session()
 
+
+        if entry.action == discord.AuditLogAction.ban:
+            auditlog_repository = AuditLogRepository()
+
+            try:
+                log.info(f"[AUDIT LOG] [{entry.id}] Member banned detected.")
+                auditlog_repository.log_ban(
+                    target_id=int(entry.target.id),
+                    changed_by_id=entry.user_id,
+                    guild_id=entry.guild.id,
+                    reason=entry.reason or "No reason provided."
+                )
+            except Exception as e:
+                log.error(f"[AUDIT LOG] Error logging audit log entry: {e}")
+            finally:
+                auditlog_repository.close_session()
+
         if entry.action == discord.AuditLogAction.member_role_update:
             auditlog_repository = AuditLogRepository()
             try:
