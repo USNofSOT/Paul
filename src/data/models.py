@@ -153,6 +153,13 @@ class Sailor(Base):
     def __str__(self):
         return f"[Sailor] {self.gamertag} ({self.discord_id})"
 
+class ShipSize(Base):
+    __tablename__ = "ship_size"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    ship_role_id = Column(BIGINT, primary_key=True)
+    member_count = Column(Integer, nullable=False)
+    log_time = Column(DATETIME, nullable=False)
 
 class TrainingRecord(Base):
     __tablename__ = "training_records"
