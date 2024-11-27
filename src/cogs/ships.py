@@ -6,6 +6,7 @@ from dateutil.relativedelta import relativedelta
 from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
+from fontTools.merge.util import first
 from matplotlib import pyplot as plt
 
 from src.config import NSC_ROLES
@@ -13,6 +14,7 @@ from src.config.main_server import GUILD_ID
 from src.config.ranks_roles import SNCO_AND_UP, E8_AND_UP, E6_AND_UP, BOA_ROLE
 from src.config.ships import SHIPS
 from src.data.repository.hosted_repository import HostedRepository
+from src.data.repository.ship_repository import ShipRepository
 from src.data.repository.voyage_repository import VoyageRepository
 from src.utils.embeds import error_embed
 
@@ -98,7 +100,8 @@ class Ships(commands.Cog):
             elif only == "trends":
                 trend_voyages_embed, trend_voyages_file = await self.trend_voyages_past_months(interaction)
                 trend_hosted_embed, trend_hosted_file = await self.trend_hosted_past_month(interaction)
-                await interaction.followup.send(embeds=[trend_voyages_embed, trend_hosted_embed], files=[trend_voyages_file, trend_hosted_file])
+                trend_ship_size_embed, trend_ship_size_file = await self.trend_ship_size(interaction)
+                await interaction.followup.send(embeds=[trend_voyages_embed, trend_hosted_embed, trend_ship_size_embed], files=[trend_voyages_file, trend_hosted_file, trend_ship_size_file])
                 return
 
             # 2. Get the embed for displaying the best performers
@@ -110,6 +113,7 @@ class Ships(commands.Cog):
             # 3.2 Get the embed for displaying the ship trends
             trend_voyages_embed, trend_voyages_file = await self.trend_voyages_past_months(interaction)
             trend_hosted_embed, trend_hosted_file = await self.trend_hosted_past_month(interaction)
+            trend_ship_size_embed, trend_ship_size_file = await self.trend_ship_size(interaction)
 
             # 4. Check if a ship was provided
             ship_embed = None
@@ -117,9 +121,9 @@ class Ships(commands.Cog):
                 ship_embed = self.get_ship_embed(ship.id)
 
             if ship_embed:
-                await interaction.followup.send(embeds=[performers_embed, ships_embed, ship_embed, trend_voyages_embed, trend_hosted_embed], files=[trend_voyages_file, trend_hosted_file])
+                await interaction.followup.send(embeds=[performers_embed, ships_embed, ship_embed, trend_voyages_embed, trend_hosted_embed, trend_ship_size_embed], files=[trend_voyages_file, trend_hosted_file, trend_ship_size_file])
             else:
-                await interaction.followup.send(embeds=[performers_embed, ships_embed, trend_voyages_embed, trend_hosted_embed], files=[trend_voyages_file, trend_hosted_file])
+                await interaction.followup.send(embeds=[performers_embed, ships_embed, trend_voyages_embed, trend_hosted_embed, trend_ship_size_embed], files=[trend_voyages_file, trend_hosted_file, trend_ship_size_file])
         except Exception as e:
             log.error(f"Error getting ships: {e}", exc_info=True)
             await interaction.followup.send(embed=error_embed("Error getting ships"), ephemeral=True)
@@ -373,6 +377,55 @@ class Ships(commands.Cog):
             discord_file = discord.File(file)
             embed.set_image(url="attachment://ship_hosted_trend.png")
 
+        return embed, discord_file
+
+    async def trend_ship_size(self, interaction: discord.Interaction):
+        ship_repository = ShipRepository()
+        embed = discord.Embed(
+            title="Ship Size",
+            color=discord.Color.orange(),
+            description=f"Report for amount of members per ship for the last 6 months"
+        )
+
+        days = 14
+        plt.figure(figsize=(15, 12))
+        plt.title('Ship Size Trend')
+        plt.xlabel('Day')
+        plt.ylabel('Members')
+
+        for ship in self.ships:
+            role = self.bot.get_guild(GUILD_ID).get_role(ship)
+            x_dates, y_members = [], []
+            ship_sizes = ship_repository.get_ship_sizes(role.id)
+
+            for day in range(days):
+                date = datetime.now() - timedelta(days=day)
+                start_date = date.replace(hour=0, minute=0, second=0, microsecond=0)
+                end_date = (date + timedelta(days=1)) - timedelta(seconds=1)
+
+                ship_size_today = [ship_size.member_count for ship_size in ship_sizes if start_date <= ship_size.log_time <= end_date]
+
+                if ship_size_today:
+                    x_dates.append(date)
+                    y_members.append(ship_size_today[0] if ship_size_today else 0)
+                else:
+                    last_ship_size_before_today = [ship_size.member_count for ship_size in ship_sizes if ship_size.log_time < start_date]
+                    x_dates.append(date)
+                    y_members.append(last_ship_size_before_today[0] if last_ship_size_before_today else 0)
+
+
+            plt.plot(x_dates, y_members, marker='o', label=f"{role.name}", linewidth=2)
+
+        plt.legend()
+        file_path = "./ship_size_trend.png"
+        plt.savefig(file_path)
+        plt.close()
+
+        with open(file_path, 'rb') as file:
+            discord_file = discord.File(file)
+            embed.set_image(url="attachment://ship_size_trend.png")
+
+        ship_repository.close_session()
         return embed, discord_file
 
     @ships.error
