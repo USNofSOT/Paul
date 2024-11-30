@@ -384,10 +384,10 @@ class Ships(commands.Cog):
         embed = discord.Embed(
             title="Ship Size",
             color=discord.Color.orange(),
-            description=f"Report for amount of members per ship for the last 6 months"
+            description=f"Report for amount of members per ship for the last 30 days"
         )
 
-        days = 14
+        days = 30
         plt.figure(figsize=(15, 12))
         plt.title('Ship Size Trend')
         plt.xlabel('Day')
