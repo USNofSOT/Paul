@@ -19,6 +19,13 @@ class ShipRepository:
     def close_session(self):
         self.session.close()
 
+    def get_ship_sizes(self, ship_role_id: int) -> list[Type[ShipSize]]:
+        try:
+            return self.session.query(ShipSize).filter(ShipSize.ship_role_id == ship_role_id).all()
+        except Exception as e:
+            log.error(f"Error getting ship sizes: {e}")
+            raise e
+
     def get_most_recent_ship_size(self, ship_role_id: int) -> Type[ShipSize] | None:
         try:
             return self.session.query(ShipSize).filter(ShipSize.ship_role_id == ship_role_id).order_by(ShipSize.log_time.desc()).first()
