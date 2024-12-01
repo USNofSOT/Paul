@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 
 from src.config import NSC_ROLES
 from src.config.main_server import GUILD_ID
-from src.config.ranks_roles import SNCO_AND_UP, E8_AND_UP, E6_AND_UP, BOA_ROLE
+from src.config.ranks_roles import SNCO_AND_UP, E8_AND_UP, E6_AND_UP, BOA_ROLE, NCO_AND_UP
 from src.config.ships import SHIPS
 from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.ship_repository import ShipRepository
@@ -47,7 +47,7 @@ class Ships(commands.Cog):
         ]
     )
     @app_commands.describe(only="Optionally provide a specific report to get")
-    @app_commands.checks.has_any_role(BOA_ROLE, *NSC_ROLES)
+    @app_commands.checks.has_any_role(*NCO_AND_UP, *NSC_ROLES)
     @app_commands.checks.cooldown(1, 30)
     async def ships(self, interaction: discord.Interaction, ship: discord.Role = None, hidden: bool = True, only: str = None):
         self.top_voyagers = {}
