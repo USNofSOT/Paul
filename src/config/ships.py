@@ -29,7 +29,7 @@ SHIPS = [
         name="USS Audacious",
         boat_command_channel_id=BC_AUDACIOUS,
         role_id=ROLE_ID_AUDACIOUS,
-        emoji="<:Audacious:1177686973905915984>",
+        emoji="<:audacious:1312805740284608522>",
     ),
     Ship(
         name="USS Maelstrom",
