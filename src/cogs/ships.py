@@ -157,7 +157,7 @@ class Ships(commands.Cog):
         top_hosting = {}
         for ship, hosted in list(self.top_hosts_ships.items())[:5]:
             top_hosting[ship] = hosted
-        embed.add_field(name=":ship: Top 5 Hosting Ships", value="\n".join([f"{index + 1}. <@&{ship}>: \n {hosted} ({round(hosted / self.total_voyages * 100, 1) if self.total_voyages > 0 else 0}%)" for index, (ship, hosted) in enumerate(top_hosting.items())]), inline=True)
+        embed.add_field(name=":ship: Top 5 Hosting Ships", value="\n".join([f"{index + 1}. <@&{ship}>: \n {hosted} ({round(hosted / self.total_hosted * 100, 1) if self.total_hosted > 0 else 0}%)" for index, (ship, hosted) in enumerate(top_hosting.items())]), inline=True)
         top_voyages = {}
         for ship, voyages in list(self.top_voyage_ships.items())[:5]:
             top_voyages[ship] = voyages
