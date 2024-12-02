@@ -6,12 +6,11 @@ from dateutil.relativedelta import relativedelta
 from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
-from fontTools.merge.util import first
 from matplotlib import pyplot as plt
 
 from src.config import NSC_ROLES
 from src.config.main_server import GUILD_ID
-from src.config.ranks_roles import SNCO_AND_UP, E8_AND_UP, E6_AND_UP, BOA_ROLE, NCO_AND_UP
+from src.config.ranks_roles import NCO_AND_UP
 from src.config.ships import SHIPS
 from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.ship_repository import ShipRepository
@@ -39,17 +38,17 @@ class Ships(commands.Cog):
     @app_commands.describe(ship="Optionally provide a ship to get more detailed information about")
     @app_commands.describe(hidden="Should only you be able to see the response?")
     @app_commands.choices(
-        only=[
+        specific=[
             Choice(name="Performers", value="performers"),
             Choice(name="Ships", value="ships"),
             Choice(name="Drilldown", value="drilldown"),
             Choice(name="Trends", value="trends")
         ]
     )
-    @app_commands.describe(only="Optionally provide a specific report to get")
+    @app_commands.describe(specific="Optionally provide a specific report to get")
     @app_commands.checks.has_any_role(*NCO_AND_UP, *NSC_ROLES)
     @app_commands.checks.cooldown(1, 30)
-    async def ships(self, interaction: discord.Interaction, ship: discord.Role = None, hidden: bool = True, only: str = None):
+    async def ships(self, interaction: discord.Interaction, ship: discord.Role = None, hidden: bool = True, specific: str = None):
         self.top_voyagers = {}
         self.top_hosts = {}
         self.top_voyage_ships = {}
@@ -82,22 +81,22 @@ class Ships(commands.Cog):
             if self.selected_ships:
                 self.ships = {ship: self.ships[ship] for ship in self.selected_ships}
 
-            if only == "performers":
+            if specific == "performers":
                 performers_embed = self.get_performers_embed()
                 await interaction.followup.send(embed=performers_embed)
                 return
-            elif only == "ships":
+            elif specific == "ships":
                 ships_embed = self.get_ships_embed()
                 await interaction.followup.send(embed=ships_embed)
                 return
-            elif only == "drilldown":
+            elif specific == "drilldown":
                 if not ship:
                     await interaction.followup.send(embed=error_embed("No ship provided"), ephemeral=True)
                     return
                 ship_embed = self.get_ship_embed(ship.id)
                 await interaction.followup.send(embed=ship_embed)
                 return
-            elif only == "trends":
+            elif specific == "trends":
                 trend_voyages_embed, trend_voyages_file = await self.trend_voyages_past_months(interaction)
                 trend_hosted_embed, trend_hosted_file = await self.trend_hosted_past_month(interaction)
                 trend_ship_size_embed, trend_ship_size_file = await self.trend_ship_size(interaction)
@@ -207,7 +206,7 @@ class Ships(commands.Cog):
                         datetime.now()
                     )
                 )
-        embed.add_field(name=":trophy: Top Ship Hosts", value="\n".join([f"- <@{member_id}>: \n Monthly rank: **#{list(self.top_hosts.keys()).index(member_id) + 1}** \n Total hosted: **{hosted}** \n Percentage Hosted (Ship): **{round(hosted/total_hosted_in_ship * 100, 1) if total_hosted_in_ship > 0 else 0}%** \n Percentage Hosted (Navy): **{round(hosted/self.total_hosted * 100, 1) if self.total_hosted > 0 else 0}%**" for member_id, hosted in top_hosts.items()][:5]), inline=True)
+        embed.add_field(name=":trophy: Top Ship Hosts", value="\n".join([f"- <@{member_id}>: \n Monthly rank (Navy): **#{list(self.top_hosts.keys()).index(member_id) + 1}** \n Total hosted: **{hosted}** \n Percentage Hosted (Ship): **{round(hosted/total_hosted_in_ship * 100, 1) if total_hosted_in_ship > 0 else 0}%** \n Percentage Hosted (Navy): **{round(hosted/self.total_hosted * 100, 1) if self.total_hosted > 0 else 0}%**" for member_id, hosted in top_hosts.items()][:5]), inline=True)
         top_voyagers = {}
         for member_id, voyages in list(self.top_voyagers.items()):
             if member_id in [member.id for member in ship_members]:
@@ -219,7 +218,7 @@ class Ships(commands.Cog):
                         datetime.now()
                     )
                 )
-        embed.add_field(name=":trophy: Top Ship Voyagers", value="\n".join([f"- <@{member_id}>: \n Monthly rank: **#{list(self.top_voyagers.keys()).index(member_id) + 1}**  \n Total voyages: **{voyages}** \n Percentage Voyages (Ship): **{round(voyages/ship['Voyages'] * 100, 1) if ship['Voyages'] > 0 else 0}%** \n Percentage Voyages (Navy): **{round(voyages/self.total_voyages * 100, 1) if self.total_voyages > 0 else 0}%**" for member_id, voyages in top_voyagers.items()][:5]), inline=True)
+        embed.add_field(name=":trophy: Top Ship Voyagers", value="\n".join([f"- <@{member_id}>: \n Monthly rank (Navy): **#{list(self.top_voyagers.keys()).index(member_id) + 1}**  \n Total voyages: **{voyages}** \n Percentage Voyages (Ship): **{round(voyages/ship['Voyages'] * 100, 1) if ship['Voyages'] > 0 else 0}%** \n Percentage Voyages (Navy): **{round(voyages/self.total_voyages * 100, 1) if self.total_voyages > 0 else 0}%**" for member_id, voyages in top_voyagers.items()][:5]), inline=True)
 
         return embed
 
