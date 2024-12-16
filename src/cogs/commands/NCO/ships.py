@@ -410,7 +410,7 @@ class Ships(commands.Cog):
                 else:
                     last_ship_size_before_today = [ship_size.member_count for ship_size in ship_sizes if ship_size.log_time < start_date]
                     x_dates.append(date)
-                    y_members.append(last_ship_size_before_today[0] if last_ship_size_before_today else 0)
+                    y_members.append(last_ship_size_before_today[-1] if last_ship_size_before_today else 0)
 
 
             plt.plot(x_dates, y_members, marker='o', label=f"{role.name}", linewidth=2)
