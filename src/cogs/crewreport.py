@@ -212,7 +212,7 @@ class CrewReport(commands.Cog):
                         "ship": ship_name[0] if ship_name else "N/A"
                     }
                     no_members = False
-                elif get_time_difference_past(last_hosted.get(member.id)).days >= 21:
+                elif get_time_difference_past(last_hosted.get(member.id)).days >= 14:
                     ship_name = [role.name for role in member_roles if role.name.startswith("USS")]
                     hoster_dictionary[member.id] = {
                         "last_hosted": get_time_difference_past(last_hosted.get(member.id)),
