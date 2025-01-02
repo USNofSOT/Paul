@@ -2,12 +2,13 @@ import enum
 import logging
 from typing import List
 
-from sqlalchemy import Column, Integer, BIGINT, ForeignKey, VARCHAR
+from sqlalchemy import BIGINT, VARCHAR, Column, ForeignKey, Integer
 from sqlalchemy.dialects.mysql import TINYTEXT
-from sqlalchemy.orm import declarative_base, mapped_column, relationship, Mapped
-from sqlalchemy.sql.sqltypes import BOOLEAN, TEXT, DATETIME, Enum
+from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
+from sqlalchemy.sql.sqltypes import BOOLEAN, DATETIME, TEXT, Enum
 
 from src.utils.time_utils import get_time_difference
+
 from .engine import engine
 
 log = logging.getLogger(__name__)
@@ -67,6 +68,14 @@ class Hosted(Base):
     # amount = Column(Integer, server_default="1") Note: no longer needed
     log_time = Column(DATETIME)
     ship_role_id = Column(BIGINT, nullable=True)
+
+    gold_count = Column(Integer, server_default="0", nullable=True) # The number of gold given in the log
+    doubloon_count = Column(Integer, server_default="0", nullable=True) # The number of doubloons given in the log
+
+    ship_voyage_count = Column(Integer, server_default="0", nullable=True) # The voyage number for the ship for this log
+
+    ship_name = Column(VARCHAR(32), nullable=True) # e.g. "USS Venom"
+    auxiliary_ship_name = Column(VARCHAR(32), nullable=True) # e.g. "USS Auxiliary" which would be the auxiliary ship for the USS Venom
 
     # One-To-Many relationship with Voyages
     voyages: Mapped[List["Voyages"]] = relationship("Voyages", back_populates="hosted")
@@ -197,7 +206,7 @@ class Training(Base):
     log_time = Column(DATETIME, nullable=False)
 
 """ AUDIT LOGS
-The following classes are used for audit logging 
+The following classes are used for audit logging
 
 Things we may log are
 - Name changes
@@ -205,7 +214,7 @@ Things we may log are
 - Moderation actions
 - Commands used?
 
-We may refer to the Sailor class for the discord_id as 
+We may refer to the Sailor class for the discord_id as
 - target_id (the person who the action was taken on)
 - changed_by (the person who took the action)
 """
