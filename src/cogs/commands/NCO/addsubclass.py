@@ -2,17 +2,28 @@ import re
 from logging import getLogger
 
 import discord
-from discord import app_commands
+from discord import Colour, app_commands
 from discord.ext import commands
+from utils.ship_utils import convert_to_ordinal
 
-from src.config import VOYAGE_LOGS, NSC_ROLE, CANNONEER_SYNONYMS, FLEX_SYNONYMS, CARPENTER_SYNONYMS, HELM_SYNONYMS, \
-    SURGEON_SYNONYMS, GRENADIER_SYNONYMS, NCO_AND_UP, GUILD_ID
+from src.config import (
+    CANNONEER_SYNONYMS,
+    CARPENTER_SYNONYMS,
+    FLEX_SYNONYMS,
+    GRENADIER_SYNONYMS,
+    GUILD_ID,
+    HELM_SYNONYMS,
+    NCO_AND_UP,
+    NSC_ROLE,
+    SURGEON_SYNONYMS,
+    VOYAGE_LOGS,
+)
 from src.data import SubclassType
 from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.sailor_repository import ensure_sailor_exists
 from src.data.repository.subclass_repository import SubclassRepository
 from src.utils.discord_utils import get_best_display_name
-from src.utils.embeds import error_embed, default_embed
+from src.utils.embeds import default_embed, error_embed
 
 log = getLogger(__name__)
 
@@ -37,7 +48,6 @@ subclass_map = {**{alias: SubclassType.CANNONEER for alias in CANNONEER_SYNONYMS
     **{alias: SubclassType.HELM for alias in HELM_SYNONYMS}, }
 
 subclass_repository = SubclassRepository()
-
 
 def current_entries_embed(bot: commands.Bot, log_id: int, description: str = None) -> discord.Embed:
     """
@@ -342,8 +352,53 @@ class AddSubclass(commands.Cog):
             if len(updates) == 0 and len(missing_users) == 0:
                 return await interaction.followup.send(embed=current_entries_embed(self.bot, int(log_id),
                                                                                    description="No updates had to be made. Displaying current entries."))
+            embed_misc_voyage_info = discord.Embed(
+                title="Miscellaneous Voyage Information",
+                description="The following information was found in the voyage log, please ensure all information including spelling and capitalization is correct. Gold and Doubloon counts should be fully written out.",
+                color=Colour.dark_gold(),
+            )
 
-            await interaction.followup.send(embed=embed,
+            embed_misc_voyage_info.add_field(name="Log Link", value=f"https://discord.com/channels/{GUILD_ID}/{VOYAGE_LOGS}/{log_id}", inline=False)
+            hosted_repository = HostedRepository()
+            hosted_entry = hosted_repository.get_host_by_log_id(int(log_id))
+
+
+            hosted_repository.close_session()
+
+            embed_misc_voyage_info.add_field(
+                name="Main Ship",
+                value=hosted_entry.ship_name or ":warning: Unknown",
+            )
+            embed_misc_voyage_info.add_field(
+                name="Auxiliary Ship",
+                value=hosted_entry.auxiliary_ship_name or ":information_source: None",
+            )
+            if hosted_entry.ship_voyage_count < 0:
+                embed_misc_voyage_info.add_field(
+                    name="Voyage Count",
+                    value=":warning: Unknown",
+                )
+            else:
+                embed_misc_voyage_info.add_field(
+                    name="Voyage Count",
+                    value=convert_to_ordinal(hosted_entry.ship_voyage_count) or ":warning: Unknown",
+                )
+
+            gold_emoji = "<:Gold:965929014067867699>"
+
+            embed_misc_voyage_info.add_field(
+                name=f"{gold_emoji} Count",
+                value=f"{hosted_entry.gold_count:,}" if hosted_entry.gold_count is not None else ":information_source: Unknown",
+            )
+
+            doubloon_emoji = "<:Doubloon:965929088650981426>"
+
+            embed_misc_voyage_info.add_field(
+                name=f"{doubloon_emoji} Count",
+                value=f"{hosted_entry.doubloon_count:,}" if hosted_entry.doubloon_count is not None else ":information_source: Unknown",
+            )
+
+            await interaction.followup.send(embeds=[embed_misc_voyage_info, embed],
                                             view=ConfirmView(interaction, self.bot, updates, missing_users, author_id,
                                                              log_id))
         except Exception as e:
