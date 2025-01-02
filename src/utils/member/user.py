@@ -1,17 +1,24 @@
-from warnings import catch_warnings
-
 import discord
 
+from src.config import GUILD_OWNER_ID, NCO_AND_UP
+from src.config.requirements import (
+    HOSTING_REQUIREMENT_IN_DAYS,
+    VOYAGING_REQUIREMENT_IN_DAYS,
+)
+from src.data import MemberReport, RoleChangeType, member_report
 from src.data.repository.auditlog_repository import AuditLogRepository
 from src.data.repository.coin_repository import CoinRepository
-from src.config import NCO_AND_UP, GUILD_OWNER_ID
-from src.data import MemberReport, member_report, RoleChangeType
 from src.data.repository.sailor_repository import ensure_sailor_exists
 from src.data.structs import NavyRank
-from src.utils.embeds import error_embed, default_embed
+from src.utils.embeds import default_embed, error_embed
 from src.utils.rank_and_promotion_utils import get_current_rank
-from src.utils.report_utils import tiered_medals, other_medals, identify_role_index, process_role_index
-from src.utils.time_utils import get_time_difference_past, format_time, get_time_difference
+from src.utils.report_utils import (
+    identify_role_index,
+    other_medals,
+    process_role_index,
+    tiered_medals,
+)
+from src.utils.time_utils import format_time, get_time_difference_past
 
 
 def modify_points(base_points: int, force_points: int) -> int:
@@ -72,7 +79,7 @@ async def get_member_embed(bot, interaction, member: discord.Member) -> discord.
                         value=f"Current: {current_member_mention}\n Immediate: {immediate_member_mention}",
                         inline=True)
     else:
-        next_in_command.add_field(name="Next in Command", value=f"Unknown", inline=True)
+        next_in_command.add_field(name="Next in Command", value="Unknown", inline=True)
 
     try:
         database_report: MemberReport = member_report(member.id)
@@ -91,7 +98,7 @@ async def get_member_embed(bot, interaction, member: discord.Member) -> discord.
         last_voyaged = "N/A"
     else:
         last_voyage_format = format_time(get_time_difference_past(database_report.last_voyage))
-        if get_time_difference_past(database_report.last_voyage).days >= 28:
+        if get_time_difference_past(database_report.last_voyage).days >= VOYAGING_REQUIREMENT_IN_DAYS:
             last_voyaged = ":x: " + last_voyage_format
         else:
             last_voyaged = ":white_check_mark: " + last_voyage_format
@@ -121,7 +128,7 @@ async def get_member_embed(bot, interaction, member: discord.Member) -> discord.
         last_hosted = "N/A"
     else:
         last_hosted_format = format_time(get_time_difference_past(database_report.last_hosted))
-        if get_time_difference_past(database_report.last_hosted).days >= 21:
+        if get_time_difference_past(database_report.last_hosted).days >= HOSTING_REQUIREMENT_IN_DAYS:
             last_hosted = ":x: " + last_hosted_format
         else:
             last_hosted = ":white_check_mark: " + last_hosted_format
@@ -183,7 +190,7 @@ async def get_member_embed(bot, interaction, member: discord.Member) -> discord.
     )
 
     coin_repository = CoinRepository()
-    # Get coins 
+    # Get coins
     regular_coins, commander_coins = coin_repository.get_coins_by_target(member.id)
 
     embed.add_field(
