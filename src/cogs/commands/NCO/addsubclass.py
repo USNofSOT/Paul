@@ -361,8 +361,7 @@ class AddSubclass(commands.Cog):
             embed_misc_voyage_info.add_field(name="Log Link", value=f"https://discord.com/channels/{GUILD_ID}/{VOYAGE_LOGS}/{log_id}", inline=False)
             hosted_repository = HostedRepository()
             hosted_entry = hosted_repository.get_host_by_log_id(int(log_id))
-
-
+            previous_count = hosted_repository.get_previous_ship_voyage_count(log_id)
             hosted_repository.close_session()
 
             embed_misc_voyage_info.add_field(
@@ -373,15 +372,28 @@ class AddSubclass(commands.Cog):
                 name="Auxiliary Ship",
                 value=hosted_entry.auxiliary_ship_name or ":information_source: None",
             )
+
             if hosted_entry.ship_voyage_count < 0:
                 embed_misc_voyage_info.add_field(
                     name="Voyage Count",
                     value=":warning: Unknown",
                 )
             else:
-                embed_misc_voyage_info.add_field(
-                    name="Voyage Count",
-                    value=convert_to_ordinal(hosted_entry.ship_voyage_count) or ":warning: Unknown",
+                if previous_count:
+                    if previous_count + 1 == hosted_entry.ship_voyage_count:
+                        embed_misc_voyage_info.add_field(
+                            name="Voyage Count",
+                            value=f":white_check_mark: {convert_to_ordinal(hosted_entry.ship_voyage_count)}",
+                        )
+                    else:
+                        embed_misc_voyage_info.add_field(
+                            name="Voyage Count",
+                            value=f":warning: {convert_to_ordinal(hosted_entry.ship_voyage_count)} (Expected {convert_to_ordinal(previous_count + 1)})",
+                        )
+                else:
+                    embed_misc_voyage_info.add_field(
+                        name="Voyage Count",
+                        value=f":new: {convert_to_ordinal(hosted_entry.ship_voyage_count)}",
                 )
 
             gold_emoji = "<:Gold:965929014067867699>"
@@ -402,7 +414,7 @@ class AddSubclass(commands.Cog):
                                             view=ConfirmView(interaction, self.bot, updates, missing_users, author_id,
                                                              log_id))
         except Exception as e:
-            log.error(f"Error occurred in addsubclass command: {e}")
+            log.error(f"Error occurred in addsubclass command: {e}", exc_info=True)
             await interaction.followup.send(
                 embed=error_embed(description="An error occurred while processing the command", exception=e),
                 ephemeral=True)

@@ -23,6 +23,16 @@ class HostedRepository:
     def close_session(self):
         self.session.close()
 
+    def get_previous_ship_voyage_count(self, log_id: int) -> int:
+        hosted = self.get_host_by_log_id(log_id)
+
+        if hosted.auxiliary_ship_name:
+            result = self.session.query(Hosted).filter(Hosted.ship_name == hosted.ship_name, Hosted.auxiliary_ship_name == hosted.auxiliary_ship_name, Hosted.log_time < hosted.log_time).order_by(Hosted.log_time.desc()).first()
+        else:
+            result = self.session.query(Hosted).filter(Hosted.ship_name == hosted.ship_name, Hosted.auxiliary_ship_name == None, Hosted.log_time < hosted.log_time).order_by(Hosted.log_time.desc()).first()
+
+        return result.ship_voyage_count if result else 0
+
     def get_hosted_by_target_ids_and_between_dates(self, target_ids: list, start_date: datetime, end_date: datetime) -> list[Type[Hosted]]:
         try:
             return self.session.query(Hosted).filter(Hosted.target_id.in_(target_ids), Hosted.log_time >= start_date, Hosted.log_time <= end_date).all()
