@@ -1,3 +1,4 @@
+import re
 from logging import getLogger
 
 import discord
@@ -5,9 +6,34 @@ import discord
 from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.sailor_repository import SailorRepository
 from src.data.repository.voyage_repository import VoyageRepository
-from src.utils.ship_utils import get_ship_role_id_by_member
+from src.utils.ship_utils import (
+    get_auxiliary_ship_from_content,
+    get_count_from_content,
+    get_main_ship_from_content,
+    get_ship_role_id_by_member,
+)
 
 log = getLogger(__name__)
+
+def get_gold_count_from_content(content: str) -> int:
+    """
+    Get the gold count from the content.
+
+    The gold count will always include the word "gold" or the gold emoji. Either in the beginning or the end of the content.
+    The gold count will be a number with or without commas and periods.
+    """
+    pattern = r"(?i)(?:gold[:> a-z]*\s*(\d+)|(\d+)\s*[:< a-z]gold)"
+    text_without_ids = re.sub(r':\d+>', '>', content.replace(",", "").replace(".", "").replace("<", ""))
+    match = re.search(pattern, text_without_ids)
+    if match:
+        return min(int(match.group(1) or match.group(2)), 20000000)
+    return 0
+
+def get_doubloon_count_from_content(content: str) -> int:
+    pattern = r"(?i)(?:doubloons[:> a-z]*\s*(\d+)|(\d+)\s*[:< a-z]doubloons)"
+    text_without_ids = re.sub(r':\d+>', '>', content.replace(",", "").replace(".", "").replace("<", ""))
+    match = re.search(pattern, text_without_ids)
+    return min(int(match.group(1) or match.group(2)), 20000000) if match else 0
 
 class Process_Voyage_Log:
     #subroutine to check if a voyage log already exists, and processes it if it does not.
@@ -38,7 +64,17 @@ class Process_Voyage_Log:
 
         # 2. If not, process the log. But first, ensure the host is in the Sailor table
         sailor_repository.update_or_create_sailor_by_discord_id(host_id)
-        hosted_repository.save_hosted_data(log_id, host_id, log_time, get_ship_role_id_by_member(message.author))
+        hosted_repository.save_hosted_data(
+            log_id,
+            host_id,
+            log_time,
+            get_ship_role_id_by_member(message.author),
+            ship_name=get_main_ship_from_content(message.content),
+            auxiliary_ship_name=get_auxiliary_ship_from_content(message.content),
+            ship_voyage_count=get_count_from_content(message.content),
+            gold_count=get_gold_count_from_content(message.content),
+            doubloon_count=get_doubloon_count_from_content(message.content)
+        )
         # 3.Log Voyage Count
 
         voyage_data = []
