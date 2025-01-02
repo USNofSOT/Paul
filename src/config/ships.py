@@ -1,5 +1,17 @@
-from src.config.main_server import (BC_ADRESTIA, BC_ORIGIN, BC_MAELSTROM, BC_LUSTY, BC_VENOM, BC_AUDACIOUS, BC_ADUN,
-                                    BC_HYPERION, BC_PLATYPUS, BC_ARIZONA, BC_PHANTOM, BC_COLLINS)
+from src.config.main_server import (
+    BC_ADRESTIA,
+    BC_ADUN,
+    BC_ARIZONA,
+    BC_AUDACIOUS,
+    BC_COLLINS,
+    BC_HYPERION,
+    BC_LUSTY,
+    BC_MAELSTROM,
+    BC_ORIGIN,
+    BC_PHANTOM,
+    BC_PLATYPUS,
+    BC_VENOM,
+)
 from src.data.structs import Ship
 
 ROLE_ID_LUSTY = 933919139700019222
@@ -32,7 +44,7 @@ SHIPS = [
         emoji="<:audacious:1312805740284608522>",
     ),
     Ship(
-        name="USS Maelstrom",
+        name="USS Reliant",
         boat_command_channel_id=BC_MAELSTROM,
         role_id=ROLE_ID_MAELSTROM,
         emoji="<:Maelstrom:1259650992346107944>",
@@ -86,7 +98,7 @@ SHIPS = [
         emoji="<:Venom:1239895956489633852>",
     ),
     Ship(
-        name="USS Collins",
+        name="USS Journey",
         boat_command_channel_id=BC_COLLINS,
         role_id=ROLE_ID_COLLINS,
         emoji="<:Collins:1263703567978729593>",

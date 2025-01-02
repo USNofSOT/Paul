@@ -1,6 +1,5 @@
 import logging
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Type
 
 from sqlalchemy import delete, update
@@ -24,6 +23,16 @@ class HostedRepository:
     def close_session(self):
         self.session.close()
 
+    def get_previous_ship_voyage_count(self, log_id: int) -> int:
+        hosted = self.get_host_by_log_id(log_id)
+
+        if hosted.auxiliary_ship_name:
+            result = self.session.query(Hosted).filter(Hosted.ship_name == hosted.ship_name, Hosted.auxiliary_ship_name == hosted.auxiliary_ship_name, Hosted.log_time < hosted.log_time).order_by(Hosted.log_time.desc()).first()
+        else:
+            result = self.session.query(Hosted).filter(Hosted.ship_name == hosted.ship_name, Hosted.auxiliary_ship_name == None, Hosted.log_time < hosted.log_time).order_by(Hosted.log_time.desc()).first()
+
+        return result.ship_voyage_count if result else 0
+
     def get_hosted_by_target_ids_and_between_dates(self, target_ids: list, start_date: datetime, end_date: datetime) -> list[Type[Hosted]]:
         try:
             return self.session.query(Hosted).filter(Hosted.target_id.in_(target_ids), Hosted.log_time >= start_date, Hosted.log_time <= end_date).all()
@@ -45,7 +54,7 @@ class HostedRepository:
             log.error(f"Error getting voyage log entries by role IDs, target IDs, and between dates: {e}")
             raise e
 
-    def save_hosted_data(self, log_id: int, target_id: int, log_time: datetime = datetime.now(), ship_role_id: int = 0) -> bool:
+    def save_hosted_data(self, log_id: int, target_id: int, log_time: datetime = datetime.now(), ship_role_id: int = 0, ship_name: str = None, auxiliary_ship_name: str = None, ship_voyage_count: int = None, gold_count: int = 0, doubloon_count: int = 0) -> bool:
         """
         Adds a hosted data entry to the Hosted table. Also increments the hosted count for the target.
 
@@ -54,6 +63,11 @@ class HostedRepository:
             target_id (int): The Discord ID of the host.
             log_time (datetime): The time of the hosted data. Defaults to the current time.
             ship_role_id (int): The role ID of the ship. Defaults to 0.
+            ship_name (str): The name of the ship. Defaults to None.
+            auxiliary_ship_name (str): The name of the auxiliary ship. Defaults to None.
+            ship_voyage_count (int): The number of voyages the ship has made. Defaults to None.
+            gold_count (int): The number of gold confiscated. Defaults to 0.
+            doubloon_count (int): The number of doubloons confiscated. Defaults to 0.
         Returns:
             bool: True if the operation was successful, False otherwise.
         """
@@ -62,7 +76,17 @@ class HostedRepository:
             if self.check_hosted_log_id_exists(log_id):
                 raise ValueError(f"Log ID {log_id} already exists in the Hosted table.")
             else:
-                self.session.add(Hosted(log_id=log_id, target_id=target_id, log_time=log_time, ship_role_id=ship_role_id))
+                self.session.add(Hosted(
+                    log_id=log_id,
+                    target_id=target_id,
+                    log_time=log_time,
+                    ship_role_id=ship_role_id,
+                    ship_name=ship_name,
+                    auxiliary_ship_name=auxiliary_ship_name,
+                    ship_voyage_count=ship_voyage_count,
+                    gold_count=gold_count,
+                    doubloon_count=doubloon_count
+                ))
 
                 # Increment the host count for the target
                 self.session.execute(
@@ -79,13 +103,13 @@ class HostedRepository:
             log.error(f"Error saving hosted data: {e}")
             self.session.rollback()
             return False
-        
+
     def get_host_by_log_id(self, log_id: int) -> Hosted | None:
         try:
             return self.session.query(Hosted).filter(Hosted.log_id == log_id).first()
         except Exception as e:
             log.error(f"Error getting hosted log entry: {e}")
-            raise e    
+            raise e
 
     def check_hosted_log_id_exists(self, log_id: int) -> bool:
         """
