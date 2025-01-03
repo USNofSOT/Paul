@@ -6,12 +6,11 @@ from dateutil.relativedelta import relativedelta
 from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
-from fontTools.merge.util import first
 from matplotlib import pyplot as plt
 
 from src.config import NSC_ROLES
 from src.config.main_server import GUILD_ID
-from src.config.ranks_roles import SNCO_AND_UP, E8_AND_UP, E6_AND_UP, BOA_ROLE, NCO_AND_UP
+from src.config.ranks_roles import NCO_AND_UP
 from src.config.ships import SHIPS
 from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.ship_repository import ShipRepository
@@ -411,7 +410,7 @@ class Ships(commands.Cog):
                 else:
                     last_ship_size_before_today = [ship_size.member_count for ship_size in ship_sizes if ship_size.log_time < start_date]
                     x_dates.append(date)
-                    y_members.append(last_ship_size_before_today[0] if last_ship_size_before_today else 0)
+                    y_members.append(last_ship_size_before_today[-1] if last_ship_size_before_today else 0)
 
 
             plt.plot(x_dates, y_members, marker='o', label=f"{role.name}", linewidth=2)
