@@ -30,7 +30,7 @@ def get_gold_count_from_content(content: str) -> int:
     return 0
 
 def get_doubloon_count_from_content(content: str) -> int:
-    pattern = r"(?i)(?:doubloons[:> a-z]*\s*(\d+)|(\d+)\s*[:< a-z]doubloons)"
+    pattern = r"(?i)(?:doubloons[:> a-z]*\s*(\d+)|^(?!.*\d\n)(\d+)\s*[:< a-z]doubloons)"
     text_without_ids = re.sub(r':\d+>', '>', content.replace(",", "").replace(".", "").replace("<", ""))
     match = re.search(pattern, text_without_ids)
     return min(int(match.group(1) or match.group(2)), 20000000) if match else 0
