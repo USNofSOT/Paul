@@ -7,6 +7,7 @@ from data.repository.subclass_repository import SubclassRepository
 from discord import Message
 from discord.ext import commands
 from utils.embeds import default_embed, error_embed
+from utils.ship_utils import convert_to_ordinal
 
 
 class VoyageInformation(commands.Cog):
@@ -40,31 +41,29 @@ class VoyageInformation(commands.Cog):
         hosted_repository.close_session()
 
         if not hosted:
-            await context.send(embed=error_embed(
+            embed = error_embed(
                 title="Voyage Log Information",
-                description=f"Voyage Log ID: {voyage_log_id} not found"
-                )
+                description=f"Voyage Log ID: {voyage_log_id} not found in the database."
             )
-            return
+        else:
+            embed = default_embed(
+                title="Voyage Log Information",
+                description=f"https://discord.com/channels/{GUILD_ID}/{VOYAGE_LOGS}/{voyage_log_id} by <@{hosted.target_id}>"
+            )
 
-        embed = default_embed(
-            title="Voyage Log Information",
-            description=f"https://discord.com/channels/{GUILD_ID}/{VOYAGE_LOGS}/{voyage_log_id} by <@{hosted.target_id}>"
-        )
+            ship_emoji = None
+            for ship in SHIPS:
+                if ship.name == hosted.ship_name:
+                    ship_emoji = ship.emoji
+                    break
 
-        ship_emoji = None
-        for ship in SHIPS:
-            if ship.name == hosted.ship_name:
-                ship_emoji = ship.emoji
-                break
+            embed.add_field(name="Ship", value=f"{ship_emoji} {hosted.ship_name if hosted.ship_name else 'N/A'}", inline=True)
+            embed.add_field(name="Gold", value=f"{GOLD_EMOJI} {hosted.gold_count}", inline=True)
+            embed.add_field(name="Doubloons", value=f"{DOUBLOONS_EMOJI} {hosted.doubloon_count}", inline=True)
 
-        embed.add_field(name="Ship", value=f"{ship_emoji} {hosted.ship_name if hosted.ship_name else 'N/A'}", inline=True)
-        embed.add_field(name="Gold", value=f"{GOLD_EMOJI} {hosted.gold_count}", inline=True)
-        embed.add_field(name="Doubloons", value=f"{DOUBLOONS_EMOJI} {hosted.doubloon_count}", inline=True)
-
-        embed.add_field(name="Auxiliary Ship", value=hosted.auxiliary_ship_name if hosted.auxiliary_ship_name else "N/A", inline=True)
-        embed.add_field(name="Voyage Count", value=hosted.ship_voyage_count if hosted.ship_voyage_count else "N/A", inline=True)
-        embed.add_field(name="\u200b", value="\u200b", inline=True)
+            embed.add_field(name="Auxiliary Ship", value=hosted.auxiliary_ship_name if hosted.auxiliary_ship_name else "N/A", inline=True)
+            embed.add_field(name="Voyage Count", value=convert_to_ordinal(hosted.ship_voyage_count) if hosted.ship_voyage_count else "N/A", inline=True)
+            embed.add_field(name="\u200b", value="\u200b", inline=True)
 
         subclass_repository = SubclassRepository()
         subclasses: [Subclasses] = subclass_repository.entries_for_log_id(int(voyage_log_id))
@@ -73,7 +72,7 @@ class VoyageInformation(commands.Cog):
         if subclasses:
             subclass_txt = ""
             for subclass in subclasses:
-                subclass_txt += f"<@{subclass.target_id}> {subclass.subclass_count}x {subclass.subclass.name.capitalize()}\n"
+                subclass_txt += f"<@{subclass.target_id}> {subclass.subclass_count}x {subclass.subclass.name.capitalize()} @ <t:{int(subclass.log_time.timestamp())}>\n"
             embed.add_field(name="Subclasses", value=subclass_txt, inline=False)
 
         log_channel = self.bot.get_channel(VOYAGE_LOGS)
