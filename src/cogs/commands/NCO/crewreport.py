@@ -1,25 +1,22 @@
+import os
 from datetime import datetime, timedelta
-
-import discord, tempfile
-import asyncio
-from discord.ext import commands
-from discord import app_commands
-
 from logging import getLogger
 
-from fontTools.merge.util import first
-
-from src.config.main_server import GUILD_ID
-from src.config.ranks_roles import BOA_ROLE, NRC_ROLE
-from src.data.repository.voyage_repository import VoyageRepository
-from src.data.repository.hosted_repository import HostedRepository
-from src.config import NCO_AND_UP, NCO_AND_UP_PURE, NSC_ROLES
-from src.utils.discord_utils import get_best_display_name
-from src.utils.time_utils import get_time_difference_past, format_time
-
-import os
-
+import discord
 import matplotlib.pyplot as plt
+from discord import app_commands
+from discord.ext import commands
+
+from src.config import NCO_AND_UP, NCO_AND_UP_PURE, NSC_ROLES
+from src.config.ranks_roles import BOA_ROLE
+from src.config.requirements import (
+    HOSTING_REQUIREMENT_IN_DAYS,
+    VOYAGING_REQUIREMENT_IN_DAYS,
+)
+from src.data.repository.hosted_repository import HostedRepository
+from src.data.repository.voyage_repository import VoyageRepository
+from src.utils.discord_utils import get_best_display_name
+from src.utils.time_utils import get_time_difference_past
 
 log = getLogger(__name__)
 
@@ -79,7 +76,7 @@ class CrewReport(commands.Cog):
             embed3, hosted_graph = self.send_hosted_graph(names_hosted, member_hosted, total_hosted_count)
             await interaction.followup.send(embeds=[embed1,embed2,embed3], files=[voyage_graph, hosted_graph], ephemeral=True)
 
-            
+
         except Exception as e:
             log.error(f"Error getting squad report: {e}", exc_info=True)
             await interaction.followup.send("Error getting squad report", ephemeral=True)
@@ -175,7 +172,7 @@ class CrewReport(commands.Cog):
             if last_voyages.get(member.id) is None:
                 voyager_dictionary[member.id] = "N/A"
                 no_members = False
-            elif get_time_difference_past(last_voyages.get(member.id)).days >= 30:
+            elif get_time_difference_past(last_voyages.get(member.id)).days >= VOYAGING_REQUIREMENT_IN_DAYS:
                 voyager_dictionary[member.id] = get_time_difference_past(last_voyages.get(member.id))
                 no_members = False
 
@@ -212,7 +209,7 @@ class CrewReport(commands.Cog):
                         "ship": ship_name[0] if ship_name else "N/A"
                     }
                     no_members = False
-                elif get_time_difference_past(last_hosted.get(member.id)).days >= 14:
+                elif get_time_difference_past(last_hosted.get(member.id)).days >= HOSTING_REQUIREMENT_IN_DAYS:
                     ship_name = [role.name for role in member_roles if role.name.startswith("USS")]
                     hoster_dictionary[member.id] = {
                         "last_hosted": get_time_difference_past(last_hosted.get(member.id)),

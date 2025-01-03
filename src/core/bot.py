@@ -8,7 +8,7 @@ from typing import Optional
 from discord.ext import commands
 from discord.ext.commands import CommandNotFound
 
-from src.cogs import EXTENTIONS
+from src.cogs import EXTENSIONS
 from src.data import BotInteractionType
 from src.data.repository.auditlog_repository import AuditLogRepository
 
@@ -102,8 +102,8 @@ class Bot(discord.ext.commands.Bot):
 
 
     async def setup_hook(self):
-        log.info(f"Loading {len(EXTENTIONS)} extensions")
-        for extension in EXTENTIONS:
+        log.info(f"Loading {len(EXTENSIONS)} extensions")
+        for extension in EXTENSIONS:
             log.info(f"Loading {extension}")
             await self.load_extension(extension)
         log.info("All extentions loaded")

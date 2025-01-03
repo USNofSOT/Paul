@@ -4,8 +4,16 @@ from typing import Type
 
 from sqlalchemy.orm import sessionmaker
 
-from src.data import NameChangeLog, AuditLog, RoleChangeLog, RoleChangeType, TimeoutLog, BotInteractionType, \
-    BotInteractionLog, LeaveChangeLog, BanChangeLog
+from src.data import (
+    BanChangeLog,
+    BotInteractionLog,
+    BotInteractionType,
+    LeaveChangeLog,
+    NameChangeLog,
+    RoleChangeLog,
+    RoleChangeType,
+    TimeoutLog,
+)
 from src.data.engine import engine
 from src.data.repository.sailor_repository import ensure_sailor_exists
 from src.utils.time_utils import utc_time_now
