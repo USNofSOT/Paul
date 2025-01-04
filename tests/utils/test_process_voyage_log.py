@@ -116,3 +116,14 @@ class TestGetGoldCountFromContent(unittest.TestCase):
         content = "Gold secured: 1,224,132"
         self.assertEqual(get_gold_count_from_content(content), 1224132)
 
+    def test_gold_and_number_earlier_in_log(self):
+        content = "We voted up Gold hoarders proceeded to do a series of other things, like sinking a ship to then fight a grade 3 reaper, and then we did a fort. \n \n Loot: \n 1536057 gold"
+        self.assertEqual(get_gold_count_from_content(content), 1536057)
+
+    def test_gold_count_must_be_within_25_characters(self):
+        twenty_five_characters = "Lorem ipsum dolor sit adi"
+        content = "Gold " + twenty_five_characters + " 100"
+        self.assertEqual(get_gold_count_from_content(content), 0)
+        content = "Gold " + twenty_five_characters[1:] + " 100"
+        self.assertEqual(get_gold_count_from_content(content), 100)
+

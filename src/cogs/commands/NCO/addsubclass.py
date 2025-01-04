@@ -1,7 +1,9 @@
+import os
 import re
 from logging import getLogger
 
 import discord
+from config.emojis import DOUBLOONS_EMOJI, GOLD_EMOJI
 from discord import Colour, app_commands
 from discord.ext import commands
 from utils.ship_utils import convert_to_ordinal
@@ -107,7 +109,8 @@ class ConfirmView(discord.ui.View):
         # Remove emoji send by bot discord py
         for reaction in log_message.reactions:
             if reaction.me:
-                await reaction.clear()
+                if str(os.getenv('ENVIRONMENT', "DEV")) == "PROD":
+                    await reaction.clear()
 
         wait = await interaction.response.send_message("This may take a moment, please wait...", ephemeral=True)
 
@@ -396,17 +399,13 @@ class AddSubclass(commands.Cog):
                         value=f":new: {convert_to_ordinal(hosted_entry.ship_voyage_count)}",
                 )
 
-            gold_emoji = "<:Gold:965929014067867699>"
-
             embed_misc_voyage_info.add_field(
-                name=f"{gold_emoji} Count",
+                name=f"{GOLD_EMOJI} Count",
                 value=f"{hosted_entry.gold_count:,}" if hosted_entry.gold_count is not None else ":information_source: Unknown",
             )
 
-            doubloon_emoji = "<:Doubloon:965929088650981426>"
-
             embed_misc_voyage_info.add_field(
-                name=f"{doubloon_emoji} Count",
+                name=f"{DOUBLOONS_EMOJI} Count",
                 value=f"{hosted_entry.doubloon_count:,}" if hosted_entry.doubloon_count is not None else ":information_source: Unknown",
             )
 
