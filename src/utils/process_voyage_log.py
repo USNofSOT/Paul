@@ -22,7 +22,7 @@ def get_gold_count_from_content(content: str) -> int:
     The gold count will always include the word "gold" or the gold emoji. Either in the beginning or the end of the content.
     The gold count will be a number with or without commas and periods.
     """
-    pattern = r"(?i)(?:gold[:> a-z]*\s*(\d+)|(\d+)\s*[:< a-z]gold)"
+    pattern = r"(?i)(?:gold[:> a-z]{0,25}\s*(\d+)|(\d+)\s*[:< a-z]gold)"
     text_without_ids = re.sub(r':\d+>', '>', content.replace(",", "").replace(".", "").replace("<", ""))
     match = re.search(pattern, text_without_ids)
     if match:
