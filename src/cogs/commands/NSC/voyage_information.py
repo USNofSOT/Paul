@@ -58,8 +58,8 @@ class VoyageInformation(commands.Cog):
                     break
 
             embed.add_field(name="Ship", value=f"{ship_emoji} {hosted.ship_name if hosted.ship_name else 'N/A'}", inline=True)
-            embed.add_field(name="Gold", value=f"{GOLD_EMOJI} {hosted.gold_count}", inline=True)
-            embed.add_field(name="Doubloons", value=f"{DOUBLOONS_EMOJI} {hosted.doubloon_count}", inline=True)
+            embed.add_field(name="Gold", value=f"{GOLD_EMOJI} {hosted.gold_count:,}", inline=True)
+            embed.add_field(name="Doubloons", value=f"{DOUBLOONS_EMOJI} {hosted.doubloon_count:,}", inline=True)
 
             embed.add_field(name="Auxiliary Ship", value=hosted.auxiliary_ship_name if hosted.auxiliary_ship_name else "N/A", inline=True)
             embed.add_field(name="Voyage Count", value=convert_to_ordinal(hosted.ship_voyage_count) if hosted.ship_voyage_count else "N/A", inline=True)
