@@ -1,3 +1,4 @@
+import os
 import re
 from logging import getLogger
 
@@ -108,7 +109,8 @@ class ConfirmView(discord.ui.View):
         # Remove emoji send by bot discord py
         for reaction in log_message.reactions:
             if reaction.me:
-                await reaction.clear()
+                if str(os.getenv('ENVIRONMENT', "DEV")) == "PROD":
+                    await reaction.clear()
 
         wait = await interaction.response.send_message("This may take a moment, please wait...", ephemeral=True)
 
