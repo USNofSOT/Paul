@@ -63,6 +63,10 @@ class TestGetDoubloonCountFromContent(unittest.TestCase):
         content = "::Gold> Gold: 1536057\n:Doubloons> Doubloons: 12"
         self.assertEqual(get_doubloon_count_from_content(content), 12)
 
+    def test_doubloons_with_emoji_named_doubloon(self):
+        content = "::Gold> Gold: 1536057\n:Doubloon> 12"
+        self.assertEqual(get_doubloon_count_from_content(content), 12)
+
 class TestGetGoldCountFromContent(unittest.TestCase):
     def test_gold_at_beginning(self):
         content = "gold 100"
@@ -115,6 +119,14 @@ class TestGetGoldCountFromContent(unittest.TestCase):
     def test_gold_with_extra_text(self):
         content = "Gold secured: 1,224,132"
         self.assertEqual(get_gold_count_from_content(content), 1224132)
+
+    def test_gold_with_space(self):
+        content = "Gold 1 000"
+        self.assertEqual(get_gold_count_from_content(content), 1000)
+        content = "We as Gold Hoarders achieved so much, we even managed to sink a grade 3 reaper. \n \n Loot: \n 1 005 gold"
+        self.assertEqual(get_gold_count_from_content(content), 1005)
+        content = "212 543 gold"
+        self.assertEqual(get_gold_count_from_content(content), 212543)
 
     def test_gold_and_number_earlier_in_log(self):
         content = "We voted up Gold hoarders proceeded to do a series of other things, like sinking a ship to then fight a grade 3 reaper, and then we did a fort. \n \n Loot: \n 1536057 gold"
