@@ -56,6 +56,9 @@ def get_main_ship_from_content(content: str, ships: [Ship] = SHIPS) -> str or No
     elif len(matches) >= 2:
         main_ship = matches[1]
 
+    if not main_ship:
+        return None
+
     # Check if the main ship name matches one of the ship roles
     for ship in ships:
         if main_ship.upper() == ship.name.upper():
