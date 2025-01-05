@@ -51,8 +51,10 @@ async def build_embed(self, voyage_log_id: str = None) -> discord.Embed:
                 ship_emoji = ship.emoji
                 break
 
-        embed.add_field(name="Ship", value=f"{ship_emoji} {hosted.ship_name if hosted.ship_name else 'N/A'}",
-                        inline=True)
+        if ship_emoji:
+            embed.add_field(name="Ship", value=f"{ship_emoji} {hosted.ship_name if hosted.ship_name else 'N/A'}", inline=True)
+        else:
+            embed.add_field(name="Ship", value=hosted.ship_name if hosted.ship_name else "N/A", inline=True)
         embed.add_field(name="Gold", value=f"{GOLD_EMOJI} {hosted.gold_count:,}", inline=True)
         embed.add_field(name="Doubloons", value=f"{DOUBLOONS_EMOJI} {hosted.doubloon_count:,}", inline=True)
 
