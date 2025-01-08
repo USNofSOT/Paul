@@ -44,7 +44,7 @@ def get_main_ship_from_content(content: str, ships: [Ship] = SHIPS) -> str or No
     Returns:
         str: The main ship name if found, None otherwise.
     """
-    first_25_words = " ".join(content.split()[:FIND_WITHIN])
+    first_25_words = " ".join(content.split()[:FIND_WITHIN]).replace("*", "").replace("_", "")
     matches = re.findall(SHIP_NAME_PATTERN, first_25_words)
     main_ship = None
 
@@ -75,7 +75,7 @@ def get_auxiliary_ship_from_content(content: str) -> str or None:
     Returns:
         str: The auxiliary ship name if found, None otherwise.
     """
-    first_25_words = " ".join(content.split()[:FIND_WITHIN])
+    first_25_words = " ".join(content.split()[:FIND_WITHIN]).replace("*", "").replace("_", "")
     matches = re.findall(SHIP_NAME_PATTERN, first_25_words)
     auxiliary_ship = None
 
