@@ -23,7 +23,8 @@ def get_gold_count_from_content(content: str) -> int:
     The gold count will be a number with or without commas and periods or spaces.
     """
     pattern = r"(?i)(?:gold[-:> a-z]{0,25}\s*(\d[\d\s]*)|(\d[\d\s]*)\s*[-]?[:< a-z]gold)"
-    text_without_ids = re.sub(r':\d+>', '>', content.replace(",", "").replace(".", "").replace("<", "").replace("*", ""))
+    text_without_ids = re.sub(r':\d+>', '>', content.replace(",", "").replace(".", "").replace("<", "").replace("*", "").replace("_", ""))
+    print(text_without_ids)
     match = re.search(pattern, text_without_ids)
     if match:
         return min(int((match.group(1) or match.group(2)).replace(" ", "")), 20000000)
@@ -31,7 +32,7 @@ def get_gold_count_from_content(content: str) -> int:
 
 def get_doubloon_count_from_content(content: str) -> int:
     pattern = r"(?i)(?:doubloon[s]?[-:> a-z]*\s*(\d+)|^(?!.*\d\n)(\d+)\s*[-]?[:< a-z]doubloon[s]?)"
-    text_without_ids = re.sub(r':\d+>', '>', content.replace(",", "").replace(".", "").replace("<", "").replace("*", ""))
+    text_without_ids = re.sub(r':\d+>', '>', content.replace(",", "").replace(".", "").replace("<", "").replace("*", "").replace("_", ""))
     match = re.search(pattern, text_without_ids)
     return min(int(match.group(1) or match.group(2)), 20000000) if match else 0
 
