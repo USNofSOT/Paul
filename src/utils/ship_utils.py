@@ -1,6 +1,7 @@
 import re
 
 import discord
+from data import VoyageType
 
 from src.config.ships import SHIPS
 from src.data.structs import Ship
@@ -85,6 +86,15 @@ def get_auxiliary_ship_from_content(content: str) -> str or None:
 
     return auxiliary_ship
 
+def get_voyage_type_from_content(content: str) -> VoyageType:
+    """
+    Get the voyage type from the content.
+    """
+    first_25_words = " ".join(content.split()[:FIND_WITHIN])
+    for voyage_type in VoyageType:
+        if voyage_type.value in first_25_words:
+            return voyage_type
+    return VoyageType.UNKNOWN
 
 def get_count_from_content(content: str) -> int:
     """

@@ -2,7 +2,7 @@ import logging
 
 import discord
 from config import GUILD_ID, NSC_ROLES, VOYAGE_LOGS
-from config.emojis import DOUBLOONS_EMOJI, GOLD_EMOJI
+from config.emojis import ANCIENT_COINS_EMOJI, DOUBLOONS_EMOJI, GOLD_EMOJI
 from config.ships import SHIPS
 from data import Subclasses
 from data.repository.hosted_repository import HostedRepository
@@ -55,15 +55,22 @@ async def build_embed(self, voyage_log_id: str = None) -> discord.Embed:
             embed.add_field(name="Ship", value=f"{ship_emoji} {hosted.ship_name if hosted.ship_name else 'N/A'}", inline=True)
         else:
             embed.add_field(name="Ship", value=hosted.ship_name if hosted.ship_name else "N/A", inline=True)
-        embed.add_field(name="Gold", value=f"{GOLD_EMOJI} {hosted.gold_count:,}", inline=True)
-        embed.add_field(name="Doubloons", value=f"{DOUBLOONS_EMOJI} {hosted.doubloon_count:,}", inline=True)
 
         embed.add_field(name="Auxiliary Ship",
                         value=hosted.auxiliary_ship_name if hosted.auxiliary_ship_name else "N/A", inline=True)
+
         embed.add_field(name="Voyage Count",
                         value=convert_to_ordinal(hosted.ship_voyage_count) if hosted.ship_voyage_count else "N/A",
                         inline=True)
+
+        embed.add_field(name="Voyage Type", value=hosted.voyage_type.name.capitalize() if hosted.voyage_type else "N/A", inline=True)
+        embed.add_field(name="Gold", value=f"{GOLD_EMOJI} {hosted.gold_count:,}", inline=True)
+        embed.add_field(name="Doubloons", value=f"{DOUBLOONS_EMOJI} {hosted.doubloon_count:,}", inline=True)
+
         embed.add_field(name="\u200b", value="\u200b", inline=True)
+        embed.add_field(name="Ancient Coins", value=f"{ANCIENT_COINS_EMOJI} {hosted.ancient_coin_count:,}" if hosted.ancient_coin_count else "N/A", inline=True)
+        embed.add_field(name="Fish", value=f":fish: {hosted.fish_count:,}" if hosted.fish_count else "N/A", inline=True)
+
 
     voyage_repository = VoyageRepository()
     voyages = voyage_repository.get_voyages_by_log_id(int(voyage_log_id))

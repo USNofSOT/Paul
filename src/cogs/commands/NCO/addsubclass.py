@@ -3,7 +3,9 @@ import re
 from logging import getLogger
 
 import discord
-from config.emojis import DOUBLOONS_EMOJI, GOLD_EMOJI
+from config.emojis import ANCIENT_COINS_EMOJI, DOUBLOONS_EMOJI, GOLD_EMOJI
+from data import VoyageType
+from data.repository.voyage_repository import VoyageRepository
 from discord import Colour, app_commands
 from discord.ext import commands
 from utils.ship_utils import convert_to_ordinal
@@ -358,7 +360,7 @@ class AddSubclass(commands.Cog):
             embed_misc_voyage_info = discord.Embed(
                 title="Miscellaneous Voyage Information",
                 description="The following information was found in the voyage log, please ensure all information including spelling and capitalization is correct. Gold and Doubloon counts should be fully written out.",
-                color=Colour.dark_gold(),
+                color=Colour.green(),
             )
 
             embed_misc_voyage_info.add_field(name="Log Link", value=f"https://discord.com/channels/{GUILD_ID}/{VOYAGE_LOGS}/{log_id}", inline=False)
@@ -367,20 +369,35 @@ class AddSubclass(commands.Cog):
             previous_count = hosted_repository.get_previous_ship_voyage_count(log_id)
             hosted_repository.close_session()
 
-            embed_misc_voyage_info.add_field(
-                name="Main Ship",
-                value=hosted_entry.ship_name or ":warning: Unknown",
-            )
+            warnings = []
+
+
+            # 1. Get the main ship name if it exists
+            if hosted_entry.ship_name:
+                embed_misc_voyage_info.add_field(
+                    name="Main Ship",
+                    value=":white_check_mark: " + hosted_entry.ship_name,
+                )
+            else:
+                embed_misc_voyage_info.add_field(
+                    name="Main Ship",
+                    value=":warning: `Unknown`",
+                )
+                warnings.append("No main ship found")
+
             embed_misc_voyage_info.add_field(
                 name="Auxiliary Ship",
-                value=hosted_entry.auxiliary_ship_name or ":information_source: None",
+                value=":white_check_mark: " + hosted_entry.auxiliary_ship_name if hosted_entry.auxiliary_ship_name else ":information_source: None",
             )
+
+            embed_misc_voyage_info.add_field(name="Host", value=f'<@{hosted_entry.target_id}>', inline=True)
 
             if hosted_entry.ship_voyage_count < 0:
                 embed_misc_voyage_info.add_field(
                     name="Voyage Count",
-                    value=":warning: Unknown",
+                    value=":warning: `Unknown`",
                 )
+                warnings.append("Unknown voyage count")
             else:
                 if previous_count:
                     if previous_count + 1 == hosted_entry.ship_voyage_count:
@@ -391,23 +408,72 @@ class AddSubclass(commands.Cog):
                     else:
                         embed_misc_voyage_info.add_field(
                             name="Voyage Count",
-                            value=f":warning: {convert_to_ordinal(hosted_entry.ship_voyage_count)} (Expected {convert_to_ordinal(previous_count + 1)})",
+                            value=f":warning: `{convert_to_ordinal(hosted_entry.ship_voyage_count)} (Expected {convert_to_ordinal(previous_count + 1)})`",
                         )
+                        warnings.append(f"Expected voyage count: {convert_to_ordinal(previous_count + 1)}")
                 else:
                     embed_misc_voyage_info.add_field(
                         name="Voyage Count",
                         value=f":new: {convert_to_ordinal(hosted_entry.ship_voyage_count)}",
                 )
 
+            if hosted_entry.voyage_type.value != VoyageType.UNKNOWN.value:
+                embed_misc_voyage_info.add_field(
+                    name="Voyage Type",
+                    value=f":white_check_mark: {hosted_entry.voyage_type.value}",
+                )
+            else:
+                embed_misc_voyage_info.add_field(
+                    name="Voyage Type",
+                    value=":warning: `Unknown`",
+                )
+                warnings.append("Unknown voyage type")
+
+            crew_string = ""
+            voyage_repository = VoyageRepository()
+            for voyage in voyage_repository.get_voyages_by_log_id(int(log_id)):
+                crew_string += f"<@{voyage.target_id}> \n"
             embed_misc_voyage_info.add_field(
-                name=f"{GOLD_EMOJI} Count",
-                value=f"{hosted_entry.gold_count:,}" if hosted_entry.gold_count is not None else ":information_source: Unknown",
+                name="Crew",
+                value=crew_string
+            )
+            voyage_repository.close_session()
+
+            generic_loot_confiscated_string = (
+                f"{GOLD_EMOJI} Gold: {hosted_entry.gold_count:,}\n"
+                f"{DOUBLOONS_EMOJI} Doubloons: {hosted_entry.doubloon_count:,}\n"
+            )
+
+            misc_loot_confiscated_string = (
+                f"{ANCIENT_COINS_EMOJI} Ancient Coins: {hosted_entry.ancient_coin_count:,}\n"
+                f":fish: Fish: {hosted_entry.fish_count:,}"
             )
 
             embed_misc_voyage_info.add_field(
-                name=f"{DOUBLOONS_EMOJI} Count",
-                value=f"{hosted_entry.doubloon_count:,}" if hosted_entry.doubloon_count is not None else ":information_source: Unknown",
+                name="Generic confiscated:",
+                value=generic_loot_confiscated_string
             )
+
+            embed_misc_voyage_info.add_field(
+                name="Miscellaneous confiscated:",
+                value=misc_loot_confiscated_string
+            )
+
+            if warnings:
+                embed_misc_voyage_info.colour = Colour.yellow()
+                embed_misc_voyage_info.set_footer(
+                    text="If you think this is an error please contact the NSC Department."
+                )
+                embed_misc_voyage_info.add_field(
+                    name="\u200b",
+                    value="\u200b",
+                    inline=False
+                )
+                embed_misc_voyage_info.add_field(
+                    name=r":warning: Warnings",
+                    value="\n".join([f"- {warning}" for warning in warnings]),
+                    inline=False
+                )
 
             await interaction.followup.send(embeds=[embed_misc_voyage_info, embed],
                                             view=ConfirmView(interaction, self.bot, updates, missing_users, author_id,
