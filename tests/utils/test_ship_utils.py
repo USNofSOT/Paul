@@ -123,5 +123,5 @@ class TestGetAuxiliaryShipName(TestCase):
     def test_auxiliary_ship_with_dash_between_words(self):
         content = "We started our adventure at Plunder on the USS Phoenix, Auxiliary to the USS Platypus"
         self.assertEqual(get_auxiliary_ship_from_content(content), "USS Phoenix")
-        content = "We started our adventure at Plunder on the USS Phoenix, Auxiliary to the USS-Platypus"
+        content = "We started our adventure at Plunder on the USS-Phoenix, Auxiliary to the USS Platypus"
         self.assertEqual(get_auxiliary_ship_from_content(content), None)
