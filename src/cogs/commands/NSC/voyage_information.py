@@ -65,6 +65,16 @@ async def build_embed(self, voyage_log_id: str = None) -> discord.Embed:
                         inline=True)
         embed.add_field(name="\u200b", value="\u200b", inline=True)
 
+    voyage_repository = VoyageRepository()
+    voyages = voyage_repository.get_voyages_by_log_id(int(voyage_log_id))
+    voyage_repository.close_session()
+
+    if voyages:
+        voyage_txt = ""
+        for voyage in voyages:
+            voyage_txt += f"<@{voyage.target_id}> @ <t:{int(voyage.log_time.timestamp())}>\n"
+        embed.add_field(name="Voyagers", value=voyage_txt, inline=False)
+
     subclass_repository = SubclassRepository()
     subclasses: [Subclasses] = subclass_repository.entries_for_log_id(int(voyage_log_id))
     subclass_repository.close_session()
