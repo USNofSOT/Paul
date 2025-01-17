@@ -459,6 +459,14 @@ class AddSubclass(commands.Cog):
                 value=misc_loot_confiscated_string
             )
 
+            # Warning for Patrol with no gold count
+            if hosted_entry.voyage_type == VoyageType.PATROL and hosted_entry.gold_count == 0:
+                warnings.append("Patrol with no gold count")
+
+            # Warning for same auxiliary as main ship
+            if hosted_entry.auxiliary_ship_name and hosted_entry.ship_name == hosted_entry.auxiliary_ship_name:
+                warnings.append("Main ship and auxiliary ship are the same")
+
             if warnings:
                 embed_misc_voyage_info.colour = Colour.yellow()
                 embed_misc_voyage_info.set_footer(
