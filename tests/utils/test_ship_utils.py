@@ -125,3 +125,8 @@ class TestGetAuxiliaryShipName(TestCase):
         self.assertEqual(get_auxiliary_ship_from_content(content), "USS Phoenix")
         content = "We started our adventure at Plunder on the USS-Phoenix, Auxiliary to the USS Platypus"
         self.assertEqual(get_auxiliary_ship_from_content(content), None)
+
+    def test_auxiliary_is_main_ship(self):
+        content = "We started our adventure at Plunder on the USS Platypus, Auxiliary to the USS Platypus"
+        self.assertEqual(get_auxiliary_ship_from_content(content), None)
+        self.assertEqual(get_main_ship_from_content(content), "USS Platypus")

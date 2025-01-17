@@ -83,6 +83,9 @@ def get_auxiliary_ship_from_content(content: str) -> str or None:
     # If two ship names are found, assume the first one is the auxiliary ship
     if len(matches) >= 2:
         auxiliary_ship = matches[0]
+    # If the found auxiliary ship name is currently configurated as a main ship, return None
+    if auxiliary_ship in [ship.name for ship in SHIPS]:
+        return None
 
     return auxiliary_ship
 
