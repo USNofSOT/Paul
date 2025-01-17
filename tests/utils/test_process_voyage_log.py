@@ -27,10 +27,6 @@ class TestGetDoubloonCountFromContent(unittest.TestCase):
         content = "10.121 <:doubloons:1323316150930636961>"
         self.assertEqual(get_doubloon_count_from_content(content), 10121)
 
-    def test_negative_doubloons(self):
-        content = "doubloons -100"
-        self.assertEqual(get_doubloon_count_from_content(content), 0)
-
     def test_max_20m_doubloons(self):
         content = "doubloons 20,000,001"
         self.assertEqual(get_doubloon_count_from_content(content), 20000000)
@@ -67,6 +63,26 @@ class TestGetDoubloonCountFromContent(unittest.TestCase):
         content = "::Gold> Gold: 1536057\n:Doubloon> 12"
         self.assertEqual(get_doubloon_count_from_content(content), 12)
 
+    def test_doubloons_with_dash(self):
+        content = "Doubloons - 234,646"
+        self.assertEqual(get_doubloon_count_from_content(content), 234646)
+        content = "548,646 - Doubloons"
+        self.assertEqual(get_doubloon_count_from_content(content), 548646)
+
+    def test_doubloons_with_italic_or_bold(self):
+        content = "Doubloons **1,000**"
+        self.assertEqual(get_doubloon_count_from_content(content), 1000)
+        content = "Doubloons *1,000*"
+        self.assertEqual(get_doubloon_count_from_content(content), 1000)
+
+    def test_doubloons_with_underline(self):
+        content = "Doubloons __1,050__"
+        self.assertEqual(get_doubloon_count_from_content(content), 1050)
+
+    def test_doubloons_with_bold_underline(self):
+        content = "Doubloons __**1,055**__"
+        self.assertEqual(get_doubloon_count_from_content(content), 1055)
+
 class TestGetGoldCountFromContent(unittest.TestCase):
     def test_gold_at_beginning(self):
         content = "gold 100"
@@ -87,10 +103,6 @@ class TestGetGoldCountFromContent(unittest.TestCase):
         self.assertEqual(get_gold_count_from_content(content), 10232)
         content = "10.121 <:gold:1323316150930636961>"
         self.assertEqual(get_gold_count_from_content(content), 10121)
-
-    def test_negative_gold(self):
-        content = "gold -100"
-        self.assertEqual(get_gold_count_from_content(content), 0)
 
     def test_max_20m_gold(self):
         content = "gold 20,000,001"
@@ -138,4 +150,24 @@ class TestGetGoldCountFromContent(unittest.TestCase):
         self.assertEqual(get_gold_count_from_content(content), 0)
         content = "Gold " + twenty_five_characters[1:] + " 100"
         self.assertEqual(get_gold_count_from_content(content), 100)
+
+    def test_gold_count_with_dash(self):
+        content = "Gold - 234,646"
+        self.assertEqual(get_gold_count_from_content(content), 234646)
+        content = "548,646 - Gold"
+        self.assertEqual(get_gold_count_from_content(content), 548646)
+
+    def test_gold_count_with_italic_or_bold(self):
+        content = "Gold **1,000**"
+        self.assertEqual(get_gold_count_from_content(content), 1000)
+        content = "Gold *1,000*"
+        self.assertEqual(get_gold_count_from_content(content), 1000)
+
+    def test_gold_count_with_underline(self):
+        content = "Gold __1,050__"
+        self.assertEqual(get_gold_count_from_content(content), 1050)
+
+    def test_gold_count_with_bold_underline(self):
+        content = "Gold __**1,055**__"
+        self.assertEqual(get_gold_count_from_content(content), 1055)
 
