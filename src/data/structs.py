@@ -94,7 +94,7 @@ class SailorCO:
     _sailor: Member
     _guild: Guild
 
-    def  __init__(self, sailor: Member, guild: Guild):
+    def __init__(self, sailor: Member, guild: Guild):
         self.immediate = None
         self.acting = None
         self._sailor = sailor
@@ -145,6 +145,14 @@ class SailorCO:
         
         # Re-run for the acting CO's acting CO if not
         return SailorCO(self.acting, self._guild).for_awards(award_roles)
+    
+    @property
+    def member_str(self):
+        if self.acting is None:
+            return "None"
+        if self.acting.id == self.immediate.id:
+            return f"<@{self.acting.id}>"
+        return f"Current: <@{self.acting.id}>\nImmediate: <@{self.immediate.id}>"
     
 def _get_co_from_link(idx: int, sailor: Member, CoC: OrderedDict, CoC_keys: list[int], guild: Guild) -> Member | None:
     role_id = CoC_keys[idx]
