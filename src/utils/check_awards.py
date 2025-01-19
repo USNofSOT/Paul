@@ -11,14 +11,14 @@ from src.utils.ranks import rank_to_roles
 from src.utils.report_utils import identify_role_index, process_role_index
 
 
-def check_sailor(bot : Bot, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> list[str]:
+def check_sailor(guild: discord.Guild, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> list[str]:
     # Assert these are the same person
     assert sailor.discord_id == member.id, "Sailor does not have the same ID as discord member."
 
     msg_strs = (
         # Check awards
-        check_voyages(bot, interaction, sailor, member),
-        check_hosted(bot, interaction, sailor, member),
+        check_voyages(guild, interaction, sailor, member),
+        check_hosted(guild, interaction, sailor, member),
         #FIXME: Add check for combat medals
         #FIXME: Add check for training medals
         #FIXME: Add check for recruiting medals
@@ -26,12 +26,12 @@ def check_sailor(bot : Bot, interaction: discord.Interaction, sailor: Sailor, me
         #FIXME: Add check for service stripes
 
         # Check subclasses
-        check_cannoneer(bot, interaction, sailor, member),
-        check_carpenter(bot, interaction, sailor, member),
-        check_flex(bot, interaction, sailor, member),
-        check_helm(bot, interaction, sailor, member),
-        check_grenadier(bot, interaction, sailor, member),
-        check_surgeon(bot, interaction, sailor, member),
+        check_cannoneer(guild, interaction, sailor, member),
+        check_carpenter(guild, interaction, sailor, member),
+        check_flex(guild, interaction, sailor, member),
+        check_helm(guild, interaction, sailor, member),
+        check_grenadier(guild, interaction, sailor, member),
+        check_surgeon(guild, interaction, sailor, member),
     )
 
     return msg_strs
@@ -56,37 +56,37 @@ def check_hosted(bot : Bot, interaction: discord.Interaction, sailor: Sailor, me
 
 # check_service
 
-def check_cannoneer(bot : Bot, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
+def check_cannoneer(guild: discord.Guild, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
     count = sailor.cannoneer_points + sailor.force_cannoneer_points
     tiers = SUBCLASS_AWARDS.cannoneer
-    return _check_awards_by_type(bot, count, tiers, interaction, sailor, member)
+    return _check_awards_by_type(guild, count, tiers, interaction, sailor, member)
 
-def check_carpenter(bot : Bot, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
+def check_carpenter(guild: discord.Guild, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
     count = sailor.carpenter_points + sailor.force_carpenter_points
     tiers = SUBCLASS_AWARDS.carpenter
-    return _check_awards_by_type(bot, count, tiers, interaction, sailor, member)
+    return _check_awards_by_type(guild, count, tiers, interaction, sailor, member)
 
-def check_flex(bot : Bot, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
+def check_flex(guild: discord.Guild, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
     count = sailor.flex_points + sailor.force_flex_points
     tiers = SUBCLASS_AWARDS.flex
-    return _check_awards_by_type(bot, count, tiers, interaction, sailor, member)
+    return _check_awards_by_type(guild, count, tiers, interaction, sailor, member)
 
-def check_helm(bot : Bot, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
+def check_helm(guild: discord.Guild, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
     count = sailor.helm_points + sailor.force_helm_points
     tiers = SUBCLASS_AWARDS.helm
-    return _check_awards_by_type(bot, count, tiers, interaction, sailor, member)
+    return _check_awards_by_type(guild, count, tiers, interaction, sailor, member)
 
-def check_grenadier(bot : Bot, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
+def check_grenadier(guild: discord.Guild, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
     count = sailor.grenadier_points + sailor.force_grenadier_points
     tiers = SUBCLASS_AWARDS.grenadier
-    return _check_awards_by_type(bot, count, tiers, interaction, sailor, member)
+    return _check_awards_by_type(guild, count, tiers, interaction, sailor, member)
 
-def check_surgeon(bot : Bot, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
+def check_surgeon(guild: discord.Guild, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
     count = sailor.surgeon_points + sailor.force_surgeon_points
     tiers = SUBCLASS_AWARDS.surgeon
-    return _check_awards_by_type(bot, count, tiers, interaction, sailor, member)
+    return _check_awards_by_type(guild, count, tiers, interaction, sailor, member)
 
-def _check_awards_by_type(bot : Bot, count: int, medals: list[Award], interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
+def _check_awards_by_type(guild: discord.Guild, count: int, medals: list[Award], interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
     msg_str = ""
 
     # Get award sailor is eligible for
@@ -96,7 +96,6 @@ def _check_awards_by_type(bot : Bot, count: int, medals: list[Award], interactio
         return msg_str
 
     # Check if member has award role already
-    guild = bot.get_guild(GUILD_ID)
     award_role = guild.get_role(award.role_id)
     if award_role not in member.roles:
         msg_str = _award_message(guild, award, award_role, interaction, member)
