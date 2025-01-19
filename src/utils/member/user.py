@@ -1,6 +1,8 @@
 import discord
+from discord.ext.commands import Bot
 
 from src.config import GUILD_OWNER_ID, NCO_AND_UP
+from src.config.main_server import GUILD_ID
 from src.config.requirements import (
     HOSTING_REQUIREMENT_IN_DAYS,
     VOYAGING_REQUIREMENT_IN_DAYS,
@@ -9,7 +11,7 @@ from src.data import MemberReport, RoleChangeType, member_report
 from src.data.repository.auditlog_repository import AuditLogRepository
 from src.data.repository.coin_repository import CoinRepository
 from src.data.repository.sailor_repository import ensure_sailor_exists
-from src.data.structs import NavyRank
+from src.data.structs import NavyRank, SailorCO
 from src.utils.embeds import default_embed, error_embed
 from src.utils.rank_and_promotion_utils import get_current_rank
 from src.utils.report_utils import (
@@ -24,7 +26,7 @@ from src.utils.time_utils import format_time, get_time_difference_past
 def modify_points(base_points: int, force_points: int) -> int:
     return base_points + force_points
 
-async def get_member_embed(bot, interaction, member: discord.Member) -> discord.Embed:
+async def get_member_embed(bot: Bot, interaction, member: discord.Member) -> discord.Embed:
     ensure_sailor_exists(member.id)
 
     # Get the appropriate avatar URL
@@ -57,6 +59,12 @@ async def get_member_embed(bot, interaction, member: discord.Member) -> discord.
 
     audit_log_repository.close_session()
 
+    # Add Next in Command to Embed
+    guild = bot.get_guild(GUILD_ID)
+    co_str = SailorCO(member, guild).member_str
+    embed.add_field(name="Next in Command", value=co_str, inline=True)
+
+    '''
     role_index = identify_role_index(interaction, member)
     next_in_command = process_role_index(interaction, member, role_index)
 
@@ -80,6 +88,7 @@ async def get_member_embed(bot, interaction, member: discord.Member) -> discord.
                         inline=True)
     else:
         next_in_command.add_field(name="Next in Command", value="Unknown", inline=True)
+    '''
 
     try:
         database_report: MemberReport = member_report(member.id)
