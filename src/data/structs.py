@@ -1,7 +1,11 @@
 from __future__ import annotations
+from collections import OrderedDict
 from dataclasses import dataclass
+from discord import Guild, Member, Role
+from warnings import warn
 
 from config.main_server import GUILD_ID
+import config.ranks_roles
 
 @dataclass
 class Ship:
@@ -82,3 +86,111 @@ class SubclassCollector:
     grenadier: tuple[Award]
     helm: tuple[Award]
     surgeon: tuple[Award]
+
+@dataclass(frozen=True)
+class SailorCO:
+    immediate: Member | None
+    acting: Member | None
+    _sailor: Member
+    _guild: Guild
+
+    def  __init__(self, sailor: Member, guild: Guild):
+        self.immediate = None
+        self.acting = None
+        self._sailor = sailor
+        self._guild = guild
+
+        # Unpack sailor roles
+        sailor_roles = sailor.roles
+        role_ids = set([role.id for role in sailor_roles])
+        
+        # Traverse the chain of command
+        co_set = False
+        CoC = config.ranks_roles.CHAIN_OF_COMMAND
+        CoC_keys = list(CoC.keys())
+        for idx, role_id in enumerate(CoC_keys):
+            if role_id in role_ids:
+                co_member = _get_co_from_link(idx, sailor, CoC, CoC_keys, guild)
+                self.immediate = co_member
+                co_set = True
+                break
+
+        # Seach for Squad Leader if CO not set
+        if not co_set and (squad_roles:=[role for role in sailor_roles if role.name.endswith('Squad')]):
+            squad_role = squad_roles[0]
+            SL_all = guild.get_role(config.ranks_roles.SHIP_SL_ROLE).members
+            sailor_SL = _get_by_role(squad_role, SL_all)
+
+            self.immediate = sailor_SL
+            co_set = True
+
+        # Get the acting CO (if immediate CO is LOA-2)
+        self.acting = self.immediate
+        if self.immediate.nick.startswith("[LOA-2]"):
+            self.acting = SailorCO(self.immediate, guild).acting
+
+    def for_awards(self, award_roles: tuple[int]) -> Member | Role:
+        # Check if top of CoC
+        CoC = config.ranks_roles.CHAIN_OF_COMMAND
+        CoC_keys = list(CoC.keys())
+        if CoC_keys[0] in [role.id for role in self._sailor.roles]:
+            boa_role = self._guild.get_role(config.ranks_roles.BOA_ROLE)
+            return boa_role
+
+        # Check if acting CO has roles
+        acting_role_ids = set([role.id for role in self.acting.roles])
+        for award_role in award_roles:
+            if award_role in acting_role_ids:
+                return self.acting
+        
+        # Re-run for the acting CO's acting CO if not
+        return SailorCO(self.acting, self._guild).for_awards(award_roles)
+    
+def _get_co_from_link(idx: int, sailor: Member, CoC: OrderedDict, CoC_keys: list[int], guild: Guild) -> Member | None:
+    role_id = CoC_keys[idx]
+    co_role_id, common_group = CoC[role_id]
+    if co_role_id is None:
+        return None
+    
+    co_role = guild.get_role(co_role_id)
+    if common_group == config.ranks_roles.COC_ENUM['Fleet']:
+        fleet_role = _get_fleet(sailor)
+        co_role_members = [m for m in co_role.members if fleet_role in m.roles]
+    elif common_group == config.ranks_roles.COC_ENUM['Ship']:
+        ship_role = _get_ship(sailor)
+        co_role_members = [m for m in co_role.members if ship_role in m.roles]
+    else:
+        co_role_members = co_role.members
+
+    if len(co_role_members) == 1:
+        return co_role_members[0]
+    if len(co_role_members) == 0:
+        # go up one in the CoC
+        return _get_co_from_link(idx-1, sailor, CoC, CoC_keys, guild)
+    
+    warn("Found more than one member with role. Using first in list")
+    return co_role_members[0]
+    
+def _get_by_role(role_key: Role, members: list[Member]):
+    member_with_role = None
+    for member in members:
+        if role_key in member.roles:
+            member_with_role = member
+            break
+    return member_with_role
+
+def _get_fleet(sailor: Member):
+    fleet_role = None
+    for role in sailor.roles:
+        if role.name.endswith('Fleet'):
+            fleet_role = role
+            break
+    return fleet_role
+
+def _get_ship(sailor: Member):
+    ship_role = None
+    for role in sailor.roles:
+        if role.name.startswith('USS'):
+            ship_role = role
+            break
+    return ship_role
