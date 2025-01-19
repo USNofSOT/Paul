@@ -59,7 +59,7 @@ class AutoCheckAwards(commands.Cog):
                         continue
 
                     # Check for award messages for sailor
-                    sailor_strs = check_sailor(self.bot, fake_context(self.bot, f"{ship.name}"), sailor, member)
+                    sailor_strs = check_sailor(GUILD, fake_context(self.bot, f"{ship.name}"), sailor, member)
                     # Add strings to message, printing early if message would be too long
                     for sailor_str in sailor_strs:
                         if len(msg_str + sailor_str) <= MAX_MESSAGE_LENGTH:
