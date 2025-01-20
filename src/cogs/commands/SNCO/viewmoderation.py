@@ -47,26 +47,6 @@ class ViewModeration(commands.Cog):
         co_str = SailorCO(target, guild).member_str
         embed.add_field(name="Next in Command", value=co_str, inline=True)
 
-        if target.id == GUILD_OWNER_ID:
-            embed.add_field(name="Next in Command", value="Dungeon Master", inline=True)
-        elif next_in_command is None:  # Check if next_in_command is None
-            embed.add_field(name="Next in Command", value="None", inline=True)  # Handle No CO
-        elif len(next_in_command) == 1:
-            if next_in_command is None or not isinstance(next_in_command, list):
-                embed.add_field(name="Next in Command", value=next_in_command, inline=True)
-            else:
-                next_in_command = next_in_command[0]
-                embed.add_field(name="Next in Command", value=f"<@{next_in_command}>", inline=True)
-        elif len(next_in_command) == 2:
-            current_member_id = str(next_in_command[1])[1:-1]
-            current_member_mention = f"<@{current_member_id}>"
-            immediate_member_id = next_in_command[0]
-            immediate_member_mention = f"<@{immediate_member_id}>"
-            embed.add_field(name="Next in Command",
-                            value=f"Current: {current_member_mention}\n Immediate: {immediate_member_mention}",
-                            inline=True)
-        else:
-            next_in_command.add_field(name="Next in Command", value=f"Unknown", inline=True)
         embed.add_field(
             name="User ID",
             value=f"{target.id}"
