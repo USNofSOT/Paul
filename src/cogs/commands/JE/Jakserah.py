@@ -1,3 +1,4 @@
+from discord import app_commands
 from discord.ext import commands
 
 
@@ -5,10 +6,12 @@ class JakserahCog(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
-    @commands.command(name="jakserah", help="One last message from good ol' Jaks.")
-    @commands.check(lambda ctx: ctx.author.id == 690264788257079439)
-    async def farewell(self, ctx):
+    @app_commands.command(name="jakserah", description="One last message from good ol' Jaks.")
+    async def farewell(self, interaction):
         """A long and truly sorrowful goodbye message for the USN of SoT from Jakserah."""
+        await interaction.response.defer(ephemeral=True)
+
+
         farewell_message = (
             "Heya {mention}, and thanks for running me. Today, January 20th 2025, "
             "I'm retiring from the USN. I've had a brilliant time in the server, sailing with a lot of great people, "
@@ -34,11 +37,9 @@ class JakserahCog(commands.Cog):
         )
 
         # Replace the placeholder with the command author's mention
-        formatted_message = farewell_message.format(mention=ctx.author.mention)
-        # Delete the command message
-        await ctx.message.delete()
+        formatted_message = farewell_message.format(mention=interaction.user.mention)
         # Send the message
-        await ctx.send(formatted_message)
+        await interaction.followup.send(content=formatted_message)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(JakserahCog(bot))
