@@ -34,6 +34,7 @@ class CheckAwards(commands.Cog):
 
         # Get the repositories
         sailor_repo = SailorRepository()
+        guild = self.bot.get_guild(GUILD_ID)
 
         try:
             role_has_sailors = False
@@ -49,7 +50,7 @@ class CheckAwards(commands.Cog):
                     role_has_sailors = True
 
                 # Check for award messages for sailor
-                sailor_strs = check_sailor(self.bot, interaction, sailor, member)
+                sailor_strs = check_sailor(guild, interaction, sailor, member)
                 # Add strings to message, printing early if message would be too long
                 for sailor_str in sailor_strs:
                     if len(msg_str+sailor_str) <= MAX_MESSAGE_LENGTH:

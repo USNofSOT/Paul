@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 ###############################################################################
 # Rank Roles
 ###############################################################################
@@ -16,7 +18,7 @@ DH_ROLES = [1003446066835894394] #Deckhand
 E1_ROLES = [933913081099214848] # Recruit
 E2_ROLES = [933913010806857801, 1201933589357547540] # Seaman, Seaman Apprentice
 E3_ROLES = [933912647999565864] # Able Seaman
-VT_ROLES = [1218962980536848494] #Vetrain
+VT_ROLES = [1218962980536848494] #Veteran
 E4_ROLES = [933912557008343120] # Junior Petty Officer
 E5_ROLES = [] # Unused
 E6_ROLES = [933911949585035275] # Petty Officer
@@ -30,8 +32,39 @@ O5_ROLES = [933909780639150101] # Commander
 O6_ROLES = [933909668550553630] # Captain
 O7_ROLES = [933909182711746570] # Commodore
 O8_ROLES = [1157429131416449134] # Rear Admiral
+MCPON_ROLES = [1002280798801625179] # Master Chief Petty Officer of the Navy
+VADM_ROLES = [933914222088306698] # Vice Admiral of the Navy
 AOTN_ROLES = [933914043935248424] # Admiral of the Navy
 RT_ROLES = [958152319424413726] # Retired
+
+###############################################################################
+# Command Roles
+###############################################################################
+FLEET_CO_ROLE = 1250612616510967899
+SHIP_CO_ROLE = 1250613478503350403
+SHIP_FO_ROLE = 1250613812336398418
+SHIP_COS_ROLE = 1250613959095091343
+SHIP_SL_ROLE = 1143324589968068619
+
+COC_ENUM = {
+    'Navy':  0,
+    'Fleet': 1,
+    'Ship':  2,
+}
+
+    # CMD ROLE       # CO ROLE      # COMMON GROUP
+CHAIN_OF_COMMAND = OrderedDict([
+    (AOTN_ROLES[0],  (None,          COC_ENUM['Navy'])),
+    (VADM_ROLES[0],  (AOTN_ROLES[0], COC_ENUM['Navy'])),
+    (MCPON_ROLES[0], (AOTN_ROLES[0], COC_ENUM['Navy'])),
+    (FLEET_CO_ROLE,  (VADM_ROLES[0], COC_ENUM['Navy'])),
+    (SHIP_CO_ROLE,   (FLEET_CO_ROLE, COC_ENUM['Fleet'])),
+    (SHIP_FO_ROLE,   (SHIP_CO_ROLE,  COC_ENUM['Ship'])),
+    (SHIP_COS_ROLE,  (SHIP_FO_ROLE,  COC_ENUM['Ship'])),
+    (SHIP_SL_ROLE,   (SHIP_COS_ROLE, COC_ENUM['Ship'])),
+    (E2_ROLES[1],    (VADM_ROLES[0], COC_ENUM['Navy'])), # Seaman Apprentice
+    (E1_ROLES[0],    (VADM_ROLES[0], COC_ENUM['Navy'])), # Recruit
+])
 
 ###############################################################################
 # SPD Roles

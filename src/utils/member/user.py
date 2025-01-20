@@ -1,6 +1,8 @@
 import discord
+from discord.ext.commands import Bot
 
 from src.config import GUILD_OWNER_ID, NCO_AND_UP
+from src.config.main_server import GUILD_ID
 from src.config.requirements import (
     HOSTING_REQUIREMENT_IN_DAYS,
     VOYAGING_REQUIREMENT_IN_DAYS,
@@ -9,13 +11,11 @@ from src.data import MemberReport, RoleChangeType, member_report
 from src.data.repository.auditlog_repository import AuditLogRepository
 from src.data.repository.coin_repository import CoinRepository
 from src.data.repository.sailor_repository import ensure_sailor_exists
-from src.data.structs import NavyRank
+from src.data.structs import NavyRank, SailorCO
 from src.utils.embeds import default_embed, error_embed
 from src.utils.rank_and_promotion_utils import get_current_rank
 from src.utils.report_utils import (
-    identify_role_index,
     other_medals,
-    process_role_index,
     tiered_medals,
 )
 from src.utils.time_utils import format_time, get_time_difference_past
@@ -24,7 +24,7 @@ from src.utils.time_utils import format_time, get_time_difference_past
 def modify_points(base_points: int, force_points: int) -> int:
     return base_points + force_points
 
-async def get_member_embed(bot, interaction, member: discord.Member) -> discord.Embed:
+async def get_member_embed(bot: Bot, interaction, member: discord.Member) -> discord.Embed:
     ensure_sailor_exists(member.id)
 
     # Get the appropriate avatar URL
@@ -57,30 +57,12 @@ async def get_member_embed(bot, interaction, member: discord.Member) -> discord.
 
     audit_log_repository.close_session()
 
-    role_index = identify_role_index(interaction, member)
-    next_in_command = process_role_index(interaction, member, role_index)
+    # Add Next in Command
+    guild = bot.get_guild(GUILD_ID)
+    co_str = SailorCO(member, guild).member_str
+    embed.add_field(name="Next in Command", value=co_str, inline=True)
 
-    if member.id == GUILD_OWNER_ID:
-        embed.add_field(name="Next in Command", value="Dungeon Master", inline=True)
-    elif next_in_command is None:  # Check if next_in_command is None
-        embed.add_field(name="Next in Command", value="None", inline=True)  # Handle No CO
-    elif len(next_in_command) == 1:
-        if next_in_command is None or not isinstance(next_in_command, list):
-            embed.add_field(name="Next in Command", value=next_in_command, inline=True)
-        else:
-            next_in_command = next_in_command[0]
-            embed.add_field(name="Next in Command", value=f"<@{next_in_command}>", inline=True)
-    elif len(next_in_command) == 2:
-        current_member_id = str(next_in_command[1])[1:-1]
-        current_member_mention = f"<@{current_member_id}>"
-        immediate_member_id = next_in_command[0]
-        immediate_member_mention = f"<@{immediate_member_id}>"
-        embed.add_field(name="Next in Command",
-                        value=f"Current: {current_member_mention}\n Immediate: {immediate_member_mention}",
-                        inline=True)
-    else:
-        next_in_command.add_field(name="Next in Command", value="Unknown", inline=True)
-
+    ## Add Member Report
     try:
         database_report: MemberReport = member_report(member.id)
     except Exception as e:
