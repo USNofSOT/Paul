@@ -1,11 +1,12 @@
-import discord
 from discord.ext import commands
+
 
 class JakserahCog(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
     @commands.command(name="jakserah", help="One last message from good ol' Jaks.")
+    @commands.check(lambda ctx: ctx.author.id == 690264788257079439)
     async def farewell(self, ctx):
         """A long and truly sorrowful goodbye message for the USN of SoT from Jakserah."""
         farewell_message = (
@@ -34,7 +35,8 @@ class JakserahCog(commands.Cog):
 
         # Replace the placeholder with the command author's mention
         formatted_message = farewell_message.format(mention=ctx.author.mention)
-
+        # Delete the command message
+        await ctx.message.delete()
         # Send the message
         await ctx.send(formatted_message)
 
