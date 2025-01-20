@@ -111,11 +111,7 @@ def _find_highest_award(count : int, medals : list[Award]) -> None | Award:
 
 def _award_message(guild : discord.Guild, award : Award | None, award_role : discord.Role, interaction: discord.Interaction, member: discord.Member) -> str:
     # Check if SPD/NETC award
-    is_SPD_NETC_award = False
-    for keyword in ("Logistics","Media","NETC","NRC","NSC","Scheduling"):
-        is_SPD_NETC_award = keyword in award.ranks_responsible
-        if is_SPD_NETC_award:
-            break
+    is_SPD_NETC_award = any(kw in award.ranks_responsible for kw in ("Logistics","Media","NETC","NRC","NSC","Scheduling"))
     if is_SPD_NETC_award:
         responsible_co = award.ranks_responsible
     else:
