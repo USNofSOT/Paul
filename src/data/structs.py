@@ -87,7 +87,7 @@ class SubclassCollector:
     helm: tuple[Award]
     surgeon: tuple[Award]
 
-@dataclass(frozen=True)
+@dataclass
 class SailorCO:
     immediate: Member | None
     acting: Member | None
@@ -126,7 +126,7 @@ class SailorCO:
 
         # Get the acting CO (if immediate CO is LOA-2)
         self.acting = self.immediate
-        if self.immediate.display_name.startswith("[LOA-2]"):
+        if self.immediate and self.immediate.display_name.startswith("[LOA-2]"):
             self.acting = SailorCO(self.immediate, guild).acting
 
     def for_awards(self, award_roles: tuple[int]) -> Member | Role:

@@ -59,37 +59,12 @@ async def get_member_embed(bot: Bot, interaction, member: discord.Member) -> dis
 
     audit_log_repository.close_session()
 
-    # Add Next in Command to Embed
+    # Add Next in Command
     guild = bot.get_guild(GUILD_ID)
     co_str = SailorCO(member, guild).member_str
     embed.add_field(name="Next in Command", value=co_str, inline=True)
 
-    '''
-    role_index = identify_role_index(interaction, member)
-    next_in_command = process_role_index(interaction, member, role_index)
-
-    if member.id == GUILD_OWNER_ID:
-        embed.add_field(name="Next in Command", value="Dungeon Master", inline=True)
-    elif next_in_command is None:  # Check if next_in_command is None
-        embed.add_field(name="Next in Command", value="None", inline=True)  # Handle No CO
-    elif len(next_in_command) == 1:
-        if next_in_command is None or not isinstance(next_in_command, list):
-            embed.add_field(name="Next in Command", value=next_in_command, inline=True)
-        else:
-            next_in_command = next_in_command[0]
-            embed.add_field(name="Next in Command", value=f"<@{next_in_command}>", inline=True)
-    elif len(next_in_command) == 2:
-        current_member_id = str(next_in_command[1])[1:-1]
-        current_member_mention = f"<@{current_member_id}>"
-        immediate_member_id = next_in_command[0]
-        immediate_member_mention = f"<@{immediate_member_id}>"
-        embed.add_field(name="Next in Command",
-                        value=f"Current: {current_member_mention}\n Immediate: {immediate_member_mention}",
-                        inline=True)
-    else:
-        next_in_command.add_field(name="Next in Command", value="Unknown", inline=True)
-    '''
-
+    ## Add Member Report
     try:
         database_report: MemberReport = member_report(member.id)
     except Exception as e:
@@ -162,7 +137,8 @@ async def get_member_embed(bot: Bot, interaction, member: discord.Member) -> dis
             value=total_hosted_display,
             inline=True
         )
-
+    '''
+    '''
     carpenter_emoji = "<:Planks:1256589596473692272>"
     carpenter_points = modify_points(database_report.sailor.carpenter_points, database_report.sailor.force_carpenter_points)
     carpenter_points_display = f"{carpenter_points} ({database_report.sailor.carpenter_points})" if database_report.sailor.force_carpenter_points != 0  else str(carpenter_points)
