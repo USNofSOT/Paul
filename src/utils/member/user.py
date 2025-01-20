@@ -15,9 +15,7 @@ from src.data.structs import NavyRank, SailorCO
 from src.utils.embeds import default_embed, error_embed
 from src.utils.rank_and_promotion_utils import get_current_rank
 from src.utils.report_utils import (
-    identify_role_index,
     other_medals,
-    process_role_index,
     tiered_medals,
 )
 from src.utils.time_utils import format_time, get_time_difference_past
@@ -137,8 +135,7 @@ async def get_member_embed(bot: Bot, interaction, member: discord.Member) -> dis
             value=total_hosted_display,
             inline=True
         )
-    '''
-    '''
+
     carpenter_emoji = "<:Planks:1256589596473692272>"
     carpenter_points = modify_points(database_report.sailor.carpenter_points, database_report.sailor.force_carpenter_points)
     carpenter_points_display = f"{carpenter_points} ({database_report.sailor.carpenter_points})" if database_report.sailor.force_carpenter_points != 0  else str(carpenter_points)

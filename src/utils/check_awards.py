@@ -8,7 +8,6 @@ from src.data import Sailor
 from src.data.repository.sailor_repository import SailorRepository
 from src.data.structs import Award, SailorCO
 from src.utils.ranks import rank_to_roles
-from src.utils.report_utils import identify_role_index, process_role_index
 
 
 def check_sailor(guild: discord.Guild, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> list[str]:
