@@ -147,7 +147,7 @@ class SailorCO:
         return SailorCO(self.acting, self._guild).for_awards(award_roles)
     
     @property
-    def member_str(self):
+    def member_str(self) -> str:
         if self.acting is None:
             return "None"
         if self.acting.id == self.immediate.id:
