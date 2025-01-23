@@ -3,6 +3,7 @@ import re
 from logging import getLogger
 
 import discord
+from config import MINIMUM_GOLD_REQUIREMENT_FOR_PATROL
 from config.emojis import ANCIENT_COINS_EMOJI, DOUBLOONS_EMOJI, GOLD_EMOJI
 from data import VoyageType
 from data.repository.voyage_repository import VoyageRepository
@@ -459,9 +460,12 @@ class AddSubclass(commands.Cog):
                 value=misc_loot_confiscated_string
             )
 
-            # Warning for Patrol with no gold count
-            if hosted_entry.voyage_type == VoyageType.PATROL and hosted_entry.gold_count == 0:
-                warnings.append("Patrol with no gold count")
+            # Warning for Patrol with gold count lower than the minimum
+            if hosted_entry.voyage_type.name == VoyageType.PATROL.name:
+                if hosted_entry.gold_count <= 0:
+                    warnings.append("Patrol with no gold count")
+                elif hosted_entry.gold_count < MINIMUM_GOLD_REQUIREMENT_FOR_PATROL:
+                    warnings.append("Patrol has gold count lower than the minimum requirement: %s" % MINIMUM_GOLD_REQUIREMENT_FOR_PATROL)
 
             # Warning for same auxiliary as main ship
             if hosted_entry.auxiliary_ship_name and hosted_entry.ship_name == hosted_entry.auxiliary_ship_name:
