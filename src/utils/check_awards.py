@@ -1,4 +1,5 @@
 import discord
+from data import TrainingRecord
 from discord.ext.commands import Bot
 
 from src.config.awards import MEDALS_AND_RIBBONS
@@ -48,7 +49,10 @@ def check_hosted(bot : Bot, interaction: discord.Interaction, sailor: Sailor, me
 
 # check_combat
 
-# check_training
+def check_training(bot : Bot, interaction: discord.Interaction, training_records: TrainingRecord, member: discord.Member) -> str:
+    count = training_records.nrc_training_points + training_records.netc_training_points + training_records.st_training_points
+    tiers = MEDALS_AND_RIBBONS.training
+    return _check_awards_by_type(bot, count, tiers, interaction, member)
 
 # check_recruiting
 
@@ -59,34 +63,34 @@ def check_hosted(bot : Bot, interaction: discord.Interaction, sailor: Sailor, me
 def check_cannoneer(bot : Bot, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
     count = sailor.cannoneer_points + sailor.force_cannoneer_points
     tiers = SUBCLASS_AWARDS.cannoneer
-    return _check_awards_by_type(bot, count, tiers, interaction, sailor, member)
+    return _check_awards_by_type(bot, count, tiers, interaction, member)
 
 def check_carpenter(bot : Bot, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
     count = sailor.carpenter_points + sailor.force_carpenter_points
     tiers = SUBCLASS_AWARDS.carpenter
-    return _check_awards_by_type(bot, count, tiers, interaction, sailor, member)
+    return _check_awards_by_type(bot, count, tiers, interaction, member)
 
 def check_flex(bot : Bot, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
     count = sailor.flex_points + sailor.force_flex_points
     tiers = SUBCLASS_AWARDS.flex
-    return _check_awards_by_type(bot, count, tiers, interaction, sailor, member)
+    return _check_awards_by_type(bot, count, tiers, interaction, member)
 
 def check_helm(bot : Bot, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
     count = sailor.helm_points + sailor.force_helm_points
     tiers = SUBCLASS_AWARDS.helm
-    return _check_awards_by_type(bot, count, tiers, interaction, sailor, member)
+    return _check_awards_by_type(bot, count, tiers, interaction, member)
 
 def check_grenadier(bot : Bot, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
     count = sailor.grenadier_points + sailor.force_grenadier_points
     tiers = SUBCLASS_AWARDS.grenadier
-    return _check_awards_by_type(bot, count, tiers, interaction, sailor, member)
+    return _check_awards_by_type(bot, count, tiers, interaction, member)
 
 def check_surgeon(bot : Bot, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
     count = sailor.surgeon_points + sailor.force_surgeon_points
     tiers = SUBCLASS_AWARDS.surgeon
-    return _check_awards_by_type(bot, count, tiers, interaction, sailor, member)
+    return _check_awards_by_type(bot, count, tiers, interaction, member)
 
-def _check_awards_by_type(bot : Bot, count: int, medals: list[Award], interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
+def _check_awards_by_type(bot : Bot, count: int, medals: list[Award], interaction: discord.Interaction, member: discord.Member) -> str:
     msg_str = ""
 
     # Get award sailor is eligible for
@@ -125,7 +129,7 @@ def _award_message(bot : Bot, award : Award | None, award_role : discord.Role, i
             msg_str += f"\tResponsible CO: {responsible_co.display_name}\n"
         sailor_repo.close_session()
     msg_str += f"\tDetails: {award.embed_url}\n"
-    msg_str += f"\n"
+    msg_str += "\n"
     return msg_str
 
 def _get_responsible_co(bot : Bot, interaction:discord.Interaction, member: discord.Member, ranks_responsible: str) -> discord.Member | None:
