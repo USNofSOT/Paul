@@ -187,6 +187,25 @@ class TestGetCountFromContentByKeyword(unittest.TestCase):
         self.assertEqual(result_fish, 1300)
         self.assertEqual(result_fish_emoji, 1400)
 
+    def test_ignores_events(self):
+        # Arrange - content with the keyword "events"
+        content = "1x GH Dig :GoldHoarder: \n 1x Fort of the Damned :SkullOfDestiny: \n \n Gold : 20121"
+        # Act
+        result = get_count_from_content_by_keyword(content, "gold")
+        # Assert
+        self.assertEqual(result, 20121)
+
+    def test_get_highest_cold_count(self):
+        # Arrange - content with multiple gold counts
+        content = "Gold 1,000\nGold 2,000\nGold 3,000"
+        # Act
+        result = get_count_from_content_by_keyword(content, "gold")
+        # Assert
+        self.assertEqual(result, 3000)
+        # Arrange - Add a higher gold count
+        content += "\nGold 4,000"
+        # Act
+        result = get_count_from_content_by_keyword(content, "gold")
 
 class TestGetDoubloonCountFromContent(unittest.TestCase):
     def test_doubloons_at_beginning(self):
@@ -317,14 +336,16 @@ class TestGetDoubloonCountFromContent(unittest.TestCase):
     def test_gold_with_space(self):
         content = "Gold 1 000"
         self.assertEqual(get_gold_count_from_content(content), 1000)
-        # content = "We as Gold Hoarders achieved so much, we even managed to sink a grade 3 reaper. \n \n Loot: \n1 005 gold"
-        # self.assertEqual(get_gold_count_from_content(content), 1005)
+        content = "We as Gold Hoarders achieved so much, we even managed to sink a grade 3 reaper. \n \n Loot gold: \n1 005 "
+        self.assertEqual(get_gold_count_from_content(content), 1005)
         # content = "212 543 gold"
         # self.assertEqual(get_gold_count_from_content(content), 212543)
 
-    # def test_gold_and_number_earlier_in_log(self):
-    #     content = "We voted up Gold hoarders proceeded to do a series of other things, like sinking a ship to then fight a grade 3 reaper, and then we did a fort. \n \n Loot: \n1536057 gold"
-    #     self.assertEqual(get_gold_count_from_content(content), 1536057)
+    def test_gold_and_number_earlier_in_log(self):
+        content = "We voted up Gold hoarders proceeded to do a series of other things, like sinking a ship to then fight a grade 3 reaper, and then we did a fort. \n \n Loot gold: \n1536057 "
+        self.assertEqual(get_gold_count_from_content(content), 1536057)
+        content = "We voted up Gold hoarders 3 proceeded to do a series of other things, like sinking a ship to then fight a grade 3 reaper, and then we did a fort. \n \n Loot gold: \n1536057 "
+        self.assertEqual(get_gold_count_from_content(content), 1536057)
 
     def test_gold_count_must_be_within_25_characters(self):
         twenty_five_characters = "Lorem ipsum dolor sit adi"

@@ -48,12 +48,20 @@ def get_count_from_content_by_keyword(content: str, keywords: str) -> int:
     # 4. Remove discord embedded id's
     content = re.sub(r"\d+>|<|>", "", content.replace(":", ""))
 
-    match = re.search(pattern, content)
+    matches = re.findall(pattern, content)
 
-    if match:
-        # Return the count, but limit it to 20,000,000 max
-        return min(int((match.group(1) or match.group(2)).replace(" ", "")), 20000000)
-    return 0
+    if matches:
+        highest = 0
+        for match in matches:
+            try:
+                count = int(match.replace(" ", ""))
+                if count > highest:
+                    highest = count
+            except ValueError:
+                continue
+        return min(highest, 20000000)
+    else:
+        return 0
 
 def get_gold_count_from_content(content: str) -> int:
     return get_count_from_content_by_keyword(content, "gold")
