@@ -3,9 +3,9 @@ from enum import member
 import asyncio
 
 import discord
-from discord import Interaction, app_commands, Role, ButtonStyle  # Changed import location
+from discord import Interaction, app_commands, Role, ButtonStyle  
 from discord.ext import commands
-from discord.ui import Button, View  # Removed ButtonStyle from here
+from discord.ui import Button, View  
 
 from src.config.awards import CITATION_OF_COMBAT, COMBAT_MEDALS, CITATION_OF_CONDUCT, CONDUCT_MEDALS, \
     NCO_IMPROVEMENT_RIBBON, FOUR_MONTHS_SERVICE_STRIPES, SERVICE_STRIPES, HONORABLE_CONDUCT, MARITIME_SERVICE_MEDAL, \
@@ -30,7 +30,6 @@ DISALLOWED_ROLES = [
     "Civilian"
 ]
 
-# Add missing role IDs
 SEAMAN_ROLE_ID = 933913010806857801  # Replace with actual role ID
 ABLE_SEAMAN_ROLE_ID = 933912647999565864  # Replace with actual role ID
 JPO_ROLE_ID = 933912557008343120  # Replace with actual role ID
@@ -45,7 +44,6 @@ CAPTAIN_ROLE_ID = 933909668550553630  # Replace with actual role ID
 COMMODORE_ROLE_ID = 933909182711746570  # Replace with actual role ID
 REARADMIRAL_ROLE_ID = 1157429131416449134  # Replace with actual role ID
 
-# Add rank emojis
 RANK_EMOJIS = {
     'Seaman | E-2': '<:E2:1245860781887590472>',
     'Able Seaman | E-3': '<:E3:1245860807980617848>',
@@ -62,7 +60,6 @@ RANK_EMOJIS = {
     'Rear Admiral | O-8': '<:O8:1245861113330008065>'
 }
 
-# Define rank order
 RANK_ORDER = [
     'Seaman | E-2',
     'Able Seaman | E-3',
@@ -83,7 +80,6 @@ def is_role_disallowed(role_name):
     """Check if a role is in the disallowed list or doesn't match required patterns."""
     if role_name in DISALLOWED_ROLES:
         return True
-    # Check if role name starts with "USS" or ends with "Squad"
     if not (role_name.startswith("USS") or role_name.endswith("Squad")):
         return True
     return False
@@ -97,43 +93,37 @@ class CounterButton(discord.ui.Button):
         )
 
 class PromotionView(View):
-    def __init__(self, sailors, detailed=False, bot=None):  # Add bot parameter
+    def __init__(self, sailors, detailed=False, bot=None):  
         super().__init__(timeout=None)
         self.sailors = sailors
         self.current_page = 0
         self.detailed = detailed
         self.per_page = 1 if detailed else 9
         self.pages = [self.sailors[i:i + self.per_page] for i in range(0, len(self.sailors), self.per_page)] if sailors else []
-        self.bot = bot  # Store bot reference
+        self.bot = bot  
 
         if len(self.pages) > 1:
             self.add_item(PreviousButton())
             self.add_item(CounterButton(self.current_page, len(self.pages)))
             self.add_item(NextButton())
 
-    def get_embed(self):  # Rename from create_embed and make sync
+    def get_embed(self):  
         if not self.pages:
             return discord.Embed(title="Promotion Status", description="No members to display", color=discord.Color.blue())
 
         if not self.detailed:
-            # Show summary grid view
             embed = discord.Embed(title="Promotion Status", description="Summary grid view", color=discord.Color.blue())
-            # ...existing summary embed code...
             return embed
 
-        return None  # Return None for detailed view since it needs async
+        return None  
 
     async def create_detailed_embed(self, member):
-        # Get the cog instance
         cog = self.bot.get_cog('CheckPromotion')
         if not cog:
             return discord.Embed(title="Error", description="Could not find CheckPromotion cog", color=discord.Color.red())
             
-        # Get promotion status
         is_eligible, requirements = await cog.check_single_promotion_status(member, None)
         
-        # Create the embed using the existing check_single_promotion_status logic
-        # The embed is created inside check_single_promotion_status, so we need to capture it
         embed = await cog.create_promotion_embed(member, is_eligible, requirements)
         return embed
 
@@ -149,7 +139,6 @@ class PromotionView(View):
         await interaction.response.send_message(embed=embed, view=self)
 
     async def update_counter(self):
-        # Find and update the counter button
         for item in self.children:
             if isinstance(item, CounterButton):
                 item.label = f"Page {self.current_page + 1}/{len(self.pages)}"
@@ -157,7 +146,7 @@ class PromotionView(View):
 
 class PreviousButton(discord.ui.Button):
     def __init__(self):
-        super().__init__(label="Previous", style=ButtonStyle.secondary)  # This will now work
+        super().__init__(label="Previous", style=ButtonStyle.secondary) 
 
     async def callback(self, interaction: discord.Interaction):
         view = self.view
@@ -190,7 +179,7 @@ class NextButton(discord.ui.Button):
             await interaction.response.defer()
 
 class SummaryView(View):
-    def __init__(self, all_members, eligible_members, bot):  # Add bot parameter
+    def __init__(self, all_members, eligible_members, bot):
         super().__init__(timeout=None)
         self.all_members = all_members
         self.eligible_members = eligible_members
@@ -264,7 +253,6 @@ class CheckPromotion(commands.Cog):
             return
         
         if ship_or_squad:
-            # Check if the role is disallowed first
             if is_role_disallowed(ship_or_squad.name):
                 await interaction.response.send_message(
                     embed=discord.Embed(
@@ -279,10 +267,8 @@ class CheckPromotion(commands.Cog):
                 )
                 return
 
-            # Count members before deferring
             member_count = len([m for m in interaction.guild.members if ship_or_squad in m.roles])
             
-            # Send initial status message
             initial_embed = discord.Embed(
                 title=f"Promotion Status for {ship_or_squad.name}",
                 description=f"Getting promotion status for members with the role {ship_or_squad.mention}...\n\n"
@@ -292,7 +278,6 @@ class CheckPromotion(commands.Cog):
             )
             await interaction.response.send_message(embed=initial_embed)
             
-            # Proceed with checking members who have this role
             members_with_role = [
                 member for member in interaction.guild.members if ship_or_squad in member.roles
             ]
@@ -303,7 +288,6 @@ class CheckPromotion(commands.Cog):
                 )
                 return
 
-            # Initialize statistics
             stats = {
                 'total_members': len(members_with_role),
                 'eligible_count': 0,
@@ -312,7 +296,6 @@ class CheckPromotion(commands.Cog):
                 'eligible_members': []
             }
 
-            # Process each member
             for member in members_with_role:
                 is_eligible, requirements = await self.check_single_promotion_status(member, None)
                 current_rank = self.get_member_rank(member)
@@ -331,7 +314,6 @@ class CheckPromotion(commands.Cog):
                     stats['rank_breakdown'][current_rank]['eligible'] += 1
                     stats['eligible_members'].append(member)
 
-            # When creating the summary embed, sort and format ranks
             sorted_ranks = []
             for rank in RANK_ORDER:
                 if rank in stats['rank_breakdown']:
@@ -344,27 +326,23 @@ class CheckPromotion(commands.Cog):
                             'inline': True
                         })
 
-            # Create new embed with sorted ranks
             summary_embed = discord.Embed(
                 title=f"Promotion Status Summary for {ship_or_squad.name}",
                 description=f"Total Members: {stats['total_members']}\nEligible for Promotion: {stats['eligible_count']}",
                 color=discord.Color.blue()
             )
 
-            # Add sorted fields and maintain grid layout
             field_count = 0
             for field in sorted_ranks:
                 summary_embed.add_field(**field)
                 field_count += 1
 
-            # Add empty fields to complete the last row
-            if field_count > 0:  # Only add empty fields if there are fields
+            if field_count > 0:  
                 remaining = 3 - (field_count % 3)
-                if remaining < 3:  # Don't add fields if we're already at a multiple of 3
+                if remaining < 3:  
                     for _ in range(remaining):
                         summary_embed.add_field(name="\u200b", value="\u200b", inline=True)
 
-            # Add overall statistics
             summary_embed.add_field(
                 name="Overall Statistics",
                 value=f"Promotion Rate: {(stats['eligible_count'] / stats['total_members'] * 100):.1f}%\n"
@@ -372,7 +350,6 @@ class CheckPromotion(commands.Cog):
                 inline=False
             )
 
-            # Create view with buttons
             view = SummaryView(stats['all_members'], stats['eligible_members'], self.bot)
             await interaction.followup.send(embed=summary_embed, view=view)
             return
@@ -393,7 +370,6 @@ class CheckPromotion(commands.Cog):
         except AttributeError:
             pass
 
-        # Add fields to the embed based on the promotion status and requirements
         embed.add_field(
             name="Promotion Status",
             value="Eligible" if is_eligible else "Not Eligible",
@@ -408,7 +384,6 @@ class CheckPromotion(commands.Cog):
         return embed
 
     async def check_single_promotion_status(self, member, interaction: discord.Interaction = None):
-        # Modify to use create_promotion_embed
         ensure_sailor_exists(member.id)
         audit_log_repository = AuditLogRepository()
         voyage_repository = VoyageRepository()
@@ -418,18 +393,14 @@ class CheckPromotion(commands.Cog):
         netc_guild_member = self.bot.get_guild(NETC_GUILD_ID).get_member(member.id)
         netc_guild_member_role_ids = [role.id for role in netc_guild_member.roles] if netc_guild_member else []
 
-        # Initialize is_eligible
         is_eligible = False
 
-        # Check marine status
         is_marine = MARINE_ROLE in guild_member_role_ids
 
-        # Get user information as sailor from database
         sailor_repository = SailorRepository()
         sailor: Sailor = sailor_repository.get_sailor(member.id)
         sailor_repository.close_session()
 
-        # Get voyage/hosted count
         voyage_count: int = sailor.voyage_count + sailor.force_voyage_count or 0
         hosted_count: int = sailor.hosted_count + sailor.force_hosted_count or 0
 
