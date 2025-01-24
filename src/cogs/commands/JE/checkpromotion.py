@@ -1,9 +1,11 @@
 from dis import disco
 from enum import member
+import asyncio
 
 import discord
-from discord import app_commands
+from discord import Interaction, app_commands, Role, ButtonStyle  # Changed import location
 from discord.ext import commands
+from discord.ui import Button, View  # Removed ButtonStyle from here
 
 from src.config.awards import CITATION_OF_COMBAT, COMBAT_MEDALS, CITATION_OF_CONDUCT, CONDUCT_MEDALS, \
     NCO_IMPROVEMENT_RIBBON, FOUR_MONTHS_SERVICE_STRIPES, SERVICE_STRIPES, HONORABLE_CONDUCT, MARITIME_SERVICE_MEDAL, \
@@ -23,35 +25,408 @@ from src.utils.rank_and_promotion_utils import get_current_rank, get_rank_by_ind
 from src.utils.time_utils import get_time_difference_in_days, utc_time_now, format_time, get_time_difference
 
 
+DISALLOWED_ROLES = [
+    "Junior Enlisted",
+    "Civilian"
+]
+
+# Add missing role IDs
+SEAMAN_ROLE_ID = 933913010806857801  # Replace with actual role ID
+ABLE_SEAMAN_ROLE_ID = 933912647999565864  # Replace with actual role ID
+JPO_ROLE_ID = 933912557008343120  # Replace with actual role ID
+PO_ROLE_ID = 933911949585035275  # Replace with actual role ID
+CPO_ROLE_ID = 933911464660570132  # Replace with actual role ID
+SPO_ROLE_ID = 933911373669335092  # Replace with actual role ID
+MIDSHIPMAN_ROLE_ID = 933910558695129118  # Replace with actual role ID
+LIEUTENANT_ROLE_ID = 933910174555598879  # Replace with actual role ID
+LIEUTENANT_CMDR_ROLE_ID = 933909957437423677  # Replace with actual role ID
+COMMANDER_ROLE_ID = 933909780639150101  # Replace with actual role ID
+CAPTAIN_ROLE_ID = 933909668550553630  # Replace with actual role ID
+COMMODORE_ROLE_ID = 933909182711746570  # Replace with actual role ID
+REARADMIRAL_ROLE_ID = 1157429131416449134  # Replace with actual role ID
+
+# Add rank emojis
+RANK_EMOJIS = {
+    'Seaman | E-2': '<:E2:1245860781887590472>',
+    'Able Seaman | E-3': '<:E3:1245860807980617848>',
+    'Junior Petty Officer | E-4': '<:E4:1245860835138605066>',
+    'Petty Officer | E-6': '<:E6:1245860878142799923>',
+    'Chief Petty Officer | E-7': '<:E7:1245860900162769016>',
+    'Senior Chief Petty Officer | E-8': '<:E8:1245860921470091367>',
+    'Midshipman | O-1': '<:O1:1245860986640928789>',
+    'Lieutenant | O-3': '<:O3:1245861011265814620>',
+    'Lieutenant Commander | O-4': '<:O4:1245861035542315149>',
+    'Commander | O-5': '<:O5:1245861052554678365>',
+    'Captain | O-6': '<:O6:1245861070950633574>',
+    'Commodore | O-7': '<:O7:1245861091029024840>',
+    'Rear Admiral | O-8': '<:O8:1245861113330008065>'
+}
+
+# Define rank order
+RANK_ORDER = [
+    'Seaman | E-2',
+    'Able Seaman | E-3',
+    'Junior Petty Officer | E-4',
+    'Petty Officer | E-6',
+    'Chief Petty Officer | E-7',
+    'Senior Chief Petty Officer | E-8',
+    'Midshipman | O-1',
+    'Lieutenant | O-3',
+    'Lieutenant Commander | O-4',
+    'Commander | O-5',
+    'Captain | O-6',
+    'Commodore | O-7',
+    'Rear Admiral | O-8'
+]
+
+def is_role_disallowed(role_name):
+    """Check if a role is in the disallowed list or doesn't match required patterns."""
+    if role_name in DISALLOWED_ROLES:
+        return True
+    # Check if role name starts with "USS" or ends with "Squad"
+    if not (role_name.startswith("USS") or role_name.endswith("Squad")):
+        return True
+    return False
+
+class CounterButton(discord.ui.Button):
+    def __init__(self, current, total):
+        super().__init__(
+            label=f"Page {current + 1}/{total}",
+            style=ButtonStyle.gray,
+            disabled=True
+        )
+
+class PromotionView(View):
+    def __init__(self, sailors, detailed=False, bot=None):  # Add bot parameter
+        super().__init__(timeout=None)
+        self.sailors = sailors
+        self.current_page = 0
+        self.detailed = detailed
+        self.per_page = 1 if detailed else 9
+        self.pages = [self.sailors[i:i + self.per_page] for i in range(0, len(self.sailors), self.per_page)] if sailors else []
+        self.bot = bot  # Store bot reference
+
+        if len(self.pages) > 1:
+            self.add_item(PreviousButton())
+            self.add_item(CounterButton(self.current_page, len(self.pages)))
+            self.add_item(NextButton())
+
+    def get_embed(self):  # Rename from create_embed and make sync
+        if not self.pages:
+            return discord.Embed(title="Promotion Status", description="No members to display", color=discord.Color.blue())
+
+        if not self.detailed:
+            # Show summary grid view
+            embed = discord.Embed(title="Promotion Status", description="Summary grid view", color=discord.Color.blue())
+            # ...existing summary embed code...
+            return embed
+
+        return None  # Return None for detailed view since it needs async
+
+    async def create_detailed_embed(self, member):
+        # Get the cog instance
+        cog = self.bot.get_cog('CheckPromotion')
+        if not cog:
+            return discord.Embed(title="Error", description="Could not find CheckPromotion cog", color=discord.Color.red())
+            
+        # Get promotion status
+        is_eligible, requirements = await cog.check_single_promotion_status(member, None)
+        
+        # Create the embed using the existing check_single_promotion_status logic
+        # The embed is created inside check_single_promotion_status, so we need to capture it
+        embed = await cog.create_promotion_embed(member, is_eligible, requirements)
+        return embed
+
+    async def send_initial_message(self, interaction: discord.Interaction):
+        if self.detailed:
+            if self.pages:
+                embed = await self.create_detailed_embed(self.pages[self.current_page][0])
+            else:
+                embed = discord.Embed(title="Error", description="No members to display", color=discord.Color.red())
+        else:
+            embed = self.get_embed()
+        
+        await interaction.response.send_message(embed=embed, view=self)
+
+    async def update_counter(self):
+        # Find and update the counter button
+        for item in self.children:
+            if isinstance(item, CounterButton):
+                item.label = f"Page {self.current_page + 1}/{len(self.pages)}"
+                break
+
+class PreviousButton(discord.ui.Button):
+    def __init__(self):
+        super().__init__(label="Previous", style=ButtonStyle.secondary)  # This will now work
+
+    async def callback(self, interaction: discord.Interaction):
+        view = self.view
+        if view.current_page > 0:
+            view.current_page -= 1
+            await view.update_counter()
+            if view.detailed:
+                embed = await view.create_detailed_embed(view.pages[view.current_page][0])
+            else:
+                embed = view.get_embed()
+            await interaction.response.edit_message(embed=embed, view=view)
+        else:
+            await interaction.response.defer()
+
+class NextButton(discord.ui.Button):
+    def __init__(self):
+        super().__init__(label="Next", style=ButtonStyle.secondary)
+
+    async def callback(self, interaction: discord.Interaction):
+        view = self.view
+        if view.current_page < len(view.pages) - 1:
+            view.current_page += 1
+            await view.update_counter()
+            if view.detailed:
+                embed = await view.create_detailed_embed(view.pages[view.current_page][0])
+            else:
+                embed = view.get_embed()
+            await interaction.response.edit_message(embed=embed, view=view)
+        else:
+            await interaction.response.defer()
+
+class SummaryView(View):
+    def __init__(self, all_members, eligible_members, bot):  # Add bot parameter
+        super().__init__(timeout=None)
+        self.all_members = all_members
+        self.eligible_members = eligible_members
+        self.bot = bot
+
+    @discord.ui.button(label="Send All", style=ButtonStyle.primary)
+    async def send_all(self, interaction: discord.Interaction, button: Button):
+        view = PromotionView(self.all_members, detailed=True, bot=self.bot)
+        if view.pages:
+            embed = await view.create_detailed_embed(view.pages[0][0])
+            await interaction.response.send_message(embed=embed, view=view)
+        else:
+            await interaction.response.send_message("No members to display", ephemeral=True)
+
+    @discord.ui.button(label="Send Eligible", style=ButtonStyle.success)
+    async def send_eligible(self, interaction: discord.Interaction, button: Button):
+        view = PromotionView(self.eligible_members, detailed=True, bot=self.bot)
+        if view.pages:
+            embed = await view.create_detailed_embed(view.pages[0][0])
+            await interaction.response.send_message(embed=embed, view=view)
+        else:
+            await interaction.response.send_message("No eligible members to display", ephemeral=True)
+
 class CheckPromotion(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
-    @app_commands.command(name="checkpromotion", description="Check promotion eligibility")
-    @app_commands.checks.has_any_role(*JE_AND_UP)
-    async def view_moderation(self, interaction: discord.interactions, target: discord.Member = None):
-        if target is None:
-            target = interaction.user
+    def get_member_rank(self, member):
+        """Get the member's current rank based on roles."""
+        member_roles = [role.id for role in member.roles]
+        rank_roles = {
+            'Seaman | E-2': SEAMAN_ROLE_ID,
+            'Able Seaman | E-3': ABLE_SEAMAN_ROLE_ID,
+            'Junior Petty Officer | E-4': JPO_ROLE_ID,
+            'Petty Officer | E-6': PO_ROLE_ID,
+            'Chief Petty Officer | E-7': CPO_ROLE_ID,
+            'Senior Chief Petty Officer | E-8': SPO_ROLE_ID,
+            'Midshipman | O-1': MIDSHIPMAN_ROLE_ID,
+            'Lieutenant | O-3': LIEUTENANT_ROLE_ID,
+            'Lieutenant Commander | O-4': LIEUTENANT_CMDR_ROLE_ID,
+            'Commander | O-5': COMMANDER_ROLE_ID,
+            'Captain | O-6': CAPTAIN_ROLE_ID,
+            'Commodore | O-7': COMMODORE_ROLE_ID,
+            'Rear Admiral | O-8': REARADMIRAL_ROLE_ID,
+        }
+        
+        for rank_name, role_id in rank_roles.items():
+            if role_id in member_roles:
+                return rank_name
+        return "Unknown"
 
-        ensure_sailor_exists(target.id)
+    @app_commands.command(name="checkpromotion", description="Check promotion eligibility")
+    @app_commands.describe(
+        target="The specific member whose promotion status you want to check.",
+        ship_or_squad="A role representing a ship or squad to check promotions for all its members."
+    )
+    @app_commands.checks.has_any_role(*JE_AND_UP)
+    async def view_moderation(self, interaction: discord.Interaction, target: discord.Member = None, ship_or_squad: discord.Role = None):
+        """Command to check promotion eligibility for a member or all members of a role."""
+        
+        if target is None and ship_or_squad is None:
+            await interaction.response.send_message(
+                "You must provide either a specific member or a ship/squad role.", ephemeral=True
+            )
+            return
+        
+        if target and ship_or_squad:
+            await interaction.response.send_message(
+                "You can only select either a member or a role, not both.", ephemeral=True
+            )
+            return
+        
+        if ship_or_squad:
+            # Check if the role is disallowed first
+            if is_role_disallowed(ship_or_squad.name):
+                await interaction.response.send_message(
+                    embed=discord.Embed(
+                        title="Error: Disallowed Role",
+                        description=f"The role `{ship_or_squad.name}` is disallowed for this command.",
+                        color=discord.Color.red()
+                    ).add_field(
+                        name="Reason",
+                        value="Role name must either start with 'USS' or end with 'Squad'.",
+                    ),
+                    ephemeral=True
+                )
+                return
+
+            # Count members before deferring
+            member_count = len([m for m in interaction.guild.members if ship_or_squad in m.roles])
+            
+            # Send initial status message
+            initial_embed = discord.Embed(
+                title=f"Promotion Status for {ship_or_squad.name}",
+                description=f"Getting promotion status for members with the role {ship_or_squad.mention}...\n\n"
+                           f"There are {member_count} members with this role. "
+                           f"Please stand by for the results.",
+                color=discord.Color.blue()
+            )
+            await interaction.response.send_message(embed=initial_embed)
+            
+            # Proceed with checking members who have this role
+            members_with_role = [
+                member for member in interaction.guild.members if ship_or_squad in member.roles
+            ]
+
+            if not members_with_role:
+                await interaction.followup.send(
+                    f"No members found with the role {ship_or_squad.name}.", ephemeral=True
+                )
+                return
+
+            # Initialize statistics
+            stats = {
+                'total_members': len(members_with_role),
+                'eligible_count': 0,
+                'rank_breakdown': {},
+                'all_members': [],
+                'eligible_members': []
+            }
+
+            # Process each member
+            for member in members_with_role:
+                is_eligible, requirements = await self.check_single_promotion_status(member, None)
+                current_rank = self.get_member_rank(member)
+                
+                if current_rank not in stats['rank_breakdown']:
+                    stats['rank_breakdown'][current_rank] = {
+                        'total': 0,
+                        'eligible': 0
+                    }
+                
+                stats['rank_breakdown'][current_rank]['total'] += 1
+                stats['all_members'].append(member)
+                
+                if is_eligible:
+                    stats['eligible_count'] += 1
+                    stats['rank_breakdown'][current_rank]['eligible'] += 1
+                    stats['eligible_members'].append(member)
+
+            # When creating the summary embed, sort and format ranks
+            sorted_ranks = []
+            for rank in RANK_ORDER:
+                if rank in stats['rank_breakdown']:
+                    data = stats['rank_breakdown'][rank]
+                    if data['total'] > 0:
+                        percentage = (data['eligible'] / data['total']) * 100
+                        sorted_ranks.append({
+                            'name': f"{RANK_EMOJIS.get(rank, '')} {rank}",
+                            'value': f"Total: {data['total']}\nEligible: {data['eligible']} ({percentage:.1f}%)",
+                            'inline': True
+                        })
+
+            # Create new embed with sorted ranks
+            summary_embed = discord.Embed(
+                title=f"Promotion Status Summary for {ship_or_squad.name}",
+                description=f"Total Members: {stats['total_members']}\nEligible for Promotion: {stats['eligible_count']}",
+                color=discord.Color.blue()
+            )
+
+            # Add sorted fields and maintain grid layout
+            field_count = 0
+            for field in sorted_ranks:
+                summary_embed.add_field(**field)
+                field_count += 1
+
+            # Add empty fields to complete the last row
+            if field_count > 0:  # Only add empty fields if there are fields
+                remaining = 3 - (field_count % 3)
+                if remaining < 3:  # Don't add fields if we're already at a multiple of 3
+                    for _ in range(remaining):
+                        summary_embed.add_field(name="\u200b", value="\u200b", inline=True)
+
+            # Add overall statistics
+            summary_embed.add_field(
+                name="Overall Statistics",
+                value=f"Promotion Rate: {(stats['eligible_count'] / stats['total_members'] * 100):.1f}%\n"
+                      f"Total Eligible: {stats['eligible_count']}/{stats['total_members']}",
+                inline=False
+            )
+
+            # Create view with buttons
+            view = SummaryView(stats['all_members'], stats['eligible_members'], self.bot)
+            await interaction.followup.send(embed=summary_embed, view=view)
+            return
+        
+        if target:
+            await interaction.response.defer()
+            await self.check_single_promotion(interaction, target, ephemeral=False)
+
+    async def create_promotion_embed(self, member, is_eligible, requirements):
+        embed = discord.Embed(
+            title=f"{member.display_name or member.name}",
+            description=f"{member.mention}",
+            color=discord.Color.blue()
+        )
+        try:
+            avatar_url = member.guild_avatar.url if member.guild_avatar else member.avatar.url
+            embed.set_thumbnail(url=avatar_url)
+        except AttributeError:
+            pass
+
+        # Add fields to the embed based on the promotion status and requirements
+        embed.add_field(
+            name="Promotion Status",
+            value="Eligible" if is_eligible else "Not Eligible",
+            inline=False
+        )
+        embed.add_field(
+            name="Requirements",
+            value=requirements,
+            inline=False
+        )
+
+        return embed
+
+    async def check_single_promotion_status(self, member, interaction: discord.Interaction = None):
+        # Modify to use create_promotion_embed
+        ensure_sailor_exists(member.id)
         audit_log_repository = AuditLogRepository()
         voyage_repository = VoyageRepository()
 
-        # Get information from member from guild
-        guild_member = self.bot.get_guild(GUILD_ID).get_member(target.id)
+        guild_member = self.bot.get_guild(GUILD_ID).get_member(member.id)
         guild_member_role_ids = [role.id for role in guild_member.roles]
-        netc_guild_member = self.bot.get_guild(NETC_GUILD_ID).get_member(target.id)
-        if netc_guild_member:
-            netc_guild_member_role_ids = [role.id for role in netc_guild_member.roles]
-        else:
-            netc_guild_member_role_ids = []
+        netc_guild_member = self.bot.get_guild(NETC_GUILD_ID).get_member(member.id)
+        netc_guild_member_role_ids = [role.id for role in netc_guild_member.roles] if netc_guild_member else []
+
+        # Initialize is_eligible
+        is_eligible = False
 
         # Check marine status
         is_marine = MARINE_ROLE in guild_member_role_ids
 
         # Get user information as sailor from database
         sailor_repository = SailorRepository()
-        sailor: Sailor = sailor_repository.get_sailor(target.id)
+        sailor: Sailor = sailor_repository.get_sailor(member.id)
         sailor_repository.close_session()
 
         # Get voyage/hosted count
@@ -59,8 +434,8 @@ class CheckPromotion(commands.Cog):
         hosted_count: int = sailor.hosted_count + sailor.force_hosted_count or 0
 
         embed = default_embed(
-            title=f"{target.display_name or target.name}",
-            description=f"{target.mention}",
+            title=f"{member.display_name or member.name}",
+            description=f"{member.mention}",
             author=False
         )
         try:
@@ -75,8 +450,10 @@ class CheckPromotion(commands.Cog):
                 name="Current Rank",
                 value="No rank found",
             )
-            await interaction.response.send_message(embed=embed, ephemeral=False)
-            return
+            if interaction:
+                await interaction.followup.send(embed=embed, ephemeral=True)
+            return None, "No rank found"
+
         current_rank_name = current_rank.name if not is_marine else current_rank.marine_name
         if E2_ROLES[1] in guild_member_role_ids:
             current_rank_name = "Seaman Apprentice"
@@ -93,11 +470,10 @@ class CheckPromotion(commands.Cog):
             additional_requirements=[]
             has_next = False
             match next_rank.index:
-                case 3: # Able Seaman
-
-                    # if user is seaman apprentice
+                case 2: # Seaman
+                    # Check for Seaman Apprentice promotion
                     if E2_ROLES[1] in guild_member_role_ids:
-                        latest_apprentice_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id, E2_ROLES[1])
+                        latest_apprentice_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(member.id, E2_ROLES[1])
                         if not latest_apprentice_role_log:
                             days_with_apprentice = 0
                             requirements += f"\u200b \n **:warning: Please verify role age by hand whilst bot is new**  \n \n"
@@ -108,9 +484,46 @@ class CheckPromotion(commands.Cog):
                         else:
                             requirements += f":information_source: Has been Seaman Apprentice for {days_with_apprentice} days (max 14 days) \n"
 
-                        latest_voyage = voyage_repository.get_last_voyage_by_target_ids([target.id])
+                        latest_voyage = voyage_repository.get_last_voyage_by_target_ids([member.id])
                         if latest_voyage:
-                            voyage_time = latest_voyage[target.id]
+                            voyage_time = latest_voyage[member.id]
+                            days_since_voyage = get_time_difference_in_days(utc_time_now(), voyage_time)
+                            if days_since_voyage <= 14:
+                                requirements += f":white_check_mark: Had a voyage in the last 14 days ({format_time(get_time_difference(utc_time_now(), voyage_time))} ago) \n"
+                            else:
+                                requirements += f":x: Had a voyage in the last 14 days ({format_time(get_time_difference(utc_time_now(), voyage_time))} ago) \n"
+                    else:
+                        ### Prerequisites ###
+                        ## Complete 5 total voyages ##
+                        if voyage_count >= 5:
+                            requirements += f":white_check_mark: Go on five voyages ({voyage_count}/5) \n"
+                        else:
+                            requirements += f":x: Go on five voyages ({voyage_count}/5) \n"
+
+                        ## Citation of Combat OR Citation of Conduct ##
+                        if (has_award_or_higher(guild_member,CITATION_OF_COMBAT,COMBAT_MEDALS)
+                        or has_award_or_higher(guild_member,CITATION_OF_CONDUCT,CONDUCT_MEDALS)):
+                            requirements += f":white_check_mark: Awarded <@&{CITATION_OF_CONDUCT.role_id}> or <@&{CITATION_OF_COMBAT.role_id}> \n"
+                        else:
+                            requirements += f":x: Awarded <@&{CITATION_OF_CONDUCT.role_id}> or <@&{CITATION_OF_COMBAT.role_id}> \n"
+                case 3: # Able Seaman
+
+                    # if user is seaman apprentice
+                    if E2_ROLES[1] in guild_member_role_ids:
+                        latest_apprentice_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(member.id, E2_ROLES[1])
+                        if not latest_apprentice_role_log:
+                            days_with_apprentice = 0
+                            requirements += f"\u200b \n **:warning: Please verify role age by hand whilst bot is new**  \n \n"
+                        else:
+                            days_with_apprentice = get_time_difference_in_days(utc_time_now(), latest_apprentice_role_log.log_time) if latest_apprentice_role_log else None
+                        if days_with_apprentice >= 14:
+                            requirements += f":x: Has been a Seaman Apprentice for {days_with_apprentice} days (max 14 days) \n"
+                        else:
+                            requirements += f":information_source: Has been Seaman Apprentice for {days_with_apprentice} days (max 14 days) \n"
+
+                        latest_voyage = voyage_repository.get_last_voyage_by_target_ids([member.id])
+                        if latest_voyage:
+                            voyage_time = latest_voyage[member.id]
                             days_since_voyage = get_time_difference_in_days(utc_time_now(), voyage_time)
                             if days_since_voyage <= 14:
                                 requirements += f":white_check_mark: Had a voyage in the last 14 days ({format_time(get_time_difference(utc_time_now(), voyage_time))} ago) \n"
@@ -134,7 +547,7 @@ class CheckPromotion(commands.Cog):
 
                     ### Prerequisites ###
                     ## Complete 15 total voyages and wait 2 week as an E-3 or Complete 20 total voyages and wait 1 week as an E-3 ##
-                    latest_e3_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id, E3_ROLES[0])
+                    latest_e3_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(member.id, E3_ROLES[0])
                     if not latest_e3_role_log:
                         requirements += f"\u200b \n **:warning: Please verify role age by hand whilst bot is new**  \n \n"
 
@@ -162,7 +575,7 @@ class CheckPromotion(commands.Cog):
                         requirements += f"**AND**\n"\
 
                     ## Completed JLA ##
-                    latest_jla_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id, JLA_GRADUATE_ROLE)
+                    latest_jla_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(member.id, JLA_GRADUATE_ROLE)
                     if not latest_jla_role_log:
                         if JLA_GRADUATE_ROLE in netc_guild_member_role_ids:
                             requirements += f":white_check_mark: is a JLA Graduate \n"
@@ -207,7 +620,7 @@ class CheckPromotion(commands.Cog):
                     else:
                         requirements += f":x: Hosted twenty voyages ({hosted_count}/20) \n"
 
-                    latest_snla_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id, SNLA_GRADUATE_ROLE)
+                    latest_snla_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(member.id, SNLA_GRADUATE_ROLE)
                     if not latest_snla_role_log:
                         # Given that the bot is new, we can't get the role age
                         if SNLA_GRADUATE_ROLE in netc_guild_member_role_ids:
@@ -257,7 +670,7 @@ class CheckPromotion(commands.Cog):
                     ## 4 month Service Stripe ##
                     if has_award_or_higher(
                         guild_member,
-                       FOUR_MONTHS_SERVICE_STRIPES,
+                    FOUR_MONTHS_SERVICE_STRIPES,
                         SERVICE_STRIPES
                     ):
                         requirements += f":white_check_mark: Awarded <@&{FOUR_MONTHS_SERVICE_STRIPES.role_id}> \n"
@@ -270,13 +683,13 @@ class CheckPromotion(commands.Cog):
 
                     ### Prerequisites ###
                     ## 2 weeks as an O1 ##
-                    latest_o1_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id,
-                                                                                                      O1_ROLES[0])
+                    latest_o1_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(member.id,
+                                                                                                    O1_ROLES[0])
                     if not latest_o1_role_log:
                         requirements += f"\u200b \n **:warning: Please verify role age by hand whilst bot is new**  \n \n"
 
                     days_with_o1 = get_time_difference_in_days(utc_time_now(),
-                                                               latest_o1_role_log.log_time) if latest_o1_role_log else None
+                                                            latest_o1_role_log.log_time) if latest_o1_role_log else None
                     if days_with_o1 is None or latest_o1_role_log.change_type != RoleChangeType.ADDED:
                         days_with_o1 = 0
 
@@ -286,7 +699,7 @@ class CheckPromotion(commands.Cog):
                         requirements += f":x: Waited two weeks as an O1 ({days_with_o1}/14) \n"
 
                     ## Completed OCS ##
-                    latest_ocs_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id, OCS_GRADUATE_ROLE)
+                    latest_ocs_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(member.id, OCS_GRADUATE_ROLE)
                     if not latest_ocs_role_log:
                         if OCS_GRADUATE_ROLE in netc_guild_member_role_ids:
                             requirements += f":white_check_mark: is an OCS Graduate \n"
@@ -301,7 +714,7 @@ class CheckPromotion(commands.Cog):
                     ### Prerequisites ###
                     ## Completed SOCS ##
 
-                    latest_socs_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id, SOCS_GRADUATE_ROLE)
+                    latest_socs_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(member.id, SOCS_GRADUATE_ROLE)
                     if not latest_socs_role_log:
                         if SOCS_GRADUATE_ROLE in netc_guild_member_role_ids:
                             requirements += f":white_check_mark: is an SOCS Graduate \n"
@@ -316,7 +729,7 @@ class CheckPromotion(commands.Cog):
 
                     ### Prerequisites ###
                     ## 3 to 4 weeks as an O4 ##
-                    latest_o4_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id, O4_ROLES[0])
+                    latest_o4_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(member.id, O4_ROLES[0])
 
                     if not latest_o4_role_log:
                         requirements += f"\u200b \n **:warning: Please verify role age by hand whilst bot is new**  \n \n"
@@ -334,7 +747,7 @@ class CheckPromotion(commands.Cog):
 
                     ## Prequisites ##
                     ## 2 months as an O5 ##
-                    latest_o5_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id, O5_ROLES[0])
+                    latest_o5_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(member.id, O5_ROLES[0])
 
                     if not latest_o5_role_log:
                         requirements += f"\u200b \n **:warning: Please verify role age by hand whilst bot is new**  \n \n"
@@ -360,9 +773,6 @@ class CheckPromotion(commands.Cog):
                     requirements += ":x: Must bribe the Admiral"
                 case 101:
                     requirements += ":x: Viewed [training video #1](https://www.youtube.com/watch?v=dQw4w9WgXcQ)"
-
-
-
 
             promoting_to: str = next_rank.name if not is_marine else next_rank.marine_name
             # if seaman apprentice
@@ -402,9 +812,27 @@ class CheckPromotion(commands.Cog):
                     value="**OR** \n \u200b"
                 )
 
-        await interaction.response.send_message(embed=embed, ephemeral=False)
+        # Set is_eligible based on requirements
+        is_eligible = requirements.count(":white_check_mark:") > 0 and requirements.count(":x:") == 0
+
+        if interaction:
+            await interaction.followup.send(embed=embed, ephemeral=False)
         audit_log_repository.close_session()
         voyage_repository.close_session()
+        
+        return is_eligible, requirements
+
+    async def check_single_promotion(self, interaction: discord.Interaction, target: discord.Member, ephemeral: bool = False):
+        """Handle checking promotion status for a single member."""
+        # Call check_single_promotion_status with proper error handling
+        try:
+            is_eligible, requirements = await self.check_single_promotion_status(target, interaction)
+            # The embed creation and sending is already handled in check_single_promotion_status
+        except Exception as e:
+            await interaction.followup.send(
+                f"An error occurred while checking promotion status: {str(e)}", 
+                ephemeral=True
+            )
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(CheckPromotion(bot))
