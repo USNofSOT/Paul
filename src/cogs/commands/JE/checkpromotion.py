@@ -33,19 +33,19 @@ DISALLOWED_ROLES = [
     "Civilian"
 ]
 
-SEAMAN_ROLE_ID = 933913010806857801  # Replace with actual role ID
-ABLE_SEAMAN_ROLE_ID = 933912647999565864  # Replace with actual role ID
-JPO_ROLE_ID = 933912557008343120  # Replace with actual role ID
-PO_ROLE_ID = 933911949585035275  # Replace with actual role ID
-CPO_ROLE_ID = 933911464660570132  # Replace with actual role ID
-SPO_ROLE_ID = 933911373669335092  # Replace with actual role ID
-MIDSHIPMAN_ROLE_ID = 933910558695129118  # Replace with actual role ID
-LIEUTENANT_ROLE_ID = 933910174555598879  # Replace with actual role ID
-LIEUTENANT_CMDR_ROLE_ID = 933909957437423677  # Replace with actual role ID
-COMMANDER_ROLE_ID = 933909780639150101  # Replace with actual role ID
-CAPTAIN_ROLE_ID = 933909668550553630  # Replace with actual role ID
-COMMODORE_ROLE_ID = 933909182711746570  # Replace with actual role ID
-REARADMIRAL_ROLE_ID = 1157429131416449134  # Replace with actual role ID
+SEAMAN_ROLE_ID = 933913010806857801  
+ABLE_SEAMAN_ROLE_ID = 933912647999565864  
+JPO_ROLE_ID = 933912557008343120  
+PO_ROLE_ID = 933911949585035275  
+CPO_ROLE_ID = 933911464660570132  
+SPO_ROLE_ID = 933911373669335092  
+MIDSHIPMAN_ROLE_ID = 9339105586951291
+LIEUTENANT_ROLE_ID = 933910174555598879  
+LIEUTENANT_CMDR_ROLE_ID = 933909957437423677  
+COMMANDER_ROLE_ID = 933909780639150101  
+CAPTAIN_ROLE_ID = 933909668550553630  
+COMMODORE_ROLE_ID = 933909182711746570  
+REARADMIRAL_ROLE_ID = 1157429131416449134  
 
 RANK_EMOJIS = {
     'Seaman | E-2': '<:E2:1245860781887590472>',
@@ -97,7 +97,7 @@ class CounterButton(discord.ui.Button):
 
 class PromotionView(View):
     def __init__(self, sailors, detailed=False, bot=None):  
-        super().__init__(timeout=600)  # 10 minute timeout
+        super().__init__(timeout=600)  
         self.sailors = sailors
         self.current_page = 0
         self.detailed = detailed
@@ -111,7 +111,6 @@ class PromotionView(View):
             self.add_item(NextButton())
 
     async def on_timeout(self):
-        # Disable all buttons when timeout occurs
         for item in self.children:
             item.disabled = True
         
@@ -192,13 +191,12 @@ class NextButton(discord.ui.Button):
 
 class SummaryView(View):
     def __init__(self, all_members, eligible_members, bot):
-        super().__init__(timeout=600)  # 10 minute timeout
+        super().__init__(timeout=600) 
         self.all_members = all_members
         self.eligible_members = eligible_members
         self.bot = bot
 
     async def on_timeout(self):
-        # Disable all buttons when timeout occurs
         for item in self.children:
             item.disabled = True
         
@@ -374,18 +372,15 @@ class CheckPromotion(commands.Cog):
                 inline=False
             )
 
-            # Create analytics charts
             chart_buffer = await self.create_analytics_charts(stats, ship_or_squad.name)
             chart_file = discord.File(chart_buffer, filename='analytics.png')
             
-            # Add chart to embed
             summary_embed.set_image(url="attachment://analytics.png")
             
             view = SummaryView(stats['all_members'], stats['eligible_members'], self.bot)
             message = await interaction.followup.send(embed=summary_embed, view=view, file=chart_file)
-            view.message = message  # Store message reference for timeout handling
+            view.message = message  
             
-            # Close the buffer
             chart_buffer.close()
             return
         
