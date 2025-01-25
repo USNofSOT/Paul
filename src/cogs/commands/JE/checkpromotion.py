@@ -6,6 +6,9 @@ import discord
 from discord import Interaction, app_commands, Role, ButtonStyle  
 from discord.ext import commands
 from discord.ui import Button, View  
+import matplotlib.pyplot as plt
+import io
+from matplotlib.ticker import MaxNLocator
 
 from src.config.awards import CITATION_OF_COMBAT, COMBAT_MEDALS, CITATION_OF_CONDUCT, CONDUCT_MEDALS, \
     NCO_IMPROVEMENT_RIBBON, FOUR_MONTHS_SERVICE_STRIPES, SERVICE_STRIPES, HONORABLE_CONDUCT, MARITIME_SERVICE_MEDAL, \
@@ -94,7 +97,7 @@ class CounterButton(discord.ui.Button):
 
 class PromotionView(View):
     def __init__(self, sailors, detailed=False, bot=None):  
-        super().__init__(timeout=None)
+        super().__init__(timeout=600)  # 10 minute timeout
         self.sailors = sailors
         self.current_page = 0
         self.detailed = detailed
@@ -106,6 +109,16 @@ class PromotionView(View):
             self.add_item(PreviousButton())
             self.add_item(CounterButton(self.current_page, len(self.pages)))
             self.add_item(NextButton())
+
+    async def on_timeout(self):
+        # Disable all buttons when timeout occurs
+        for item in self.children:
+            item.disabled = True
+        
+        try:
+            await self.message.edit(view=self)
+        except:
+            pass
 
     def get_embed(self):  
         if not self.pages:
@@ -122,9 +135,7 @@ class PromotionView(View):
         if not cog:
             return discord.Embed(title="Error", description="Could not find CheckPromotion cog", color=discord.Color.red())
             
-        is_eligible, requirements = await cog.check_single_promotion_status(member, None)
-        
-        embed = await cog.create_promotion_embed(member, is_eligible, requirements)
+        is_eligible, requirements, embed = await cog.check_single_promotion_status(member, None)
         return embed
 
     async def send_initial_message(self, interaction: discord.Interaction):
@@ -136,7 +147,8 @@ class PromotionView(View):
         else:
             embed = self.get_embed()
         
-        await interaction.response.send_message(embed=embed, view=self)
+        response = await interaction.response.send_message(embed=embed, view=self)
+        self.message = await interaction.original_response()
 
     async def update_counter(self):
         for item in self.children:
@@ -180,10 +192,20 @@ class NextButton(discord.ui.Button):
 
 class SummaryView(View):
     def __init__(self, all_members, eligible_members, bot):
-        super().__init__(timeout=None)
+        super().__init__(timeout=600)  # 10 minute timeout
         self.all_members = all_members
         self.eligible_members = eligible_members
         self.bot = bot
+
+    async def on_timeout(self):
+        # Disable all buttons when timeout occurs
+        for item in self.children:
+            item.disabled = True
+        
+        try:
+            await self.message.edit(view=self)
+        except:
+            pass
 
     @discord.ui.button(label="Send All", style=ButtonStyle.primary)
     async def send_all(self, interaction: discord.Interaction, button: Button):
@@ -191,6 +213,7 @@ class SummaryView(View):
         if view.pages:
             embed = await view.create_detailed_embed(view.pages[0][0])
             await interaction.response.send_message(embed=embed, view=view)
+            view.message = await interaction.original_response()
         else:
             await interaction.response.send_message("No members to display", ephemeral=True)
 
@@ -200,6 +223,7 @@ class SummaryView(View):
         if view.pages:
             embed = await view.create_detailed_embed(view.pages[0][0])
             await interaction.response.send_message(embed=embed, view=view)
+            view.message = await interaction.original_response()
         else:
             await interaction.response.send_message("No eligible members to display", ephemeral=True)
 
@@ -297,7 +321,7 @@ class CheckPromotion(commands.Cog):
             }
 
             for member in members_with_role:
-                is_eligible, requirements = await self.check_single_promotion_status(member, None)
+                is_eligible, requirements, embed = await self.check_single_promotion_status(member, None)
                 current_rank = self.get_member_rank(member)
                 
                 if current_rank not in stats['rank_breakdown']:
@@ -350,8 +374,19 @@ class CheckPromotion(commands.Cog):
                 inline=False
             )
 
+            # Create analytics charts
+            chart_buffer = await self.create_analytics_charts(stats, ship_or_squad.name)
+            chart_file = discord.File(chart_buffer, filename='analytics.png')
+            
+            # Add chart to embed
+            summary_embed.set_image(url="attachment://analytics.png")
+            
             view = SummaryView(stats['all_members'], stats['eligible_members'], self.bot)
-            await interaction.followup.send(embed=summary_embed, view=view)
+            message = await interaction.followup.send(embed=summary_embed, view=view, file=chart_file)
+            view.message = message  # Store message reference for timeout handling
+            
+            # Close the buffer
+            chart_buffer.close()
             return
         
         if target:
@@ -659,8 +694,9 @@ class CheckPromotion(commands.Cog):
                     if not latest_o1_role_log:
                         requirements += f"\u200b \n **:warning: Please verify role age by hand whilst bot is new**  \n \n"
 
-                    days_with_o1 = get_time_difference_in_days(utc_time_now(),
-                                                            latest_o1_role_log.log_time) if latest_o1_role_log else None
+                    days_with_o1 = get_time_difference_in_days(
+                        utc_time_now(),
+                        latest_o1_role_log.log_time) if latest_o1_role_log else None
                     if days_with_o1 is None or latest_o1_role_log.change_type != RoleChangeType.ADDED:
                         days_with_o1 = 0
 
@@ -783,7 +819,6 @@ class CheckPromotion(commands.Cog):
                     value="**OR** \n \u200b"
                 )
 
-        # Set is_eligible based on requirements
         is_eligible = requirements.count(":white_check_mark:") > 0 and requirements.count(":x:") == 0
 
         if interaction:
@@ -791,19 +826,97 @@ class CheckPromotion(commands.Cog):
         audit_log_repository.close_session()
         voyage_repository.close_session()
         
-        return is_eligible, requirements
+        return is_eligible, requirements, embed
 
     async def check_single_promotion(self, interaction: discord.Interaction, target: discord.Member, ephemeral: bool = False):
         """Handle checking promotion status for a single member."""
-        # Call check_single_promotion_status with proper error handling
         try:
-            is_eligible, requirements = await self.check_single_promotion_status(target, interaction)
-            # The embed creation and sending is already handled in check_single_promotion_status
+            is_eligible, requirements, embed = await self.check_single_promotion_status(target, interaction)
         except Exception as e:
             await interaction.followup.send(
                 f"An error occurred while checking promotion status: {str(e)}", 
                 ephemeral=True
             )
+
+    async def create_analytics_charts(self, stats, ship_or_squad_name):
+        """Create analytics charts for promotion data"""
+        buffer = io.BytesIO()
+        
+        fig = plt.figure(figsize=(15, 10))
+        fig.suptitle(f'Promotion Analytics for {ship_or_squad_name}', fontsize=16)
+        
+        ax1 = plt.subplot(221)
+        eligible = stats['eligible_count']
+        non_eligible = stats['total_members'] - eligible
+        ax1.pie([eligible, non_eligible], 
+                labels=['Eligible', 'Not Eligible'],
+                autopct='%1.1f%%',
+                colors=['green', 'red'])
+        ax1.set_title('Promotion Eligibility')
+
+        ax2 = plt.subplot(222)
+        ranks = []
+        totals = []
+        eligible_counts = []
+        
+        for rank in RANK_ORDER:
+            if rank in stats['rank_breakdown']:
+                data = stats['rank_breakdown'][rank]
+                if data['total'] > 0:  
+                    ranks.append(rank.split('|')[0].strip())
+                    totals.append(data['total'])
+                    eligible_counts.append(data['eligible'])
+        
+        if ranks:  
+            x = range(len(ranks))
+            width = 0.35
+            
+            ax2.bar([i - width/2 for i in x], totals, width, label='Total', color='blue')
+            ax2.bar([i + width/2 for i in x], eligible_counts, width, label='Eligible', color='green')
+            
+            ax2.set_ylabel('Number of Members')
+            ax2.set_title('Rank Distribution')
+            ax2.set_xticks(x)
+            ax2.set_xticklabels(ranks, rotation=45, ha='right')
+            ax2.legend()
+
+        ax3 = plt.subplot(212)
+        promotion_rates = []
+        rank_names = []
+        colors = []
+        
+        for rank in RANK_ORDER:
+            if rank in stats['rank_breakdown']:
+                data = stats['rank_breakdown'][rank]
+                if data['total'] > 0: 
+                    rate = (data['eligible'] / data['total']) * 100
+                    promotion_rates.append(rate)
+                    rank_names.append(rank.split('|')[0].strip())
+                    if rate > 50:
+                        colors.append('green')
+                    elif rate > 25:
+                        colors.append('yellow')
+                    else:
+                        colors.append('red')
+
+        if rank_names:  
+            y_pos = range(len(rank_names))
+            ax3.barh(y_pos, promotion_rates, color=colors)
+            ax3.set_yticks(y_pos)
+            ax3.set_yticklabels(rank_names)
+            ax3.set_xlabel('Promotion Rate (%)')
+            ax3.set_title('Promotion Rates by Rank')
+            ax3.set_xlim(0, 100) 
+            
+            for i, v in enumerate(promotion_rates):
+                ax3.text(v + 1, i, f'{v:.1f}%', va='center')
+        
+        plt.tight_layout()
+        plt.savefig(buffer, format='png', bbox_inches='tight', dpi=100)
+        plt.close()
+        
+        buffer.seek(0)
+        return buffer
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(CheckPromotion(bot))
