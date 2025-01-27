@@ -40,12 +40,12 @@ def check_sailor(bot : Bot, interaction: discord.Interaction, sailor: Sailor, me
 def check_voyages(bot : Bot, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
     count = sailor.voyage_count + sailor.force_voyage_count
     medals = MEDALS_AND_RIBBONS.voyages
-    return _check_awards_by_type(bot, count, medals, interaction, sailor, member)
+    return _check_awards_by_type(bot, count, medals, interaction, member)
 
 def check_hosted(bot : Bot, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
     count = sailor.hosted_count + sailor.force_hosted_count
     medals = MEDALS_AND_RIBBONS.hosted
-    return _check_awards_by_type(bot, count, medals, interaction, sailor, member)
+    return _check_awards_by_type(bot, count, medals, interaction, member)
 
 # check_combat
 
