@@ -117,15 +117,6 @@ class SailorCO:
                 co_set = True
                 break
 
-        # Seach for Squad Leader if CO not set
-        if not co_set and (squad_roles:=[role for role in sailor_roles if role.name.endswith('Squad')]):
-            squad_role = squad_roles[0]
-            SL_all = guild.get_role(config.ranks_roles.SHIP_SL_ROLE).members
-            sailor_SL = _get_by_role(squad_role, SL_all)
-
-            self.immediate = sailor_SL
-            co_set = True
-
         # Get the acting CO (if immediate CO is LOA-2)
         self.acting = self.immediate
         if self.immediate and self.immediate.display_name.startswith("[LOA-2]"):
