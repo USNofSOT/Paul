@@ -1,9 +1,7 @@
 import discord
 from data import TrainingRecord
-from discord.ext.commands import Bot
 
 from src.config.awards import MEDALS_AND_RIBBONS
-from src.config.main_server import GUILD_ID
 from src.config.subclasses import SUBCLASS_AWARDS
 from src.data import Sailor
 from src.data.repository.sailor_repository import SailorRepository
@@ -20,7 +18,6 @@ def check_sailor(guild: discord.Guild, interaction: discord.Interaction, sailor:
         check_voyages(guild, interaction, sailor, member),
         check_hosted(guild, interaction, sailor, member),
         #FIXME: Add check for combat medals
-        #FIXME: Add check for training medals
         #FIXME: Add check for recruiting medals
         #FIXME: Add check for attendance medals
         #FIXME: Add check for service stripes
@@ -36,22 +33,22 @@ def check_sailor(guild: discord.Guild, interaction: discord.Interaction, sailor:
 
     return msg_strs
 
-def check_voyages(bot : Bot, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
+def check_voyages(guild: discord.Guild, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
     count = sailor.voyage_count + sailor.force_voyage_count
     medals = MEDALS_AND_RIBBONS.voyages
-    return _check_awards_by_type(bot, count, medals, interaction, sailor, member)
+    return _check_awards_by_type(guild, count, medals, interaction, member)
 
-def check_hosted(bot : Bot, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
+def check_hosted(guild: discord.Guild, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
     count = sailor.hosted_count + sailor.force_hosted_count
     medals = MEDALS_AND_RIBBONS.hosted
-    return _check_awards_by_type(bot, count, medals, interaction, sailor, member)
+    return _check_awards_by_type(guild, count, medals, interaction, member)
 
 # check_combat
 
-def check_training(bot : Bot, interaction: discord.Interaction, training_records: TrainingRecord, member: discord.Member) -> str:
+def check_training(guild: discord.Guild, interaction: discord.Interaction, training_records: TrainingRecord, member: discord.Member) -> str:
     count = training_records.nrc_training_points + training_records.netc_training_points + training_records.st_training_points
     tiers = MEDALS_AND_RIBBONS.training
-    return _check_awards_by_type(bot, count, tiers, interaction, member)
+    return _check_awards_by_type(guild, count, tiers, interaction, member)
 
 # check_recruiting
 
