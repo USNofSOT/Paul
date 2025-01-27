@@ -59,6 +59,12 @@ class ForceAdd(Base):
     moderator_id = mapped_column(ForeignKey("sailor.discord_id"))
     add_time = Column(DATETIME)
 
+class VoyageType(enum.Enum):
+    UNKNOWN = "Unknown"
+    SKIRMISH = "Skirmish"
+    PATROL = "Patrol"
+    ADVENTURE = "Adventure"
+    CONVOY = "Convoy"
 
 class Hosted(Base):
     __tablename__ = "hosted"
@@ -69,8 +75,12 @@ class Hosted(Base):
     log_time = Column(DATETIME)
     ship_role_id = Column(BIGINT, nullable=True)
 
+    voyage_type = Column(Enum(VoyageType), server_default="Unknown", nullable=False) # The type of voyage
+
     gold_count = Column(Integer, server_default="0", nullable=True) # The number of gold given in the log
     doubloon_count = Column(Integer, server_default="0", nullable=True) # The number of doubloons given in the log
+    ancient_coin_count = Column(Integer, server_default="0", nullable=True) # The number of ancient coins given in the log
+    fish_count = Column(Integer, server_default="0", nullable=True) # The number of fish given in the log
 
     ship_voyage_count = Column(Integer, server_default="0", nullable=True) # The voyage number for the ship for this log
 
