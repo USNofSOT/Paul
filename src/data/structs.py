@@ -1,11 +1,13 @@
 from __future__ import annotations
+
 from collections import OrderedDict
 from dataclasses import dataclass
-from discord import Guild, Member, Role
 from warnings import warn
 
-from config.main_server import GUILD_ID
 import config.ranks_roles
+from config.main_server import GUILD_ID
+from discord import Guild, Member, Role
+
 
 @dataclass
 class Ship:
@@ -103,7 +105,7 @@ class SailorCO:
         # Unpack sailor roles
         sailor_roles = sailor.roles
         role_ids = set([role.id for role in sailor_roles])
-        
+
         # Traverse the chain of command
         co_set = False
         CoC = config.ranks_roles.CHAIN_OF_COMMAND
@@ -137,15 +139,19 @@ class SailorCO:
             boa_role = self._guild.get_role(config.ranks_roles.BOA_ROLE)
             return boa_role
 
+        # fixme: hotfix for the case where the sailor has no acting CO
+        if self.acting is None:
+            return self.immediate
+
         # Check if acting CO has roles
         acting_role_ids = set([role.id for role in self.acting.roles])
         for award_role in award_roles:
             if award_role in acting_role_ids:
                 return self.acting
-        
+
         # Re-run for the acting CO's acting CO if not
         return SailorCO(self.acting, self._guild).for_awards(award_roles)
-    
+
     @property
     def member_str(self) -> str:
         if self.acting is None:
@@ -153,13 +159,13 @@ class SailorCO:
         if self.acting.id == self.immediate.id:
             return f"<@{self.acting.id}>"
         return f"Current: <@{self.acting.id}>\nImmediate: <@{self.immediate.id}>"
-    
+
 def _get_co_from_link(idx: int, sailor: Member, CoC: OrderedDict, CoC_keys: list[int], guild: Guild) -> Member | None:
     role_id = CoC_keys[idx]
     co_role_id, common_group = CoC[role_id]
     if co_role_id is None:
         return None
-    
+
     co_role = guild.get_role(co_role_id)
     if common_group == config.ranks_roles.COC_ENUM['Fleet']:
         fleet_role = _get_fleet(sailor)
@@ -175,10 +181,10 @@ def _get_co_from_link(idx: int, sailor: Member, CoC: OrderedDict, CoC_keys: list
     if len(co_role_members) == 0:
         # go up one in the CoC
         return _get_co_from_link(idx-1, sailor, CoC, CoC_keys, guild)
-    
+
     warn("Found more than one member with role. Using first in list")
     return co_role_members[0]
-    
+
 def _get_by_role(role_key: Role, members: list[Member]):
     member_with_role = None
     for member in members:
