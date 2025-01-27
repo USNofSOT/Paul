@@ -2,6 +2,7 @@ import re
 from logging import getLogger
 
 import discord
+from utils.ship_utils import get_voyage_type_from_content
 
 from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.sailor_repository import SailorRepository
@@ -15,25 +16,64 @@ from src.utils.ship_utils import (
 
 log = getLogger(__name__)
 
-def get_gold_count_from_content(content: str) -> int:
-    """
-    Get the gold count from the content.
+LOG_KEYWORD_SYNONYM = {
+    "doubloon": "doubloons",
+    "fish": "fishes",
+    "ancient coin": "ancient coins",
+    "AncientCoin" : "ancient coins",
+    "AncientCoins" : "ancient coins",
+    "🐟": "fishes",
+}
 
-    The gold count will always include the word "gold" or the gold emoji. Either in the beginning or the end of the content.
-    The gold count will be a number with or without commas and periods or spaces.
+def get_count_from_content_by_keyword(content: str, keywords: str) -> int:
     """
-    pattern = r"(?i)(?:gold[-:> a-z]{0,25}\s*(\d[\d\s]*)|(\d[\d\s]*)\s*[-]?[:< a-z]gold)"
-    text_without_ids = re.sub(r':\d+>', '>', content.replace(",", "").replace(".", "").replace("<", "").replace("*", "").replace("_", ""))
-    match = re.search(pattern, text_without_ids)
-    if match:
-        return min(int((match.group(1) or match.group(2)).replace(" ", "")), 20000000)
-    return 0
+    Get the count from the content based on the keyword.
+
+    The count will always include the keyword or its emoji. Either in the beginning or the end of the content.
+    The count will be a number with or without commas and periods or spaces.
+
+    Args:
+        content (str): The content to search for the count.
+        keywords (str): The keyword to search for. Can be either 'gold', 'doubloons', 'fishes', 'ancient coins'
+    """
+
+    pattern = "(?im)(?:" + keywords + r"[-:> a-z]{0,25}\s*(\d[\d\s]*))"
+    # 1. Replace aliases with the keyword
+    for synonym, keyword in LOG_KEYWORD_SYNONYM.items():
+        content = content.lower().replace(synonym.lower(), keyword.lower())
+    # 2. Remove markdown
+    content = content.replace("*", "").replace("_", "").replace("`", "")
+    # 3. Remove commas and periods
+    content = content.replace(",", "").replace(".", "")
+    # 4. Remove discord embedded id's
+    content = re.sub(r"\d+>|<|>", "", content.replace(":", ""))
+
+    matches = re.findall(pattern, content)
+
+    if matches:
+        highest = 0
+        for match in matches:
+            try:
+                count = int(match.replace(" ", ""))
+                if count > highest:
+                    highest = count
+            except ValueError:
+                continue
+        return min(highest, 20000000)
+    else:
+        return 0
+
+def get_gold_count_from_content(content: str) -> int:
+    return get_count_from_content_by_keyword(content, "gold")
 
 def get_doubloon_count_from_content(content: str) -> int:
-    pattern = r"(?i)(?:doubloon[s]?[-:> a-z]*\s*(\d+)|^(?!.*\d\n)(\d+)\s*[-]?[:< a-z]doubloon[s]?)"
-    text_without_ids = re.sub(r':\d+>', '>', content.replace(",", "").replace(".", "").replace("<", "").replace("*", "").replace("_", ""))
-    match = re.search(pattern, text_without_ids)
-    return min(int(match.group(1) or match.group(2)), 20000000) if match else 0
+    return get_count_from_content_by_keyword(content, "doubloons")
+
+def get_fish_count_from_content(content: str) -> int:
+    return get_count_from_content_by_keyword(content, "fishes")
+
+def get_ancient_coin_count_from_content(content: str) -> int:
+    return get_count_from_content_by_keyword(content, "ancient coins")
 
 class Process_Voyage_Log:
     #subroutine to check if a voyage log already exists, and processes it if it does not.
@@ -73,7 +113,10 @@ class Process_Voyage_Log:
             auxiliary_ship_name=get_auxiliary_ship_from_content(message.content),
             ship_voyage_count=get_count_from_content(message.content),
             gold_count=get_gold_count_from_content(message.content),
-            doubloon_count=get_doubloon_count_from_content(message.content)
+            doubloon_count=get_doubloon_count_from_content(message.content),
+            fish_count=get_fish_count_from_content(message.content),
+            ancient_coin_count=get_ancient_coin_count_from_content(message.content),
+            voyage_type=get_voyage_type_from_content(message.content)
         )
         # 3.Log Voyage Count
 
