@@ -1,7 +1,8 @@
 import discord
+from config.ranks import DECKHAND
 from discord.ext.commands import Bot
 
-from src.config import GUILD_OWNER_ID, NCO_AND_UP
+from src.config import NCO_AND_UP
 from src.config.main_server import GUILD_ID
 from src.config.requirements import (
     HOSTING_REQUIREMENT_IN_DAYS,
@@ -43,6 +44,8 @@ async def get_member_embed(bot: Bot, interaction, member: discord.Member) -> dis
 
     audit_log_repository = AuditLogRepository()
     current_rank: NavyRank = get_current_rank(member)
+    if current_rank is None:
+        current_rank = DECKHAND
     current_rank_role_id = next((role.id for role in member.roles if role.id in current_rank.role_ids), None)
 
     rank_audit_log = audit_log_repository.get_latest_role_log_for_target_and_role(member.id, current_rank_role_id)
