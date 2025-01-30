@@ -38,3 +38,5 @@ NETC_GRADUATE_ROLES: Final[tuple[int, int, int, int]] = JLA_GRADUATE_ROLE, SNLA_
 # MISC ROLES
 ###############################################################################
 CO_OF_NETC_ROLE: Final[int] = 1076129420043100183
+XO_OF_NETC_ROLE: Final[int] = 1076129420005359641
+HIGH_COMMAND_OF_NETC_ROLES = CO_OF_NETC_ROLE, XO_OF_NETC_ROLE
