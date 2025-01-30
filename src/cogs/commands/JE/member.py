@@ -3,6 +3,7 @@ from logging import getLogger
 from typing import Union
 
 import discord
+from config import HIGH_COMMAND_OF_NETC_ROLES
 from discord import app_commands
 from discord.ext import commands
 
@@ -19,7 +20,7 @@ class Member(commands.Cog):
 
     @app_commands.command(name="member", description="Get information about a member")
     @app_commands.describe(target="Select the user you want to get information about")
-    @app_commands.checks.has_any_role(*JE_AND_UP)
+    @app_commands.checks.has_any_role(*JE_AND_UP, *HIGH_COMMAND_OF_NETC_ROLES)
     async def addinfo(self, interaction: discord.interactions, target: Union[discord.Member, discord.Role] = None):
         await interaction.response.defer()
         # If no mention is provided, get the information of the user who used the command
