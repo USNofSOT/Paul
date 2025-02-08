@@ -218,15 +218,10 @@ class Training(Base):
 class LeaveOfAbsence(Base):
     __tablename__ = "leave_of_absence"
 
-    #######################################################################################
-    # NOTE: I'm not sure what to set for `nullable` so I've left it out on this commit
-    #######################################################################################
-
-    message_id = Column(BIGINT, primary_key=True, autoincrement=True)
+    message_id = Column(BIGINT, primary_key=True)
     target_id = mapped_column(ForeignKey("sailor.discord_id"))
     changed_by_id = mapped_column(ForeignKey("sailor.discord_id")) # The person who took the action
 
-    # QUESTION: Can these be mapped from NameChangeLog? Reference an entry in that database?
     name_before = Column(VARCHAR(32))
     name_after = Column(VARCHAR(32))
 
