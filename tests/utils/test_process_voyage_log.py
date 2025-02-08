@@ -1,13 +1,13 @@
 import unittest
 
-from config.emojis import (
+from src.config.emojis import (
     ANCIENT_COINS_EMOJI,
     DOUBLOONS_ANIMATED_EMOJI,
     DOUBLOONS_EMOJI,
     GOLD_ANIMATED_EMOJI,
     GOLD_EMOJI,
 )
-from utils.process_voyage_log import (
+from src.utils.process_voyage_log import (
     get_count_from_content_by_keyword,
     get_doubloon_count_from_content,
     get_gold_count_from_content,

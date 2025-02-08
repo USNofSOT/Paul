@@ -1,0 +1,23 @@
+name: "🔍 Continuous Integration"
+
+on:
+  push:
+    branches: [ "master", "Development", "development" ]
+  pull_request:
+    branches: [ "master", "Development", "development" ]
+
+jobs:
+  test:
+    name: "🧪 Running Tests"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "⌛ Checking out the code"
+        uses: actions/checkout@v3
+      - name: "🐍 Setting up Python"
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+      - name: "📦 Installing dependencies"
+        run: pip install -r requirements.txt
+      - name: "🧪 Running tests"
+        run: pytest
