@@ -1,12 +1,19 @@
 from __future__ import annotations
-import asyncio, discord, os, config
+
+import asyncio
 from logging import getLogger
+
+import config
+import discord
+from data.engine import engine_string
+from data.migrations.migrate import run_migrations
 
 from src.data import create_tables
 from src.utils.logger import initialise_logger
 
 log= getLogger(__name__)
 from core import Bot
+
 
 async def main():
     discord.utils.setup_logging()
@@ -22,4 +29,8 @@ async def main():
 if __name__ == '__main__':
     create_tables()
     initialise_logger()
+    run_migrations(
+        "../src/data/migrations",
+        engine_string
+    )
     asyncio.run(main())
