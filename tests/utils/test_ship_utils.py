@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from data import VoyageType
-from utils.ship_utils import (
+from src.data import VoyageType
+from src.utils.ship_utils import (
     get_auxiliary_ship_from_content,
     get_count_from_content,
     get_main_ship_from_content,
@@ -22,7 +22,7 @@ class TestVoyageSpecification(TestCase):
         self.assertEqual(main_ship, "USS Illustrious")
         self.assertEqual(auxiliary_ship, "USS Grizzly")
         self.assertEqual(voyage_count, 7)
-        self.assertEqual(voyage_type, VoyageType.PATROL)
+        self.assertEqual(voyage_type.value, VoyageType.PATROL.value)
 
     def test_valid_skirmish(self):
         # Arrange
@@ -36,7 +36,7 @@ class TestVoyageSpecification(TestCase):
         self.assertEqual(main_ship, "USS Adun")
         self.assertEqual(auxiliary_ship, None)
         self.assertEqual(voyage_count, 62)
-        self.assertEqual(voyage_type, VoyageType.SKIRMISH)
+        self.assertEqual(voyage_type.value, VoyageType.SKIRMISH.value)
 
     def test_valid_convoy(self):
         # Arrange
@@ -50,7 +50,7 @@ class TestVoyageSpecification(TestCase):
         self.assertEqual(main_ship, "USS Illustrious")
         self.assertEqual(auxiliary_ship, None)
         self.assertEqual(voyage_count, 120)
-        self.assertEqual(voyage_type, VoyageType.CONVOY)
+        self.assertEqual(voyage_type.value, VoyageType.CONVOY.value)
 
     def test_valid_adventure(self):
         # Arrange
@@ -64,7 +64,7 @@ class TestVoyageSpecification(TestCase):
         self.assertEqual(main_ship, "USS Audacious")
         self.assertEqual(auxiliary_ship, "USS Thor")
         self.assertEqual(voyage_count, 35)
-        self.assertEqual(voyage_type, VoyageType.ADVENTURE)
+        self.assertEqual(voyage_type.value, VoyageType.ADVENTURE.value)
 
 class TestGetMainShipName(TestCase):
 
