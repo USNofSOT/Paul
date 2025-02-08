@@ -17,3 +17,8 @@ select = [
     "T20", # flake8-print
     "PERF", # Perflint
 ]
+
+[tool.pytest.ini_options]
+pythonpath = [
+  ".", "src",
+]
