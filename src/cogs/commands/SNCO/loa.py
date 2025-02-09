@@ -4,7 +4,8 @@ from discord.ext import commands
 from discord import app_commands
 from logging import getLogger
 
-from src.config import SNCO_AND_UP
+from src.config import GUILD_ID, LEAVE_OF_ABSENCE, E2_AND_UP, SNCO_AND_UP, SO_AND_UP, BOA_ROLE, AOTN_ROLES
+from src.data.structs import SailorCO
 from src.data import ModNotes
 from src.data.repository.modnote_repository import ModNoteRepository
 from src.utils.embeds import error_embed, default_embed
@@ -22,8 +23,17 @@ class LeaveOfAbsence(commands.Cog):
     @app_commands.describe(level="LOA level, 0 being returned to active duty")
     @app_commands.describe(end_date="Return date for LOA in YYYY-MM-DD format. This input is ignored for returning to active duty")
     @app_commands.checks.has_any_role(*SNCO_AND_UP)
-    async def loa(self, interaction: discord.interactions, message_id: str, target: discord.Member, level: int, end_date: str):
+    async def loa(self, interaction: discord.Interaction, message_id: int, target: discord.Member, level: int, end_date: str):
         await interaction.response.defer (ephemeral=True)
+
+        log.info(f"LOA status change requested by {interaction.user.display_name or interaction.user.name}")
+        log.info(f"[INPUT] Message ID: {message_id}")
+        log.info(f"[INPUT] Target: {target.display_name or target.name}")
+        log.info(f"[INPUT] Level: {level}")
+        log.info(f"[INPUT] End Date: {end_date}")
+
+        target_name = target.display_name or target.name
+        guild = self.bot.get_guild(GUILD_ID)
 
         #######################################################################
         # Input Checks
@@ -32,28 +42,73 @@ class LeaveOfAbsence(commands.Cog):
         # Interaction
         ######################
         # Check the interaction member is above target in the chain of command
+        is_superior = check_superiority(interaction.user, target, guild)
+        is_superior = is_superior or CoC_exceptions(interaction.user, target)
 
-        # Exceptions to the CoC rule:
-        # - Ship CO+ can change their own LOA status
-        # - BOA can change any other BOA member's status
+        if not is_superior:
+            log.info(f"[INPUT ERROR] Interaction member is not above target in CoC (or an exceptional case).")
+
+            descr = f"You are not in the chain of command for {target_name}:"
+            while imm_CO := SailorCO(target).immediate:
+                descr += f" {imm_CO.display_name or imm_CO.name}"
+                target = imm_CO
+
+            embed = error_embed(title="Outside the Chain of Command",
+                                description=descr,
+                                footer=False)
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
 
         # Message ID
         ######################
         # Check the message is in the leave of absence channel
+        is_in_channel = check_loa_channel(message_id, guild)
+        if not is_in_channel:
+            log.info(f"[INPUT ERROR] Message ID not in LOA channel.")
+            embed = error_embed(title="Invalid Message ID",
+                                description=f"Please tag a message in the LOA channel, {guild.get_channel(LEAVE_OF_ABSENCE).name}.",
+                                footer=False)
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
 
         # Target
         ######################
         # Check the target is E-2+
+        valid_target_roles = check_loa_target_roles(target)
+        if not is_in_channel:
+            log.info(f"[INPUT ERROR] Target is not E-2+.")
+            embed = error_embed(title="Invalid Target",
+                                description=f"Please tag sailor E-2+.",
+                                footer=False)
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
 
         # Level
         ######################
         # Check the level is 0, 1, or 2
-
         # Exception for AOTN
+        is_valid_level, err_descr = check_loa_level(level, guild)
+        if not is_valid_level:
+            log.info(f"[INPUT ERROR] Invalid level value {level}.")
+            embed = error_embed(title="Invalid LOA Level",
+                                description=descr,
+                                footer=False)
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
 
         # End Date
         ######################
-        # Check that input str resolves to valid datetime
+        # Check that input string resolves to valid datetime
+        is_valid_date, end_date_dt = check_loa_end_date(end_date)
+        is_valid_date = is_valid_date or (level == 0)  # bypass check if returning from LOA
+
+        if not is_valid_date:
+            log.info(f"[INPUT ERROR] Invalid end date value {end_date}.")
+            embed = error_embed(title="Invalid End Date",
+                                description=f"End date value {end_date} d",
+                                footer=False)
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
 
         #######################################################################
         # Determine New Nickname
@@ -77,3 +132,86 @@ class LeaveOfAbsence(commands.Cog):
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(LeaveOfAbsence(bot))
+
+
+
+def check_superiority(superior: discord.Member, subordinate: discord.Member, guild: discord.Guild):
+    # Check if first input is superior to the second input
+    sub_CO = SailorCO(subordinate, guild).immediate
+
+    # If the subordinate has no CO, then no one can be their CO
+    if sub_CO is None:
+        return False
+    
+    # If the superior is their CO, return true.
+    # Otherwise, check if the superior is their CO's superior
+    if superior == sub_CO:
+        return True
+    else:
+        return check_superiority(superior, sub_CO, guild)
+
+
+def CoC_exceptions(user: discord.Member, target: discord.Member):
+    # Exceptions to the CoC rule:
+    # - Ship SO+ can change their own LOA status
+    # - BOA can change any member's status
+
+    is_SO_plus = any([role.id in SO_AND_UP for role in user.roles])
+    if is_SO_plus and (user == target):
+        return True
+    
+    if any([role.id == BOA_ROLE for role in user.roles]):
+        return True
+    
+    return False
+
+
+def check_loa_channel(message_id: int, guild: discord.Guild):
+    try:
+        loa_channel = guild.get_channel(LEAVE_OF_ABSENCE)
+        loa_channel.fetch_message(message_id)
+    except:
+        in_channel = False
+    else:
+        in_channel = True
+
+    return in_channel
+
+
+def check_loa_target_roles(target: discord.Member):
+    for role in target.roles:
+        role_id = role.id
+        if role_id in E2_AND_UP:
+            return True
+    return False
+
+
+def check_loa_level(level: int, user: discord.Member):
+    is_aotn = False
+    for role in user.roles:
+        if role.id in AOTN_ROLES:
+            is_aotn = True
+            break
+    
+    if is_aotn:
+        if level >= 0:
+            return (True, "")
+        return (False, f"Level {level} is not >=0")
+    if level in (0, 1, 2):
+        return (True, "")
+    return (False, f"Level {level} is not 0, 1, or 2.")
+
+
+def check_loa_end_date(date_str: str):
+    try:
+        date_parts = [int(part) for part in date_str.split('-')]
+        assert len(date_parts) == 3
+        end_date_dt = datetime.datetime(*date_parts)
+    except:
+        valid_str = False
+        end_date_dt = datetime.datetime.now()
+    else:
+        valid_str = True
+    return (valid_str, end_date_dt)
+
+
