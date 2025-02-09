@@ -3,6 +3,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from logging import getLogger
+import re
 
 from src.config import GUILD_ID, LEAVE_OF_ABSENCE, E2_AND_UP, SNCO_AND_UP, SO_AND_UP, BOA_ROLE, AOTN_ROLES
 from src.data.structs import SailorCO
@@ -95,6 +96,16 @@ class LeaveOfAbsence(commands.Cog):
                                 footer=False)
             await interaction.followup.send(embed=embed, ephemeral=True)
             return
+        
+        level_currrent = current_loa_level(target)
+        if (level == 0) and (level_currrent == 0):
+            log.info(f"[INPUT ERROR] Attempting to extend LOA-0.")
+            embed = error_embed(title="Invalid LOA Level",
+                                description=f"Attempting to set LOA to {level} when it is currently {level_currrent} for an active duty sailor.",
+                                footer=False)
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+
 
         # End Date
         ######################
@@ -105,19 +116,15 @@ class LeaveOfAbsence(commands.Cog):
         if not is_valid_date:
             log.info(f"[INPUT ERROR] Invalid end date value {end_date}.")
             embed = error_embed(title="Invalid End Date",
-                                description=f"End date value {end_date} d",
+                                description=f"End date value {end_date} does not follow the YYYY-MM-DD format.",
                                 footer=False)
             await interaction.followup.send(embed=embed, ephemeral=True)
             return
 
         #######################################################################
-        # Determine New Nickname
+        # Nickname Update
         #######################################################################
-
-
-        #######################################################################
-        # Apply New Nickname
-        #######################################################################
+        #new_nickname = build_target_nickname(target, level)
 
 
         #######################################################################
@@ -215,3 +222,12 @@ def check_loa_end_date(date_str: str):
     return (valid_str, end_date_dt)
 
 
+def current_loa_level(target: discord.Member):
+    # Check if LOA in name
+    nickname = target.nick or target.name
+    if 'LOA' not in nickname.upper():
+        return 0
+    
+    # Extract LOA level
+    level_str = re.search(r"\[LOA-(\d+)\]", nickname)
+    return int(level_str)
