@@ -293,11 +293,6 @@ ADMIRAL_OF_THE_NAVY = NavyRank(
     ),
     name="Admiral Of The Navy"
 )
-DUNGEON_MASTER = NavyRank(
-    index=101,
-    identifier="DM",
-    name="Dungeon Master"
-)
 
 RANKS = (
     DECKHAND,
@@ -318,5 +313,4 @@ RANKS = (
     COMMODORE,
     REAR_ADMIRAL,
     ADMIRAL_OF_THE_NAVY,
-    DUNGEON_MASTER
 )
