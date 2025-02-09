@@ -1,5 +1,5 @@
 from src.config.ranks_roles import RT_ROLES, DH_ROLES, E1_ROLES, E2_ROLES, E3_ROLES, VT_ROLES, E4_ROLES, E6_ROLES, \
-    E8_ROLES, E7_ROLES, O1_ROLES, O3_ROLES, O4_ROLES, O5_ROLES, O6_ROLES, O8_ROLES, O7_ROLES, AOTN_ROLES
+    E8_ROLES, E7_ROLES, O1_ROLES, O3_ROLES, O4_ROLES, O5_ROLES, O6_ROLES, O8_ROLES, O7_ROLES, VADM_ROLES, AOTN_ROLES
 from src.data.structs import NavyRank, RankPrerequisites, Context
 
 SAILORS_HANDBOOK_THREAD_ID = 1292510574114242631
@@ -21,6 +21,8 @@ VETERAN = NavyRank(
     identifier="VT",
     role_ids=VT_ROLES,
     name="Veteran",
+    abbreviations=("Vet"),
+    unofficial_abbreviations=("Vet."),
     promotion_index={2} # Seaman
 )
 RETIRED = NavyRank(
@@ -28,6 +30,8 @@ RETIRED = NavyRank(
     identifier="RT",
     role_ids=RT_ROLES,
     name="Retired",
+    abbreviations=("Retd"),
+    unofficial_abbreviations=("RET.", "Ret.", "Rtd."),
     promotion_index={2} # Seaman
 )
 RECRUIT = NavyRank(
@@ -35,6 +39,7 @@ RECRUIT = NavyRank(
     identifier="E1",
     role_ids=E1_ROLES,
     name="Recruit",
+    abbreviations=("Rct"),
     promotion_index={2}, # Seaman
     rank_context=Context(
         short_description="Recruit (Rct) is the first rank a Sailor is given upon enlistment into the USN.",
@@ -47,6 +52,12 @@ SEAMAN = NavyRank(
     identifier="E2",
     role_ids=E2_ROLES,
     name="Seaman",
+    marine_name="Seaman Apprentice",  # repurposing the marine fields for seaman apprentice
+    abbreviations=("SN"),
+    marine_abbreviations=("SA"),
+    gender_options={"female": "Seawoman"},
+    marine_gender_options={"female", "Seawoman Apprentice"},
+    unofficial_abbreviations=("SMAN"),
     promotion_index={3}, # Able Seaman
     rank_context=Context(
         short_description="Seaman (SMAN) is the first official rank of the USN. A sailor will be promoted to Seaman after completing the Recruit Orientation.",
@@ -60,6 +71,9 @@ ABLE_SEAMAN = NavyRank(
     role_ids=E3_ROLES,
     name="Able Seaman",
     marine_name="Lance Corporal",
+    gender_options={"female": "Able Seawoman"},
+    abbreviations=("AB"),
+    marine_abbreviations=("LCpl"),
     promotion_index={4}, # Junior Petty Officer
     rank_context=Context(
         short_description="Able Seaman (AB) and Lance Corporal (LCPL) is the final Junior Enlisted rank.",
@@ -78,6 +92,9 @@ JUNIOR_PETTY_OFFICER = NavyRank(
     role_ids=E4_ROLES,
     name="Junior Petty Officer",
     marine_name="Corporal",
+    abbreviations=("JPO", "Jr. Petty Officer"),
+    marine_abbreviations=("Cpl"),
+    unofficial_abbreviations=("Jr Petty Officer"),
     promotion_index={5},  # Petty Officer
     rank_context=Context(
         short_description="Junior Petty Officer (JPO) and Corporal (CPL) is the first Non Commissioned rank.",
@@ -100,6 +117,8 @@ PETTY_OFFICER = NavyRank(
     role_ids=E6_ROLES,
     name="Petty Officer",
     marine_name="Staff Sergeant",
+    abbreviations=("PO"),
+    marine_abbreviations=("SSgt"),
     promotion_index={6},  # Chief Petty Officer
     rank_context=Context(
         short_description="Petty Officer (PO) and Staff Sergeant (SSG) is the highest regular NCO rank.",
@@ -118,6 +137,8 @@ CHIEF_PETTY_OFFICER = NavyRank(
     role_ids=E7_ROLES,
     name="Chief Petty Officer",
     marine_name="Gunnery Sergeant",
+    abbreviations=("CPO"),
+    marine_abbreviations=("GySgt"),
     promotion_index={8,9}, # Senior Petty Officer / Midshipman
     rank_context=Context(
         short_description="The rank of Chief Petty Officer (CPO) and Gunnery Sergeant (GySgt) is the first Senior NCO rank.",
@@ -136,8 +157,10 @@ SENIOR_CHIEF_PETTY_OFFICER = NavyRank(
     index=8,
     identifier="E8",
     role_ids=E8_ROLES,
-    name="Senior Petty Officer",
+    name="Senior Chief Petty Officer",
     marine_name="Master Sergeant",
+    abbreviations=("SCPO"),
+    marine_abbreviations=("MSgt"),
     promotion_index={9}, #  Midshipman
     rank_context=Context(
         short_description="Senior Chief Petty Officer (SCPO) and Master Sergeant (MSgt) is the highest Enlisted rank before admiralty.",
@@ -156,6 +179,10 @@ MIDSHIPMAN = NavyRank(
     role_ids=O1_ROLES,
     name="Midshipman",
     marine_name="Second Lieutenant",
+    gender_options={"female": "Midshipwoman"},
+    abbreviations=("MIDN"),
+    marine_abbreviations=("2ndLt"),
+    unofficial_abbreviations=("MIDN."),
     promotion_index={10},  # Lieutenant
     rank_context=Context(
         short_description="Midshipman (MIDN) and Second Lieutenant (2NDLT) is the first Commissioned Officer rank.",
@@ -174,6 +201,10 @@ LIEUTENANT = NavyRank(
     role_ids=O3_ROLES,
     name="Lieutenant",
     marine_name="Marine Captain",
+    abbreviations=("LT"),
+    marine_abbreviations=("MCapt", "Marine Capt")
+    unofficial_abbreviations=("Lt", "Lt.", "LT."),
+    unofficial_marine_abbreviations=("MCAPT", "MCAPT.", "Marine Capt."),
     promotion_index={11}, # Lieutenant Commander
     rank_context=Context(
         short_description="Lieutenant (LT) and Marine Captain (MCAPT) is the Official Junior Officer rank.",
@@ -193,6 +224,10 @@ LIEUTENANT_COMMANDER = NavyRank(
     role_ids=O4_ROLES,
     name="Lieutenant Commander",
     marine_name="Major",
+    abbreviations=("LCDR", "Lt. Commander"),
+    marine_abbreviations=("Maj"),
+    unofficial_abbreviations=("LCDR."),
+    unofficial_marine_abbreviations=("Maj."),
     promotion_index={12}, # Commander
     rank_context=Context(
         short_description="Lieutenant Commander (LTC) and Major (MAJ) is the first Senior Officer rank, if in command of their own ship.",
@@ -212,6 +247,9 @@ COMMANDER = NavyRank(
     role_ids=O5_ROLES,
     name="Commander",
     marine_name="Lieutenant Colonel",
+    abbreviations=("CDR"),
+    marine_abbreviations=("LtCol"),
+    unofficial_marine_abbreviations=("Lt. Col"),
     promotion_index={13}, # Captain
     rank_context=Context(
         short_description="The rank of Commander (CMD) and Lieutenant Colonel (LTCOL) is the first rank in which one will command a ship if they didn't as a O-4.",
@@ -231,6 +269,8 @@ CAPTAIN = NavyRank(
     role_ids=O6_ROLES,
     name="Captain",
     marine_name="Colonel",
+    abbreviations=("CAPT"),
+    marine_abbreviations=("Col"),
     promotion_index={14}, # Commodore
     rank_context=Context(
         short_description="Captain (CAPT) and Colonel (COL) is the highest Senior Officer rank before Admiralty.",
@@ -250,6 +290,8 @@ COMMODORE = NavyRank(
     role_ids=O7_ROLES,
     name="Commodore",
     marine_name="Brigadier General",
+    abbreviations=("COMO"),
+    marine_abbreviations=("BG", "BGen"),
     promotion_index={15}, # Rear Admiral
     rank_context=Context(
         short_description="The rank of Commodore (COM) and Brigadier General (BG) is the highest earnable rank one in the Naval branch can earn.",
@@ -268,7 +310,9 @@ REAR_ADMIRAL = NavyRank(
     role_ids=O8_ROLES,
     name="Rear Admiral",
     marine_name="Major General",
-    promotion_index={16}, # Admiral Of The Navy
+    abbreviations=("RADM"),
+    marine_abbreviations=("MajGen"),
+    promotion_index={16}, # Vice Admiral Of The Navy
     rank_context=Context(
         short_description="The rank of Rear Admiral (RADM) and Major General (MG) is typically a Title achieved by a O-7 who has handed their position as a Ship Commander to another Senior Officer while maintaining their position as a Fleet Commander.",
         channel_id=SAILORS_HANDBOOK_THREAD_ID,
@@ -281,17 +325,40 @@ REAR_ADMIRAL = NavyRank(
         ]
     )
 )
-ADMIRAL_OF_THE_NAVY = NavyRank(
+VICE_ADMIRAL = NavyRank(
     index=16,
-    identifier="AOTN",
-    role_ids=AOTN_ROLES,
-    promotion_index={101},
+    identifier="VADM",
+    role_ids=VADM_ROLES,
+    name="Vice Admiral",
+    marine_name="Lieutenant General",
+    abbreviations=("VADM"),
+    marine_abbreviations=("LtGen"),
+    promotion_index={17}, # Admiral of the Navy
     rank_context=Context(
-        short_description="The Admiral of the Navy (ADM) is the appointed Commander-In-Chief of all U.S.",
+        short_description="The Vice Admiral of the Navy (VADM) is the second in command of the USN.",
         channel_id=SAILORS_HANDBOOK_THREAD_ID,
         message_id=1292524279203631239
     ),
-    name="Admiral Of The Navy"
+    rank_prerequisites=RankPrerequisites(
+        [
+            "Hand selected by the AOTN",
+        ]
+    )
+)
+ADMIRAL_OF_THE_NAVY = NavyRank(
+    index=17,
+    identifier="AOTN",
+    role_ids=AOTN_ROLES,
+    name="Admiral of the Navy",
+    marine_name="General",
+    abbreviations=("AOTN"),
+    marine_abbreviations=("Gen"),
+    promotion_index={101},
+    rank_context=Context(
+        short_description="The Admiral of the Navy (ADM) is the appointed Commander-In-Chief of all U.S. Navy forces.",
+        channel_id=SAILORS_HANDBOOK_THREAD_ID,
+        message_id=1292524279203631239
+    ),
 )
 
 RANKS = (
@@ -312,5 +379,6 @@ RANKS = (
     CAPTAIN,
     COMMODORE,
     REAR_ADMIRAL,
+    VICE_ADMIRAL,
     ADMIRAL_OF_THE_NAVY,
 )

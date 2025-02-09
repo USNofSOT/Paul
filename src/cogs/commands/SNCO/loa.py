@@ -6,7 +6,7 @@ from logging import getLogger
 import re
 
 from src.config import GUILD_ID, LEAVE_OF_ABSENCE, E2_AND_UP, SNCO_AND_UP, SO_AND_UP, BOA_ROLE, AOTN_ROLES
-from src.data.structs import SailorCO
+from src.data.structs import SailorCO, RankedNickname
 from src.data import ModNotes
 from src.data.repository.modnote_repository import ModNoteRepository
 from src.utils.embeds import error_embed, default_embed
@@ -124,18 +124,63 @@ class LeaveOfAbsence(commands.Cog):
         #######################################################################
         # Nickname Update
         #######################################################################
-        #new_nickname = build_target_nickname(target, level)
-
+        try:
+            target_ranked_nick = RankedNickname.from_member(target)
+        except:
+            log.info(f"[ERROR] error in generating ranked nickname for target.")
+            embed = error_embed(title="Ranked Nickname Generation Error",
+                                description="Contact NSC to report the issue.",
+                                footer=False)
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+        old_LOA = target_ranked_nick.LOA
+        if old_LOA != level:
+            target_ranked_nick.LOA = level
+            new_nickname = str(target_ranked_nick)
+            await target.edit(nick=new_nickname)
+            log.info(f"[INFO] New nickname is: {new_nickname}")
+        else:
+            new_nickname = target_name
+            log.info(f"[INFO] No change to nickname.")
 
         #######################################################################
         # Save Action to Database
         #######################################################################
+        target_id = target.id
+        changed_by_id = interaction.user.id
+        name_before = target_name
+        name_after = new_nickname
+
+        loa_before = old_LOA
+        loa_after = level
+        # end_date_dt previously defined
+
+        # TODO: update/define this
+        # loa_repository.save_loa(target_id, changed_by_id, name_before, name_after, loa_before, loa_after, end_date_dt)
 
         
         #######################################################################
         # Write Output Message
         #######################################################################
+        descr = ""
+        descr += f"Name: {target_name}\n"
+        if loa_before and loa_after:
+            loa_str = f"LOA-{loa_before} -> LOA-{loa_after}"
+        if loa_before:
+            loa_str = f"Returned from LOA-{loa_before}"
+        if loa_after:
+            loa_str = f"LOA-{loa_after}"
+        else:
+            loa_str = "No status change"
+        descr += f"LOA: {loa_str}\n"
+        descr += f"End Date (YYYY-MM-DD): {end_date_dt.strftime("%Y-%m-%d")}\n"
+        if new_nickname != target_name:
+            descr += f"New Name: {new_nickname}\n"
+        descr += f"Changed by: {interaction.user.nick}\n"
 
+        embed = default_embed(title="LOA Status Change Summary",
+                              description=descr)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(LeaveOfAbsence(bot))
