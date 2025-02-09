@@ -112,7 +112,7 @@ class RankedNickname:
                     remaining_str = remaining_str.lstrip(rank_data.name).lstrip(" ")
                     indicator_found = True
                 abbrev_list = rank_data.abbreviations + rank_data.unofficial_abbreviations
-                for abbrev in abbrev_list:
+                for abbrev in sorted(abbrev_list, key=len, reverse=True):
                     if not indicator_found and remaining_str.startswith(abbrev):
                         remaining_str = remaining_str.lstrip(abbrev).lstrip(" ")
                         indicator_found = True
@@ -156,7 +156,7 @@ class RankedNickname:
             unofficial_abbrevs = ranked_nick.rank.unofficial_abbreviations
         abbrev_list = official_abbrevs + unofficial_abbrevs
 
-        for abbrev_list in (official_abbrevs, unofficial_abbrevs):
+        for abbrev in sorted(abbrev_list, key=len, reverse=True):
             if remaining_str.startswith(abbrev):
                 remaining_str = remaining_str.lstrip(abbrev).lstrip(" ")
                 break
