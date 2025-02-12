@@ -9,8 +9,8 @@ from src.data import Subclasses, SubclassType, RoleChangeLog, NameChangeLog, Tim
 from src.data.repository.auditlog_repository import AuditLogRepository
 from src.data.repository.modnote_repository import ModNoteRepository
 from src.data.repository.subclass_repository import SubclassRepository
+from src.data.structs import SailorCO
 from src.utils.embeds import default_embed
-from src.utils.report_utils import identify_role_index, process_role_index
 from src.utils.time_utils import format_time, get_time_difference_past
 
 
@@ -41,29 +41,12 @@ class ViewModeration(commands.Cog):
             name="Time in Server",
             value=f"{format_time(get_time_difference_past(target.joined_at))}",
         )
-        role_index = identify_role_index(interaction, target)
-        next_in_command = process_role_index(interaction, target, role_index)
 
-        if target.id == GUILD_OWNER_ID:
-            embed.add_field(name="Next in Command", value="Dungeon Master", inline=True)
-        elif next_in_command is None:  # Check if next_in_command is None
-            embed.add_field(name="Next in Command", value="None", inline=True)  # Handle No CO
-        elif len(next_in_command) == 1:
-            if next_in_command is None or not isinstance(next_in_command, list):
-                embed.add_field(name="Next in Command", value=next_in_command, inline=True)
-            else:
-                next_in_command = next_in_command[0]
-                embed.add_field(name="Next in Command", value=f"<@{next_in_command}>", inline=True)
-        elif len(next_in_command) == 2:
-            current_member_id = str(next_in_command[1])[1:-1]
-            current_member_mention = f"<@{current_member_id}>"
-            immediate_member_id = next_in_command[0]
-            immediate_member_mention = f"<@{immediate_member_id}>"
-            embed.add_field(name="Next in Command",
-                            value=f"Current: {current_member_mention}\n Immediate: {immediate_member_mention}",
-                            inline=True)
-        else:
-            next_in_command.add_field(name="Next in Command", value=f"Unknown", inline=True)
+        # Add Next in Command
+        guild = self.bot.get_guild(GUILD_ID)
+        co_str = SailorCO(target, guild).member_str
+        embed.add_field(name="Next in Command", value=co_str, inline=True)
+
         embed.add_field(
             name="User ID",
             value=f"{target.id}"

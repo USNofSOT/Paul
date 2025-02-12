@@ -2,6 +2,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Type
 
+from data import VoyageType
 from sqlalchemy import delete, update
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql.functions import coalesce, count
@@ -54,7 +55,7 @@ class HostedRepository:
             log.error(f"Error getting voyage log entries by role IDs, target IDs, and between dates: {e}")
             raise e
 
-    def save_hosted_data(self, log_id: int, target_id: int, log_time: datetime = datetime.now(), ship_role_id: int = 0, ship_name: str = None, auxiliary_ship_name: str = None, ship_voyage_count: int = None, gold_count: int = 0, doubloon_count: int = 0) -> bool:
+    def save_hosted_data(self, log_id: int, target_id: int, log_time: datetime = datetime.now(), ship_role_id: int = 0, ship_name: str = None, auxiliary_ship_name: str = None, ship_voyage_count: int = None, gold_count: int = 0, doubloon_count: int = 0, ancient_coin_count: int = 0, fish_count: int = 0, voyage_type: VoyageType = None) -> bool:
         """
         Adds a hosted data entry to the Hosted table. Also increments the hosted count for the target.
 
@@ -68,6 +69,9 @@ class HostedRepository:
             ship_voyage_count (int): The number of voyages the ship has made. Defaults to None.
             gold_count (int): The number of gold confiscated. Defaults to 0.
             doubloon_count (int): The number of doubloons confiscated. Defaults to 0.
+            ancient_coin_count (int): The number of ancient coins confiscated. Defaults to 0.
+            fish_count (int): The number of fish confiscated. Defaults to 0.
+            voyage_type (VoyageType): The type of voyage. Defaults to VoyageType.UNKNOWN.
         Returns:
             bool: True if the operation was successful, False otherwise.
         """
@@ -85,7 +89,10 @@ class HostedRepository:
                     auxiliary_ship_name=auxiliary_ship_name,
                     ship_voyage_count=ship_voyage_count,
                     gold_count=gold_count,
-                    doubloon_count=doubloon_count
+                    doubloon_count=doubloon_count,
+                    ancient_coin_count=ancient_coin_count,
+                    fish_count=fish_count,
+                    voyage_type=VoyageType(voyage_type).value if voyage_type else VoyageType.UNKNOWN.value
                 ))
 
                 # Increment the host count for the target

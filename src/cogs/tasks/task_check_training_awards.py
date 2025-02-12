@@ -62,7 +62,7 @@ class AutoCheckAwardsTraining(commands.Cog):
                 in_nrc = member is not None and NRC_ROLE in [role.id for role in member.roles]
                 in_netc = member is not None and NETC_ROLE in [role.id for role in member.roles]
 
-                sailor_strs = check_training(self.bot, fake_context(self.bot, ""), training_record, member)
+                sailor_strs = check_training(guild, fake_context(self.bot, ""), training_record, member)
                 if sailor_strs:
                     # If person is part of NRC Department and not NETC Department dedicates to NRC
                     if in_nrc and not in_netc:

@@ -3,10 +3,20 @@ from discord import app_commands
 from discord.ext import commands
 
 from src.config.main_server import GUILD_ID
-from src.config.netc_server import SNLA_GRADUATE_ROLE, NETC_GUILD_ID, JLA_GRADUATE_ROLE, OCS_GRADUATE_ROLE, \
-    SOCS_GRADUATE_ROLE, SNLA_INSTRUCTOR_ROLE, JLA_INSTRUCTOR_ROLE, OCS_INSTRUCTOR_ROLE, SOCS_INSTRUCTOR_ROLE
+from src.config.netc_server import (
+    HIGH_COMMAND_OF_NETC_ROLES,
+    JLA_GRADUATE_ROLE,
+    JLA_INSTRUCTOR_ROLE,
+    NETC_GUILD_ID,
+    OCS_GRADUATE_ROLE,
+    OCS_INSTRUCTOR_ROLE,
+    SNLA_GRADUATE_ROLE,
+    SNLA_INSTRUCTOR_ROLE,
+    SOCS_GRADUATE_ROLE,
+    SOCS_INSTRUCTOR_ROLE,
+)
 from src.config.ranks_roles import JE_AND_UP, NETC_ROLE, NRC_ROLE
-from src.data import TrainingRecord, member_report
+from src.data import TrainingRecord
 from src.data.repository.training_records_repository import TrainingRecordsRepository
 from src.utils.embeds import default_embed
 from src.utils.time_utils import format_time, get_time_difference_past
@@ -18,7 +28,7 @@ class TrainingRecords(commands.Cog):
 
     @app_commands.command(name="trainingrecords", description="Get information about a members training records")
     @app_commands.describe(target="Select the user you want to get information about")
-    @app_commands.checks.has_any_role(*JE_AND_UP)
+    @app_commands.checks.has_any_role(*JE_AND_UP, *HIGH_COMMAND_OF_NETC_ROLES)
     async def training_records(self, interaction: discord.interactions, target: discord.Member = None):
         if target is None:
             target = interaction.user
@@ -29,7 +39,7 @@ class TrainingRecords(commands.Cog):
         training_repository.close_session()
 
         embed = default_embed(
-            title=f"Training Records",
+            title="Training Records",
             description=f"{target.mention}",
             author=False
         )
@@ -127,7 +137,7 @@ class TrainingRecords(commands.Cog):
                 )
 
 
-        if not netc_member is None:
+        if netc_member is not None:
             netc_member_roles = [role.id for role in netc_member.roles]
             if any(role in netc_member_roles for role in [JLA_INSTRUCTOR_ROLE, SNLA_INSTRUCTOR_ROLE, OCS_INSTRUCTOR_ROLE, SOCS_INSTRUCTOR_ROLE]):
                 embed.add_field(
