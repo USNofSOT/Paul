@@ -2,9 +2,36 @@ import re
 
 import discord
 from data import VoyageType
+from data.repository.hosted_repository import HostedRepository
 
 from src.config.ships import SHIPS
 from src.data.structs import Ship
+
+
+def list_main_ships():
+    hosted_repository = HostedRepository()
+    ships = hosted_repository.get_all_main_ship_names()
+    hosted_repository.close_session()
+    return ships
+
+
+def list_auxiliary_ships(main_ship: str = None):
+    hosted_repository = HostedRepository()
+    ships = []
+    if main_ship:
+        ships = hosted_repository.get_all_auxiliary_ship_names_by_main_ship(main_ship)
+    else:
+        ships = hosted_repository.get_all_auxiliary_ship_names()
+    hosted_repository.close_session()
+    return ships
+
+
+def get_ships_mapped() -> {str: [str]}:
+    ships = {}
+    main_ships = list_main_ships()
+    for ship in main_ships:
+        ships[ship] = list_auxiliary_ships(ship)
+    return ships
 
 
 def get_ship_role_id_by_member(member: discord.Member) -> int:
@@ -14,7 +41,9 @@ def get_ship_role_id_by_member(member: discord.Member) -> int:
     Args:
         member (discord.Member): The member to check for roles.
     Returns:
-        int: The role ID of the ship, or -1 if the member has no ship roles. -2 if member is None.
+        int: The role ID of the ship, or
+        -1 if the member has no ship roles.
+        -2 if member is None.
     """
     if not member:
         return -2
@@ -22,6 +51,7 @@ def get_ship_role_id_by_member(member: discord.Member) -> int:
         if ship.role_id in [role.id for role in member.roles]:
             return ship.role_id
     return -1
+
 
 def get_ship_by_role_id(role_id: int) -> dict or None:
     """
@@ -32,8 +62,10 @@ def get_ship_by_role_id(role_id: int) -> dict or None:
             return ship
     return None
 
+
 SHIP_NAME_PATTERN = r"\b(USS[\s][^\s,\.]+)\b"
 FIND_WITHIN = 25
+
 
 def get_main_ship_from_content(content: str, ships: [Ship] = SHIPS) -> str or None:
     """
@@ -67,11 +99,14 @@ def get_main_ship_from_content(content: str, ships: [Ship] = SHIPS) -> str or No
 
     return None
 
+
 def get_auxiliary_ship_from_content(content: str) -> str or None:
     """
     Get the auxiliary ship name from the content.
-    1. If sailing on an auxiliary ship, the auxiliary ship name is the first ship name found.
-    2. There must be at least two ship names found in the content. The second one being a main ship.
+    1. If sailing on an auxiliary ship,
+    the auxiliary ship name is the first ship name found.
+    2. There must be at least two ship names found in the content.
+    The second one being a main ship.
 
     Returns:
         str: The auxiliary ship name if found, None otherwise.
@@ -80,14 +115,13 @@ def get_auxiliary_ship_from_content(content: str) -> str or None:
     matches = re.findall(SHIP_NAME_PATTERN, first_25_words)
     auxiliary_ship = None
 
-    # If two ship names are found, assume the first one is the auxiliary ship
     if len(matches) >= 2:
         auxiliary_ship = matches[0]
-    # If the found auxiliary ship name is currently configurated as a main ship, return None
     if auxiliary_ship in [ship.name for ship in SHIPS]:
         return None
 
     return auxiliary_ship
+
 
 def get_voyage_type_from_content(content: str) -> VoyageType:
     """
@@ -98,6 +132,7 @@ def get_voyage_type_from_content(content: str) -> VoyageType:
         if voyage_type.value in first_25_words:
             return voyage_type
     return VoyageType.UNKNOWN
+
 
 def get_count_from_content(content: str) -> int:
     """
@@ -111,6 +146,7 @@ def get_count_from_content(content: str) -> int:
         return -1
 
     return int(matches[0][0])
+
 
 def convert_to_ordinal(count: int) -> str:
     if 10 <= count % 100 <= 20:
