@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from logging import getLogger
 from collections import OrderedDict
 from dataclasses import dataclass
 from warnings import warn
@@ -8,6 +9,8 @@ import config.ranks_roles
 from config.main_server import GUILD_ID
 from discord import Guild, Member, Role
 
+
+log = getLogger(__name__)
 
 @dataclass
 class Ship:
@@ -112,10 +115,30 @@ class SailorCO:
         CoC_keys = list(CoC.keys())
         for role_id in CoC_keys:
             if role_id in role_ids:
+                # debugging
+                role = guild.get_role(role_id)
+                log.info(f"Found member has role: {role.name}")
+
+                # end debugging 
                 co_member = _get_co_from_link(role_id, sailor, CoC, CoC_keys, guild)
                 self.immediate = co_member
                 co_set = True
                 break
+
+        # Get Squad Leader
+        if not co_set:
+            role_found = False
+            for role in sailor_roles:
+                if role.name.upper().endswith(' SQUAD'):
+                    squad_role = role
+                    role_found = True
+                    break
+            if role_found:
+                for role_member in squad_role.members:
+                    if config.ranks_roles.SHIP_SL_ROLE in (role.id for role in role_member.roles):
+                        squad_leader = role_member
+                        self.immediate = squad_leader
+                        break
 
         # Get the acting CO (if immediate CO is LOA-2)
         self.acting = self.immediate
@@ -129,10 +152,6 @@ class SailorCO:
         if CoC_keys[0] in [role.id for role in self._sailor.roles]:
             boa_role = self._guild.get_role(config.ranks_roles.BOA_ROLE)
             return boa_role
-
-        # fixme: hotfix for the case where the sailor has no acting CO
-        if self.acting is None:
-            return self.immediate
 
         # Check if acting CO has roles
         acting_role_ids = set([role.id for role in self.acting.roles])
