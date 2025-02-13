@@ -63,6 +63,8 @@ CHAIN_OF_COMMAND = OrderedDict([
     (SHIP_COS_ROLE,  (SHIP_FO_ROLE,  COC_ENUM['Ship'])),
     (SHIP_SL_ROLE,   (SHIP_COS_ROLE, COC_ENUM['Ship'])),
     (NCO_ROLE,       (SHIP_SL_ROLE,  COC_ENUM['Ship'])),
+    (E3_ROLES[0],    (SHIP_SL_ROLE,  COC_ENUM['Ship'])),
+    (E2_ROLES[0],    (SHIP_SL_ROLE,  COC_ENUM['Ship'])),
     (E2_ROLES[1],    (VADM_ROLES[0], COC_ENUM['Navy'])), # Seaman Apprentice
     (E1_ROLES[0],    (VADM_ROLES[0], COC_ENUM['Navy'])), # Recruit
 ])
