@@ -7,7 +7,7 @@ from config.emojis import ANCIENT_COINS_EMOJI, DOUBLOONS_EMOJI, GOLD_EMOJI
 from config.ships import SHIPS
 from data import Hosted, VoyageType
 from data.repository.hosted_repository import HostedRepository
-from discord import app_commands
+from discord import Message, app_commands
 from discord.ext import commands
 from utils.ship_utils import (
     convert_to_ordinal,
@@ -64,7 +64,9 @@ async def autocomplete_main_ship(
     return await autocomplete_ship(current_input, list_main_ships)
 
 
-async def build_embed(hosted: Type[Hosted], total_hosted: int, current_index: int) -> discord.Embed:
+async def build_embed(
+    bot, hosted: Type[Hosted], total_hosted: int, current_index: int
+) -> discord.Embed:
     ship_emoji = None
     for ship in SHIPS:
         if ship.name == hosted.ship_name:
@@ -129,6 +131,21 @@ async def build_embed(hosted: Type[Hosted], total_hosted: int, current_index: in
         inline=True,
     )
 
+    log_channel = bot.get_channel(VOYAGE_LOGS)
+    try:
+        log_message: Message or None = await log_channel.fetch_message(int(hosted.log_id))
+    except discord.errors.NotFound:
+        log_message = None
+
+    if log_message:
+        embed.add_field(
+            name="Created at", value=f"<t:{int(log_message.created_at.timestamp())}>", inline=True
+        )
+        if log_message.edited_at:
+            embed.add_field(
+                name="Edited at", value=f"<t:{int(log_message.edited_at.timestamp())}>", inline=True
+            )
+
     return embed
 
 
@@ -146,6 +163,7 @@ class LogBookView(discord.ui.View):
             self.selected_index = 0
         # Update the original message
         embed = await build_embed(
+            self.bot,
             self.hosted[self.selected_index],
             len(self.hosted),
             len(self.hosted) - self.selected_index,
@@ -158,6 +176,7 @@ class LogBookView(discord.ui.View):
     async def on_refresh(self, interaction: discord.Interaction, button: discord.ui.Button):
         # Update the original message
         embed = await build_embed(
+            self.bot,
             self.hosted[self.selected_index],
             len(self.hosted),
             len(self.hosted) - self.selected_index,
@@ -173,6 +192,7 @@ class LogBookView(discord.ui.View):
             self.selected_index = len(self.hosted) - 1
         # Update the original message
         embed = await build_embed(
+            self.bot,
             self.hosted[self.selected_index],
             len(self.hosted),
             len(self.hosted) - self.selected_index,
@@ -203,6 +223,7 @@ class Logbook(commands.Cog):
         ]
     )
     @app_commands.describe(voyage_type="Filter by voyage type")
+    @app_commands.describe(host="Filter by host")
     @app_commands.checks.has_any_role(*JE_AND_UP)
     async def logbook(
         self,
@@ -211,6 +232,7 @@ class Logbook(commands.Cog):
         auxiliary_ship: str = None,
         ship_role: discord.Role = None,
         voyage_type: str = None,
+        host: discord.Member = None,
     ):
         if voyage_type and voyage_type not in [v.name for v in VoyageType]:
             embed = error_embed(
@@ -269,6 +291,8 @@ class Logbook(commands.Cog):
             hosted = [h for h in hosted if h.ship_role_id == ship_role.id]
         if voyage_type:
             hosted = [h for h in hosted if h.voyage_type.name == voyage_type.upper()]
+        if host:
+            hosted = [h for h in hosted if h.target_id == host.id]
 
         if not hosted:
             embed = error_embed(
@@ -278,7 +302,7 @@ class Logbook(commands.Cog):
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
-        embed = await build_embed(hosted[0], len(hosted), len(hosted))
+        embed = await build_embed(self.bot, hosted[0], len(hosted), len(hosted))
         view = LogBookView(self.bot, hosted)
 
         await interaction.response.send_message(embed=embed, view=view)
