@@ -5,7 +5,7 @@ import discord
 from config import GUILD_ID, VOYAGE_LOGS
 from config.emojis import ANCIENT_COINS_EMOJI, DOUBLOONS_EMOJI, GOLD_EMOJI
 from config.ships import SHIPS
-from data import Hosted
+from data import Hosted, VoyageType
 from data.repository.hosted_repository import HostedRepository
 from discord import app_commands
 from discord.ext import commands
@@ -194,13 +194,39 @@ class Logbook(commands.Cog):
     @app_commands.command(name="logbook", description="Get information about a member")
     @app_commands.autocomplete(main_ship=autocomplete_main_ship)
     @app_commands.autocomplete(auxiliary_ship=autocomplete_auxiliary_ship)
+    @app_commands.describe(ship_role="Filter by ship role")
+    @app_commands.choices(
+        voyage_type=[
+            app_commands.Choice(name="Patrol", value=VoyageType.PATROL.name),
+            app_commands.Choice(name="Skirmish", value=VoyageType.SKIRMISH.name),
+            app_commands.Choice(name="Adventure", value=VoyageType.ADVENTURE.name),
+        ]
+    )
+    @app_commands.describe(voyage_type="Filter by voyage type")
     @app_commands.checks.has_any_role(*JE_AND_UP)
     async def logbook(
         self,
         interaction: discord.interactions,
         main_ship: str = None,
         auxiliary_ship: str = None,
+        ship_role: discord.Role = None,
+        voyage_type: str = None,
     ):
+        if voyage_type and voyage_type not in [v.name for v in VoyageType]:
+            embed = error_embed(
+                title="Logbook Information",
+                description="Invalid voyage type provided. Please select a valid voyage type.",
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+        if ship_role and ship_role.id not in [ship.role_id for ship in SHIPS]:
+            embed = error_embed(
+                title="Logbook Information",
+                description="Invalid ship role provided. Please select a valid ship role.",
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
         if main_ship and not await is_valid_main_ship(main_ship):
             embed = error_embed(
                 title="Logbook Information", description="Invalid main ship provided."
@@ -239,11 +265,15 @@ class Logbook(commands.Cog):
         hosted = hosted_repository.get_hosted_by_either_ship_name_or_auxiliary_ship_name(
             main_ship, auxiliary_ship, None
         )
+        if ship_role:
+            hosted = [h for h in hosted if h.ship_role_id == ship_role.id]
+        if voyage_type:
+            hosted = [h for h in hosted if h.voyage_type.name == voyage_type.upper()]
+
         if not hosted:
             embed = error_embed(
                 title="Logbook Information",
-                description="No information found for the provided ship name. "
-                "We might've not recorded this ship yet.",
+                description="No logs found for the specified criteria.",
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
