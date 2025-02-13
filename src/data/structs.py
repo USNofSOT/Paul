@@ -115,11 +115,6 @@ class SailorCO:
         CoC_keys = list(CoC.keys())
         for role_id in CoC_keys:
             if role_id in role_ids:
-                # debugging
-                role = guild.get_role(role_id)
-                log.info(f"Found member has role: {role.name}")
-
-                # end debugging 
                 co_member = _get_co_from_link(role_id, sailor, CoC, CoC_keys, guild)
                 self.immediate = co_member
                 co_set = True
