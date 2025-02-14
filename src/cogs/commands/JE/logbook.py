@@ -94,20 +94,32 @@ async def build_embed(
             inline=True,
         )
 
-    embed.add_field(
-        name="Auxiliary Ship",
-        value=hosted.auxiliary_ship_name if hosted.auxiliary_ship_name else "N/A",
-        inline=True,
-    )
+    if hosted.auxiliary_ship_name:
+        embed.add_field(
+            name="Auxiliary Ship",
+            value=hosted.auxiliary_ship_name if hosted.auxiliary_ship_name else "N/A",
+            inline=True,
+        )
+    else:
+        embed.add_field(name="\u200b", value="\u200b", inline=True)
+
     embed.add_field(
         name="Voyage Count",
         value=convert_to_ordinal(hosted.ship_voyage_count) if hosted.ship_voyage_count else "N/A",
         inline=True,
     )
 
+    voyage_type_emoji = ":question: "
+    if hosted.voyage_type.name == VoyageType.PATROL.name:
+        voyage_type_emoji = ":sailboat: "
+    elif hosted.voyage_type.name == VoyageType.SKIRMISH.name:
+        voyage_type_emoji = ":crossed_swords: "
+    elif hosted.voyage_type.name == VoyageType.ADVENTURE.name:
+        voyage_type_emoji = ":compass: "
+
     embed.add_field(
         name="Voyage Type",
-        value=hosted.voyage_type.name.capitalize() if hosted.voyage_type else "N/A",
+        value=f"{voyage_type_emoji} {hosted.voyage_type.name if hosted.voyage_type else 'N/A'}",
         inline=True,
     )
     embed.add_field(name="Gold", value=f"{GOLD_EMOJI} {hosted.gold_count:,}", inline=True)
@@ -122,12 +134,12 @@ async def build_embed(
         name="Ancient Coins",
         value=f"{ANCIENT_COINS_EMOJI} {hosted.ancient_coin_count:,}"
         if hosted.ancient_coin_count
-        else "N/A",
+        else f"{ANCIENT_COINS_EMOJI} 0",
         inline=True,
     )
     embed.add_field(
         name="Fish",
-        value=f":fish: {hosted.fish_count:,}" if hosted.fish_count else "N/A",
+        value=f":fish: {hosted.fish_count:,}" if hosted.fish_count else ":fish: 0",
         inline=True,
     )
 
@@ -202,9 +214,8 @@ class LogBookView(discord.ui.View):
         await interaction.response.defer()
 
     async def on_timeout(self):
-        for item in self.children:
-            item.disabled = True
-        await self.message.edit(view=self)
+        # Remove the view after 5 minutes
+        self.stop()
 
 
 class Logbook(commands.Cog):
@@ -214,7 +225,12 @@ class Logbook(commands.Cog):
     @app_commands.command(name="logbook", description="Get information about a member")
     @app_commands.autocomplete(main_ship=autocomplete_main_ship)
     @app_commands.autocomplete(auxiliary_ship=autocomplete_auxiliary_ship)
-    @app_commands.describe(ship_role="Filter by ship role")
+    @app_commands.describe(
+        ship_role="Filter by ship role",
+        voyage_type="Filter by voyage type",
+        host="Filter by host",
+        crew_member="Filter by crew member",
+    )
     @app_commands.choices(
         voyage_type=[
             app_commands.Choice(name="Patrol", value=VoyageType.PATROL.name),
@@ -222,105 +238,91 @@ class Logbook(commands.Cog):
             app_commands.Choice(name="Adventure", value=VoyageType.ADVENTURE.name),
         ]
     )
-    @app_commands.describe(voyage_type="Filter by voyage type")
-    @app_commands.describe(host="Filter by host")
     @app_commands.checks.has_any_role(*JE_AND_UP)
     async def logbook(
         self,
-        interaction: discord.interactions,
+        interaction: discord.Interaction,
         main_ship: str = None,
         auxiliary_ship: str = None,
         ship_role: discord.Role = None,
         voyage_type: str = None,
         host: discord.Member = None,
+        crew_member: discord.Member = None,
     ):
-        if voyage_type and voyage_type not in [v.name for v in VoyageType]:
-            embed = error_embed(
-                title="Logbook Information",
-                description="Invalid voyage type provided. Please select a valid voyage type.",
+        if voyage_type and voyage_type not in VoyageType.__members__:
+            return await interaction.response.send_message(
+                embed=error_embed(title="Logbook Information", description="Invalid voyage type."),
+                ephemeral=True,
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            return
-        if ship_role and ship_role.id not in [ship.role_id for ship in SHIPS]:
-            embed = error_embed(
-                title="Logbook Information",
-                description="Invalid ship role provided. Please select a valid ship role.",
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            return
 
         if main_ship and not await is_valid_main_ship(main_ship):
-            embed = error_embed(
-                title="Logbook Information", description="Invalid main ship provided."
+            return await interaction.response.send_message(
+                embed=error_embed(title="Logbook Information", description="Invalid main ship."),
+                ephemeral=True,
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            return
 
         if auxiliary_ship and not await is_valid_auxiliary_ship(auxiliary_ship):
-            embed = error_embed(
-                title="Logbook Information",
-                description="Invalid auxiliary ship provided.",
+            return await interaction.response.send_message(
+                embed=error_embed(
+                    title="Logbook Information", description="Invalid auxiliary ship."
+                ),
+                ephemeral=True,
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            return
 
         if auxiliary_ship and main_ship:
             check_relation = await is_aux_part_of_main_ship(main_ship, auxiliary_ship)
-            # If false, then auxiliary ship is not part of main ship
             if not check_relation:
-                embed = error_embed(
-                    title="Logbook Information",
-                    description=f"{auxiliary_ship} is not part of {main_ship}.",
+                return await interaction.response.send_message(
+                    embed=error_embed(
+                        title="Logbook Information",
+                        description=f"{auxiliary_ship} is not part of {main_ship}.",
+                    ),
+                    ephemeral=True,
                 )
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-                return
             if isinstance(check_relation, list):
-                embed = error_embed(
-                    title="Logbook Information",
-                    description=f"{auxiliary_ship} is part of one or more main ships:"
-                    f" {', '.join(check_relation)}. Please specify the correct main ship.",
+                return await interaction.response.send_message(
+                    embed=error_embed(
+                        title="Logbook Information",
+                        description=f"{auxiliary_ship} is part of multiple "
+                        f"ships: {', '.join(check_relation)}.",
+                    ),
+                    ephemeral=True,
                 )
-                await interaction.response.send_message(embed=embed, ephemeral=True)
-                return
 
         hosted_repository = HostedRepository()
-        hosted = hosted_repository.get_hosted_by_either_ship_name_or_auxiliary_ship_name(
-            main_ship, auxiliary_ship, None
+        hosted = hosted_repository.get_filtered_hosted(
+            main_ship=main_ship,
+            auxiliary_ship=auxiliary_ship,
+            ship_role_id=ship_role.id if ship_role else None,
+            voyage_type=voyage_type.upper() if voyage_type else None,
+            host_id=host.id if host else None,
+            crew_member_id=crew_member.id if crew_member else None,
         )
-        if ship_role:
-            hosted = [h for h in hosted if h.ship_role_id == ship_role.id]
-        if voyage_type:
-            hosted = [h for h in hosted if h.voyage_type.name == voyage_type.upper()]
-        if host:
-            hosted = [h for h in hosted if h.target_id == host.id]
 
         if not hosted:
-            embed = error_embed(
-                title="Logbook Information",
-                description="No logs found for the specified criteria.",
+            return await interaction.response.send_message(
+                embed=error_embed(title="Logbook Information", description="No logs found."),
+                ephemeral=True,
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            return
 
         embed = await build_embed(self.bot, hosted[0], len(hosted), len(hosted))
         view = LogBookView(self.bot, hosted)
-
         await interaction.response.send_message(embed=embed, view=view)
 
         hosted_repository.close_session()
 
     @logbook.error
     async def logbook_error(self, interaction: discord.Interaction, error: commands.CommandError):
-        log.error("Error occurred in logbook command")
+        log.error("Error in logbook command")
         if isinstance(error, app_commands.errors.MissingAnyRole):
-            embed = error_embed(
-                title="Missing Permissions",
-                description="You do not have the required permissions to use this command.",
-                footer=False,
+            await interaction.followup.send(
+                embed=error_embed(
+                    title="Missing Permissions", description="You lack the required permissions."
+                ),
+                ephemeral=True,
             )
-            await interaction.followup.send(embed=embed, ephemeral=True)
         else:
-            embed = error_embed(exception=error)
+            await interaction.followup.send(embed=error_embed(exception=error), ephemeral=True)
 
 
 async def setup(bot: commands.Bot):

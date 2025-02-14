@@ -308,6 +308,34 @@ class HostedRepository:
             log.error("Error getting all auxiliary ships by main ship")
             raise e
 
+    def get_filtered_hosted(
+        self,
+        main_ship=None,
+        auxiliary_ship=None,
+        ship_role_id=None,
+        voyage_type=None,
+        host_id=None,
+        crew_member_id=None,
+    ):
+        query = self.session.query(Hosted).order_by(Hosted.log_time.desc())
+
+        if main_ship:
+            query = query.filter(
+                Hosted.ship_name == main_ship, Hosted.auxiliary_ship_name.is_(None)
+            )
+        if auxiliary_ship:
+            query = query.filter(Hosted.auxiliary_ship_name == auxiliary_ship)
+        if ship_role_id:
+            query = query.filter(Hosted.ship_role_id == ship_role_id)
+        if voyage_type:
+            query = query.filter(Hosted.voyage_type == voyage_type)
+        if host_id:
+            query = query.filter(Hosted.target_id == host_id)
+        if crew_member_id:
+            query = query.filter(Hosted.voyages.any(target_id=crew_member_id))
+
+        return query.all()
+
 
 def remove_hosted_entry_by_log_id(log_id: int) -> bool:
     """
