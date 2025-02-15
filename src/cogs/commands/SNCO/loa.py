@@ -25,7 +25,7 @@ class LeaveOfAbsence(commands.Cog):
     @app_commands.describe(level="LOA level, 0 being returned to active duty")
     @app_commands.describe(end_date="Return date for LOA in YYYY-MM-DD format. This input is ignored for returning to active duty")
     @app_commands.checks.has_any_role(*SNCO_AND_UP)
-    async def loa(self, interaction: discord.Interaction, message_id: int, target: discord.Member, level: int, end_date: str):
+    async def loa(self, interaction: discord.Interaction, message_id: str, target: discord.Member, level: int, end_date: str):
         await interaction.response.defer (ephemeral=True)
 
         log.info(f"LOA status change requested by {interaction.user.display_name or interaction.user.name}")
@@ -64,11 +64,11 @@ class LeaveOfAbsence(commands.Cog):
         # Message ID
         ######################
         # Check the message is in the leave of absence channel
-        is_in_channel = check_loa_channel(message_id, guild)
+        is_in_channel = await check_loa_channel(message_id, guild)
         if not is_in_channel:
             log.info(f"[INPUT ERROR] Message ID not in LOA channel.")
             embed = error_embed(title="Invalid Message ID",
-                                description=f"Please tag a message in the LOA channel, {guild.get_channel(LEAVE_OF_ABSENCE).name}.",
+                                description=f"Please tag a message in the LOA channel: {guild.get_channel(LEAVE_OF_ABSENCE).mention}",
                                 footer=False)
             await interaction.followup.send(embed=embed, ephemeral=True)
             return
@@ -138,7 +138,7 @@ class LeaveOfAbsence(commands.Cog):
         if old_LOA != level:
             target_ranked_nick.LOA = level
             new_nickname = str(target_ranked_nick)
-            # await target.edit(nick=new_nickname)  # FIXME: added this just for debugging
+            # await target.edit(nick=new_nickname)  # FIXME: commented this out just for debugging
             log.info(f"[INFO] New nickname is: {new_nickname}")
         else:
             new_nickname = target_name
@@ -219,17 +219,21 @@ def CoC_exceptions(user: discord.Member, target: discord.Member):
     return False
 
 
-def check_loa_channel(message_id: int, guild: discord.Guild):
+async def check_loa_channel(message_id: str, guild: discord.Guild) -> bool:
+    loa_channel = guild.get_channel(LEAVE_OF_ABSENCE)
+    msg_int = int(message_id)
     try:
-        loa_channel = guild.get_channel(LEAVE_OF_ABSENCE)
-        loa_channel.fetch_message(message_id)
-    except:
-        in_channel = False
-    else:
-        in_channel = True
-
-    return in_channel
-
+        await loa_channel.fetch_message(msg_int)
+        return True
+    except discord.NotFound:
+        log.warning(f"message {msg_int} not found in LOA channel, {LEAVE_OF_ABSENCE}")
+        return False
+    except discord.Forbidden:
+        log.warning(f"No permission to access messages in {loa_channel.name}")
+        return False
+    except discord.HTTPException as e:
+        log.warning(f'Failed to fetch message: {e}')
+        return False
 
 def check_loa_target_roles(target: discord.Member):
     for role in target.roles:
