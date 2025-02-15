@@ -75,14 +75,14 @@ class RetirementEnum(Enum):
 
 @dataclass
 class RankedNickname:
+    rank: NavyRank
+    nick: str
+    _rank_list: tuple[NavyRank]
     LOA: int = 0
     retirement_level: int = 0
     flag_officer: bool = False
     marine: bool = False
-    rank: NavyRank
     gender_option: str = 'male'
-    nick: str
-    _rank_list: tuple[NavyRank]
 
     @classmethod
     def from_member(cls, member: Member, rank_list: tuple[NavyRank]):
