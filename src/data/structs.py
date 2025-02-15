@@ -7,7 +7,7 @@ from enum import Enum
 import re
 from warnings import warn
 
-from config import MAX_NICKNAME_LENGTH
+from config.discord import MAX_NICKNAME_LENGTH
 import config.ranks_roles
 from config.ranks import RANKS
 from config.main_server import GUILD_ID
