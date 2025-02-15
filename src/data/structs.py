@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from logging import getLogger
 from collections import OrderedDict
 from dataclasses import dataclass
 from enum import Enum
@@ -12,9 +11,6 @@ from config.discord import MAX_NICKNAME_LENGTH
 import config.ranks_roles
 from config.main_server import GUILD_ID
 from discord import Guild, Member, Role
-
-
-log = getLogger(__name__)
 
 @dataclass
 class Ship:
@@ -86,22 +82,24 @@ class RankedNickname:
 
     @classmethod
     def from_member(cls, member: Member, rank_list: tuple[NavyRank]):
-        ranked_nick = cls()
-        ranked_nick._rank_list = rank_list
+        #ranked_nick = cls()
+        #ranked_nick._rank_list = rank_list
         nickname_str = member.nick or member.name
         remaining_str = nickname_str
         member_role_ids = [role.id for role in member.roles]
 
         # LOA
+        LOA = 0
         match = re.search(r"\[LOA-(\d+)\]", nickname_str)
         if match:
             level = int(match.group(1))
-            ranked_nick.LOA = level
+            LOA = level
             remaining_str.lstrip(f"[LOA-{level}]").lstrip(" ")
 
         # Retirement Level
+        retirement_level = RetirementEnum.ACTIVE.value[0]
         for rt_level in RetirementEnum:
-            if rt_level.name == "ACTIVE":
+            if rt_level == RetirementEnum.ACTIVE:
                 continue
             level_id, idx = rt_level.value
             rank_data = rank_list[idx]
@@ -109,7 +107,7 @@ class RankedNickname:
             at_level = any([role_id in member_role_ids for role_id in rank_data.role_ids])
             if at_level:
                 # Set Level
-                ranked_nick.retirement_level = level_id
+                retirement_level = level_id
 
                 # Remove inidicator from name string
                 indicator_found = False
@@ -125,48 +123,61 @@ class RankedNickname:
                 break
 
         # Flag Officer
+        flag_officer = False
         if remaining_str.startswith("Flag "):
-            ranked_nick.flag_officer = True
+            flag_officer = True
             remaining_str.lstrip("Flag ", "")
 
         # Marine
-        ranked_nick.marine = config.ranks_roles.MARINE_ROLE in member_role_ids
+        marine = config.ranks_roles.MARINE_ROLE in member_role_ids
 
         # Rank
         found_rank = False
-        ret_indices = [ret_level.value[1] for ret_level in RetirementEnum]
-        for idx, rank in enumerate(rank_list):
-            if idx in ret_indices:
-                continue
-            for rank_id in rank.role_ids:
-                if rank_id in member_role_ids:
-                    ranked_nick.rank = rank
+        for list_rank in rank_list:
+            role_ids = list_rank.role_ids
+            for role_id in role_ids:
+                if role_id in member_role_ids:
+                    rank = list_rank
+                    rank_role_id = role_id
                     found_rank = True
                     break
             if found_rank:
                 break
+        is_seaman_apprentice = rank.identifier == "E2" and rank.role_ids.index(rank_role_id) == 1
         
         # Gender Option
-        for option, rank_name in ranked_nick.rank.gender_options.items():
+        gender_option = 'male'
+        for option, rank_name in rank.gender_options.items():
             if rank_name.upper() in remaining_str.upper():
-                ranked_nick.gender_option = option
+                gender_option = option
                 break
         
         # Nick
-        if ranked_nick.marine:
-            official_abbrevs = ranked_nick.rank.marine_abbreviations
-            unofficial_abbrevs = ranked_nick.rank.unofficial_marine_abbreviations
+        if marine or is_seaman_apprentice:  # overloaded marine fields for seaman apprentice data
+            official_abbrevs = rank.marine_abbreviations
+            unofficial_abbrevs = rank.unofficial_marine_abbreviations
+            remaining_str = remaining_str.lstrip(rank.marine_name).lstrip(" ")
         else:
-            official_abbrevs = ranked_nick.rank.abbreviations
-            unofficial_abbrevs = ranked_nick.rank.unofficial_abbreviations
+            official_abbrevs = rank.abbreviations
+            unofficial_abbrevs = rank.unofficial_abbreviations
+            remaining_str = remaining_str.lstrip(rank.name).lstrip(" ")
         abbrev_list = official_abbrevs + unofficial_abbrevs
 
         for abbrev in sorted(abbrev_list, key=len, reverse=True):
             if remaining_str.startswith(abbrev):
                 remaining_str = remaining_str.lstrip(abbrev).lstrip(" ")
                 break
-        ranked_nick.nick = remaining_str.rstrip()
-        return ranked_nick
+        nick = remaining_str.rstrip()
+        return cls(
+            rank=rank,
+            nick=nick,
+            _rank_list=rank_list,
+            LOA=LOA,
+            retirement_level=retirement_level,
+            flag_officer=flag_officer,
+            marine=marine,
+            gender_option=gender_option
+        )
     
     def __str__(self):
         # LOA tag
@@ -176,12 +187,12 @@ class RankedNickname:
             LOA_part = ""
 
         # Retirement indicator
-        retd_options = ("")
-        if self.retirement_level == RetirementEnum.VETERAN[0]:
-            retd_rank = self._rank_list[RetirementEnum.VETERAN[1]]
+        retd_options = ("",)
+        if self.retirement_level == RetirementEnum.VETERAN.value[0]:
+            retd_rank = self._rank_list[RetirementEnum.VETERAN.value[1]]
             retd_options = retd_rank.abbreviations + retd_rank.name
-        elif self.retirement_level == RetirementEnum.RETIRED[0]:
-            retd_rank = self._rank_list[RetirementEnum.RETIRED[1]]
+        elif self.retirement_level == RetirementEnum.RETIRED.value[0]:
+            retd_rank = self._rank_list[RetirementEnum.RETIRED.value[1]]
             retd_options = retd_rank.abbreviations + retd_rank.name
         
         # Rank Title
@@ -197,7 +208,7 @@ class RankedNickname:
             else:
                 name = self.rank.name
             abbrevs = self.rank.abbreviations
-        rank_options = abbrevs + name
+        rank_options = abbrevs + (name,)
 
         # Nick
         nick = f" {self.nick}"

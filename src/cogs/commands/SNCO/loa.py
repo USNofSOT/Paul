@@ -64,6 +64,7 @@ class LeaveOfAbsence(commands.Cog):
         # Message ID
         ######################
         # Check the message is in the leave of absence channel
+        '''
         is_in_channel = await check_loa_channel(message_id, guild)
         if not is_in_channel:
             log.info(f"[INPUT ERROR] Message ID not in LOA channel.")
@@ -72,12 +73,13 @@ class LeaveOfAbsence(commands.Cog):
                                 footer=False)
             await interaction.followup.send(embed=embed, ephemeral=True)
             return
+        '''
 
         # Target
         ######################
         # Check the target is E-2+
         valid_target_roles = check_loa_target_roles(target)
-        if not is_in_channel:
+        if not valid_target_roles:
             log.info(f"[INPUT ERROR] Target is not E-2+.")
             embed = error_embed(title="Invalid Target",
                                 description=f"Please tag sailor E-2+.",
@@ -127,8 +129,9 @@ class LeaveOfAbsence(commands.Cog):
         #######################################################################
         try:
             target_ranked_nick = RankedNickname.from_member(target, RANKS)
-        except:
+        except Exception as e:
             log.info(f"[ERROR] error in generating ranked nickname for target.")
+            log.error("%s", str(e))
             embed = error_embed(title="Ranked Nickname Generation Error",
                                 description="Contact NSC to report the issue.",
                                 footer=False)
