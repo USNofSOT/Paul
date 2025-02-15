@@ -1,3 +1,5 @@
+from types import MappingProxyType
+
 from src.config.ranks_roles import RT_ROLES, DH_ROLES, E1_ROLES, E2_ROLES, E3_ROLES, VT_ROLES, E4_ROLES, E6_ROLES, \
     E8_ROLES, E7_ROLES, O1_ROLES, O3_ROLES, O4_ROLES, O5_ROLES, O6_ROLES, O8_ROLES, O7_ROLES, VADM_ROLES, AOTN_ROLES
 from src.data.structs import NavyRank, RankPrerequisites, Context
@@ -55,8 +57,8 @@ SEAMAN = NavyRank(
     marine_name="Seaman Apprentice",  # repurposing the marine fields for seaman apprentice
     abbreviations=("SN"),
     marine_abbreviations=("SA"),
-    gender_options={"female": "Seawoman"},
-    marine_gender_options={"female", "Seawoman Apprentice"},
+    gender_options=MappingProxyType({"female": "Seawoman"}),
+    marine_gender_options=MappingProxyType({"female", "Seawoman Apprentice"}),
     unofficial_abbreviations=("SMAN"),
     promotion_index={3}, # Able Seaman
     rank_context=Context(
@@ -71,7 +73,7 @@ ABLE_SEAMAN = NavyRank(
     role_ids=E3_ROLES,
     name="Able Seaman",
     marine_name="Lance Corporal",
-    gender_options={"female": "Able Seawoman"},
+    gender_options=MappingProxyType({"female": "Able Seawoman"}),
     abbreviations=("AB"),
     marine_abbreviations=("LCpl"),
     promotion_index={4}, # Junior Petty Officer
@@ -179,7 +181,7 @@ MIDSHIPMAN = NavyRank(
     role_ids=O1_ROLES,
     name="Midshipman",
     marine_name="Second Lieutenant",
-    gender_options={"female": "Midshipwoman"},
+    gender_options=MappingProxyType({"female": "Midshipwoman"}),
     abbreviations=("MIDN"),
     marine_abbreviations=("2ndLt"),
     unofficial_abbreviations=("MIDN."),

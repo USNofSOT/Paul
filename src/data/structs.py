@@ -5,6 +5,7 @@ from collections import OrderedDict
 from dataclasses import dataclass
 from enum import Enum
 import re
+from types import MappingProxyType
 from warnings import warn
 
 from config.discord import MAX_NICKNAME_LENGTH
@@ -55,8 +56,8 @@ class NavyRank:
     role_ids: tuple[int] = () # The role IDs associated with the rank (e.g. [933913081099214848] for Recruit)
     name: str = "" # The name of the rank (e.g. "Recruit", "Midshipman")
     marine_name: str = name # The name of the rank in case they are a Marine
-    gender_options: dict = {}  # Gender-specific name options
-    marine_gender_options: dict = {}
+    gender_options: MappingProxyType = MappingProxyType({})  # Gender-specific name options
+    marine_gender_options: MappingProxyType = MappingProxyType({})
     abbreviations: tuple[str] = () # Official abbreviations of rank
     unofficial_abbreviations: tuple[str] = () # Unofficial abbreviations found in the server
     marine_abbreviations: tuple[str] = () # Official marine abbreviations
