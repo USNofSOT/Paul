@@ -6,6 +6,7 @@ from logging import getLogger
 import re
 
 from src.config import GUILD_ID, LEAVE_OF_ABSENCE, E2_AND_UP, SNCO_AND_UP, SO_AND_UP, BOA_ROLE, AOTN_ROLES
+from src.config.ranks import RANKS
 from src.data.structs import SailorCO, RankedNickname
 from src.data import ModNotes
 from src.data.repository.modnote_repository import ModNoteRepository
@@ -125,7 +126,7 @@ class LeaveOfAbsence(commands.Cog):
         # Nickname Update
         #######################################################################
         try:
-            target_ranked_nick = RankedNickname.from_member(target)
+            target_ranked_nick = RankedNickname.from_member(target, RANKS)
         except:
             log.info(f"[ERROR] error in generating ranked nickname for target.")
             embed = error_embed(title="Ranked Nickname Generation Error",

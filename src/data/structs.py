@@ -9,7 +9,6 @@ from warnings import warn
 
 from config.discord import MAX_NICKNAME_LENGTH
 import config.ranks_roles
-from config.ranks import RANKS
 from config.main_server import GUILD_ID
 from discord import Guild, Member, Role
 
@@ -82,10 +81,12 @@ class RankedNickname:
     rank: NavyRank
     gender_option: str = 'male'
     nick: str
+    _rank_list: tuple[NavyRank]
 
     @classmethod
-    def from_member(cls, member: Member):
+    def from_member(cls, member: Member, rank_list: tuple[NavyRank]):
         ranked_nick = cls()
+        ranked_nick._rank_list = rank_list
         nickname_str = member.nick or member.name
         remaining_str = nickname_str
         member_role_ids = [role.id for role in member.roles]
@@ -102,7 +103,7 @@ class RankedNickname:
             if rt_level.name == "ACTIVE":
                 continue
             level_id, idx = rt_level.value
-            rank_data = RANKS[idx]
+            rank_data = rank_list[idx]
 
             at_level = any([role_id in member_role_ids for role_id in rank_data.role_ids])
             if at_level:
@@ -133,7 +134,7 @@ class RankedNickname:
         # Rank
         found_rank = False
         ret_indices = [ret_level.value[1] for ret_level in RetirementEnum]
-        for idx, rank in enumerate(RANKS):
+        for idx, rank in enumerate(rank_list):
             if idx in ret_indices:
                 continue
             for rank_id in rank.role_ids:
@@ -176,10 +177,10 @@ class RankedNickname:
         # Retirement indicator
         retd_options = ("")
         if self.retirement_level == RetirementEnum.VETERAN[0]:
-            retd_rank = RANKS[RetirementEnum.VETERAN[1]]
+            retd_rank = self._rank_list[RetirementEnum.VETERAN[1]]
             retd_options = retd_rank.abbreviations + retd_rank.name
         elif self.retirement_level == RetirementEnum.RETIRED[0]:
-            retd_rank = RANKS[RetirementEnum.RETIRED[1]]
+            retd_rank = self._rank_list[RetirementEnum.RETIRED[1]]
             retd_options = retd_rank.abbreviations + retd_rank.name
         
         # Rank Title
