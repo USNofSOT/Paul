@@ -50,10 +50,12 @@ class LeaveOfAbsence(commands.Cog):
         if not is_superior:
             log.info(f"[INPUT ERROR] Interaction member is not above target in CoC (or an exceptional case).")
 
-            descr = f"You are not in the chain of command for {target_name}:"
-            while imm_CO := SailorCO(target).immediate:
-                descr += f" {imm_CO.display_name or imm_CO.name}"
+            descr = f"You are not in the chain of command for {target.mention}.\n"
+            coc_str = ""
+            while imm_CO := SailorCO(target, guild).immediate:
+                coc_str = f"1. {imm_CO.mention}\n" + coc_str
                 target = imm_CO
+            descr += coc_str
 
             embed = error_embed(title="Outside the Chain of Command",
                                 description=descr,
