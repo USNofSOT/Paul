@@ -138,7 +138,7 @@ class LeaveOfAbsence(commands.Cog):
         if old_LOA != level:
             target_ranked_nick.LOA = level
             new_nickname = str(target_ranked_nick)
-            await target.edit(nick=new_nickname)
+            # await target.edit(nick=new_nickname)  # FIXME: added this just for debugging
             log.info(f"[INFO] New nickname is: {new_nickname}")
         else:
             new_nickname = target_name
