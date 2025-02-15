@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-from logging import getLogger
 from collections import OrderedDict
 from dataclasses import dataclass
+from enum import Enum
+import re
+from types import MappingProxyType
 from warnings import warn
 
+from config.discord import MAX_NICKNAME_LENGTH
 import config.ranks_roles
 from config.main_server import GUILD_ID
 from discord import Guild, Member, Role
-
-
-log = getLogger(__name__)
 
 @dataclass
 class Ship:
@@ -52,9 +52,200 @@ class NavyRank:
     role_ids: tuple[int] = () # The role IDs associated with the rank (e.g. [933913081099214848] for Recruit)
     name: str = "" # The name of the rank (e.g. "Recruit", "Midshipman")
     marine_name: str = name # The name of the rank in case they are a Marine
+    gender_options: MappingProxyType = MappingProxyType({})  # Gender-specific name options
+    marine_gender_options: MappingProxyType = MappingProxyType({})
+    abbreviations: tuple[str] = () # Official abbreviations of rank
+    unofficial_abbreviations: tuple[str] = () # Unofficial abbreviations found in the server
+    marine_abbreviations: tuple[str] = () # Official marine abbreviations
+    unofficial_marine_abbreviations: tuple[str] = () # Unofficial abbreviations found in the server
     promotion_index: set[int] = () # The index of the rank that the member would be promoted to
     rank_prerequisites: RankPrerequisites = None # The requirements needed for a rank
     rank_context: Context = None # The context of the rank (e.g. the channel_thread_id and message_id of the rank's embed)
+
+@dataclass
+class RetirementEnum(Enum):
+             #  Ret Level  , RANKS index 
+    ACTIVE   = (0          , -1)
+    VETERAN  = (1          ,  3)
+    RETIRED  = (2          ,  2)
+
+@dataclass
+class RankedNickname:
+    rank: NavyRank
+    nick: str
+    _rank_list: tuple[NavyRank]
+    LOA: int = 0
+    retirement_level: int = 0
+    flag_officer: bool = False
+    marine: bool = False
+    gender_option: str = 'male'
+
+    @classmethod
+    def from_member(cls, member: Member, rank_list: tuple[NavyRank]):
+        #ranked_nick = cls()
+        #ranked_nick._rank_list = rank_list
+        nickname_str = member.nick or member.name
+        remaining_str = nickname_str
+        member_role_ids = [role.id for role in member.roles]
+
+        # LOA
+        LOA = 0
+        match = re.search(r"\[LOA-(\d+)\]", nickname_str)
+        if match:
+            level = int(match.group(1))
+            LOA = level
+            remaining_str.lstrip(f"[LOA-{level}]").lstrip(" ")
+
+        # Retirement Level
+        retirement_level = RetirementEnum.ACTIVE.value[0]
+        for rt_level in RetirementEnum:
+            if rt_level == RetirementEnum.ACTIVE:
+                continue
+            level_id, idx = rt_level.value
+            rank_data = rank_list[idx]
+
+            at_level = any([role_id in member_role_ids for role_id in rank_data.role_ids])
+            if at_level:
+                # Set Level
+                retirement_level = level_id
+
+                # Remove inidicator from name string
+                indicator_found = False
+                if rank_data.name in remaining_str:
+                    remaining_str = remaining_str.lstrip(rank_data.name).lstrip(" ")
+                    indicator_found = True
+                abbrev_list = rank_data.abbreviations + rank_data.unofficial_abbreviations
+                for abbrev in sorted(abbrev_list, key=len, reverse=True):
+                    if not indicator_found and remaining_str.startswith(abbrev):
+                        remaining_str = remaining_str.lstrip(abbrev).lstrip(" ")
+                        indicator_found = True
+                        break
+                break
+
+        # Flag Officer
+        flag_officer = False
+        if remaining_str.startswith("Flag "):
+            flag_officer = True
+            remaining_str.lstrip("Flag ", "")
+
+        # Marine
+        marine = config.ranks_roles.MARINE_ROLE in member_role_ids
+
+        # Rank
+        found_rank = False
+        for list_rank in rank_list:
+            role_ids = list_rank.role_ids
+            for role_id in role_ids:
+                if role_id in member_role_ids:
+                    rank = list_rank
+                    rank_role_id = role_id
+                    found_rank = True
+                    break
+            if found_rank:
+                break
+        is_seaman_apprentice = rank.identifier == "E2" and rank.role_ids.index(rank_role_id) == 1
+        
+        # Gender Option
+        gender_option = 'male'
+        for option, rank_name in rank.gender_options.items():
+            if rank_name.upper() in remaining_str.upper():
+                gender_option = option
+                break
+        
+        # Nick
+        if marine or is_seaman_apprentice:  # overloaded marine fields for seaman apprentice data
+            official_abbrevs = rank.marine_abbreviations
+            unofficial_abbrevs = rank.unofficial_marine_abbreviations
+            remaining_str = remaining_str.lstrip(rank.marine_name).lstrip(" ")
+        else:
+            official_abbrevs = rank.abbreviations
+            unofficial_abbrevs = rank.unofficial_abbreviations
+            remaining_str = remaining_str.lstrip(rank.name).lstrip(" ")
+        abbrev_list = official_abbrevs + unofficial_abbrevs
+
+        for abbrev in sorted(abbrev_list, key=len, reverse=True):
+            if remaining_str.startswith(abbrev):
+                remaining_str = remaining_str.lstrip(abbrev).lstrip(" ")
+                break
+        nick = remaining_str.rstrip()
+        return cls(
+            rank=rank,
+            nick=nick,
+            _rank_list=rank_list,
+            LOA=LOA,
+            retirement_level=retirement_level,
+            flag_officer=flag_officer,
+            marine=marine,
+            gender_option=gender_option
+        )
+    
+    def __str__(self):
+        # LOA tag
+        if self.LOA:
+            LOA_part = f"[LOA-{self.LOA}] "
+        else:
+            LOA_part = ""
+
+        # Retirement indicator
+        retd_options = ("",)
+        if self.retirement_level == RetirementEnum.VETERAN.value[0]:
+            retd_rank = self._rank_list[RetirementEnum.VETERAN.value[1]]
+            retd_options = retd_rank.abbreviations + retd_rank.name
+        elif self.retirement_level == RetirementEnum.RETIRED.value[0]:
+            retd_rank = self._rank_list[RetirementEnum.RETIRED.value[1]]
+            retd_options = retd_rank.abbreviations + retd_rank.name
+        
+        # Rank Title
+        if self.marine:
+            if self.gender_option in self.rank.marine_gender_options:
+                name = self.rank.marine_gender_options[self.gender_option]
+            else:
+                name = self.rank.marine_name
+            abbrevs = self.rank.marine_abbreviations
+        else:
+            if self.gender_option in self.rank.gender_options:
+                name = self.rank.gender_options[self.gender_option]
+            else:
+                name = self.rank.name
+            abbrevs = self.rank.abbreviations
+        rank_options = abbrevs + (name,)
+
+        # Nick
+        nick = f" {self.nick}"
+
+        # Find longest retired + rank combination
+        remaining_characters = MAX_NICKNAME_LENGTH
+        remaining_characters -= len(LOA_part)
+        remaining_characters -= len(nick)
+
+        longest_combo = ""
+        for i, retd_str in enumerate(retd_options):
+            for j, rank_str in enumerate(rank_options):
+                if retd_str and self.flag_officer:
+                    combo_str = f"{retd_str} Flag {rank_str}"
+                elif retd_str:
+                    combo_str = f"{retd_str} {rank_str}"
+                elif self.flag_officer:
+                    combo_str = f"Flag {rank_str}"
+                else:
+                    combo_str = rank_str
+                if (len(combo_str) > len(longest_combo)) and (len(combo_str) <= remaining_characters):
+                    longest_combo = combo_str
+        
+        full_nickname = f"{LOA_part}{longest_combo}{nick}"
+        return full_nickname
+
+
+
+
+
+        
+
+
+
+        
+        
+
 
 @dataclass
 class Award:

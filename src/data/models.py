@@ -215,6 +215,21 @@ class Training(Base):
     training_category = Column(Enum(TrainingCategory), nullable=False)
     log_time = Column(DATETIME, nullable=False)
 
+class LeaveOfAbsence(Base):
+    __tablename__ = "leave_of_absence"
+
+    message_id = Column(BIGINT, primary_key=True)
+    target_id = mapped_column(ForeignKey("sailor.discord_id"))
+    changed_by_id = mapped_column(ForeignKey("sailor.discord_id")) # The person who took the action
+
+    name_before = Column(VARCHAR(32))
+    name_after = Column(VARCHAR(32))
+
+    loa_before = Column(Integer, server_default="0")  # saved since some people on LOA before this database launched
+    loa_after  = Column(Integer, server_default="0")
+
+    end_date = Column(DATETIME)
+
 """ AUDIT LOGS
 The following classes are used for audit logging
 
