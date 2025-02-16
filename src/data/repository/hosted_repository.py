@@ -258,6 +258,33 @@ class HostedRepository:
             log.error("Error getting last hosted log entries.")
             raise e
 
+    def retrieve_ship_history(self, ship_name: str) -> list[Type[Hosted]]:
+        """
+        Retrieves the ship history for the given ship name.
+
+        Args:
+            ship_name (str): The name of the ship.
+
+        Returns:
+            list[Hosted] | None: The ship history if found, otherwise None.
+        """
+        try:
+            # Try to find info for main ship,
+            # if not found, try to find info for auxiliary ship
+            ship = (
+                self.session.query(Hosted)
+                .filter(Hosted.ship_name == ship_name, Hosted.auxiliary_ship_name is None)
+                .all()
+            )
+            if not ship:
+                ship = (
+                    self.session.query(Hosted).filter(Hosted.auxiliary_ship_name == ship_name).all()
+                )
+            return ship
+        except Exception as e:
+            log.error("Error retrieving ship history.")
+            raise e
+
 
 def remove_hosted_entry_by_log_id(log_id: int) -> bool:
     """
