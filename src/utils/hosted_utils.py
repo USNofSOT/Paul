@@ -154,18 +154,25 @@ def get_ship_names(
     get_auxiliary_ship_names: bool = True,
     map_by_main_ship_name: bool = False,
     ignore_none: bool = True,
+    prevent_duplicates: bool = True,
 ) -> list[str] | dict[str, list[str]]:
     ship_names = _get_unique_ship_names()
+
     if ignore_none:
         ship_names = [ship for ship in ship_names if ship.main_ship_name is not None]
+
     if map_by_main_ship_name:
-        return {ship.main_ship_name: ship.auxiliary_ship_names for ship in ship_names}
-    if get_main_ship_names and get_auxiliary_ship_names:
-        return sorted(
-            [ship.main_ship_name for ship in ship_names]
-            + [aux_ship for ship in ship_names for aux_ship in ship.auxiliary_ship_names]
-        )
+        return {
+            k: sorted(set(v)) if prevent_duplicates else v
+            for k, v in {
+                ship.main_ship_name: ship.auxiliary_ship_names for ship in ship_names
+            }.items()
+        }
+
+    all_names = []
     if get_main_ship_names:
-        return sorted([ship.main_ship_name for ship in ship_names])
+        all_names.extend(ship.main_ship_name for ship in ship_names)
     if get_auxiliary_ship_names:
-        return sorted([aux_ship for ship in ship_names for aux_ship in ship.auxiliary_ship_names])
+        all_names.extend(aux_ship for ship in ship_names for aux_ship in ship.auxiliary_ship_names)
+
+    return sorted(set(all_names)) if prevent_duplicates else sorted(all_names)
