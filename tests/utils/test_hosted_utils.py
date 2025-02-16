@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from data import Hosted, VoyageType
-from utils.hosted_utils import ShipHistory
+from utils.hosted_utils import ShipHistory, ShipName, get_ship_names
 
 
 class TestShipHistory(unittest.TestCase):
@@ -165,6 +165,111 @@ class TestShipHistory(unittest.TestCase):
         mock_retrieve_ship_history.return_value = []
         with self.assertRaises(ValueError):
             ShipHistory(ship_name="USS Grizzly")
+
+
+class TestGetNames(unittest.TestCase):
+    @patch("utils.hosted_utils._get_unique_ship_names")
+    def test_get_ship_names_default(self, mock_get_unique_ship_names):
+        mock_get_unique_ship_names.return_value = [
+            ShipName(main_ship_name="USS Grizzly", auxiliary_ship_names=["USS Illustrious"]),
+            ShipName(main_ship_name="USS Enterprise", auxiliary_ship_names=["USS Voyager"]),
+        ]
+        result = get_ship_names()
+        expected = sorted(["USS Grizzly", "USS Illustrious", "USS Enterprise", "USS Voyager"])
+        self.assertEqual(result, expected)
+
+    @patch("utils.hosted_utils._get_unique_ship_names")
+    def test_get_ship_names_main_only(self, mock_get_unique_ship_names):
+        mock_get_unique_ship_names.return_value = [
+            ShipName(main_ship_name="USS Grizzly", auxiliary_ship_names=["USS Illustrious"]),
+            ShipName(main_ship_name="USS Enterprise", auxiliary_ship_names=["USS Voyager"]),
+        ]
+        result = get_ship_names(get_auxiliary_ship_names=False)
+        expected = sorted(["USS Grizzly", "USS Enterprise"])
+        self.assertEqual(result, expected)
+
+    @patch("utils.hosted_utils._get_unique_ship_names")
+    def test_get_ship_names_auxiliary_only(self, mock_get_unique_ship_names):
+        mock_get_unique_ship_names.return_value = [
+            ShipName(main_ship_name="USS Grizzly", auxiliary_ship_names=["USS Illustrious"]),
+            ShipName(main_ship_name="USS Enterprise", auxiliary_ship_names=["USS Voyager"]),
+        ]
+        result = get_ship_names(get_main_ship_names=False)
+        expected = sorted(["USS Illustrious", "USS Voyager"])
+        self.assertEqual(result, expected)
+
+    @patch("utils.hosted_utils._get_unique_ship_names")
+    def test_get_ship_names_map_by_main(self, mock_get_unique_ship_names):
+        mock_get_unique_ship_names.return_value = [
+            ShipName(main_ship_name="USS Grizzly", auxiliary_ship_names=["USS Illustrious"]),
+            ShipName(main_ship_name="USS Enterprise", auxiliary_ship_names=["USS Voyager"]),
+        ]
+        result = get_ship_names(map_by_main_ship_name=True)
+        expected = {"USS Enterprise": ["USS Voyager"], "USS Grizzly": ["USS Illustrious"]}
+        self.assertEqual(result, expected)
+
+    @patch("utils.hosted_utils._get_unique_ship_names")
+    def test_get_ship_names_ignore_none(self, mock_get_unique_ship_names):
+        mock_get_unique_ship_names.return_value = [
+            ShipName(main_ship_name="USS Grizzly", auxiliary_ship_names=["USS Illustrious"]),
+            ShipName(main_ship_name=None, auxiliary_ship_names=["USS Voyager"]),
+        ]
+        result = get_ship_names()
+        expected = sorted(["USS Grizzly", "USS Illustrious"])
+        self.assertEqual(result, expected)
+
+    @patch("utils.hosted_utils._get_unique_ship_names")
+    def test_get_ship_names_no_auxiliary_ships(self, mock_get_unique_ship_names):
+        mock_get_unique_ship_names.return_value = [
+            ShipName(main_ship_name="USS Grizzly"),
+            ShipName(main_ship_name="USS Enterprise"),
+        ]
+        result = get_ship_names()
+        expected = sorted(["USS Grizzly", "USS Enterprise"])
+        self.assertEqual(result, expected)
+
+    @patch("utils.hosted_utils._get_unique_ship_names")
+    def test_get_ship_names_empty(self, mock_get_unique_ship_names):
+        mock_get_unique_ship_names.return_value = []
+        result = get_ship_names()
+        expected = []
+        self.assertEqual(result, expected)
+
+    @patch("utils.hosted_utils._get_unique_ship_names")
+    def test_get_ship_names_map_by_main_no_auxiliary(self, mock_get_unique_ship_names):
+        mock_get_unique_ship_names.return_value = [
+            ShipName(main_ship_name="USS Grizzly"),
+            ShipName(main_ship_name="USS Enterprise"),
+        ]
+        result = get_ship_names(map_by_main_ship_name=True)
+        expected = {"USS Grizzly": [], "USS Enterprise": []}
+        self.assertEqual(result, expected)
+
+    @patch("utils.hosted_utils._get_unique_ship_names")
+    def test_get_ship_names_map_by_main_ignore_none(self, mock_get_unique_ship_names):
+        mock_get_unique_ship_names.return_value = [
+            ShipName(main_ship_name="USS Grizzly", auxiliary_ship_names=["USS Illustrious"]),
+            ShipName(main_ship_name=None, auxiliary_ship_names=["USS Voyager"]),
+        ]
+        result = get_ship_names(map_by_main_ship_name=True, ignore_none=True)
+        expected = {"USS Grizzly": ["USS Illustrious"]}
+        self.assertEqual(result, expected)
+
+    @patch("utils.hosted_utils._get_unique_ship_names")
+    def test_get_ship_names_map_by_main_multiple_auxiliary(self, mock_get_unique_ship_names):
+        mock_get_unique_ship_names.return_value = [
+            ShipName(
+                main_ship_name="USS Grizzly",
+                auxiliary_ship_names=["USS Illustrious", "USS Voyager"],
+            ),
+            ShipName(main_ship_name="USS Enterprise", auxiliary_ship_names=["USS Voyager"]),
+        ]
+        result = get_ship_names(map_by_main_ship_name=True)
+        expected = {
+            "USS Grizzly": ["USS Illustrious", "USS Voyager"],
+            "USS Enterprise": ["USS Voyager"],
+        }
+        self.assertEqual(result, expected)
 
 
 if __name__ == "__main__":

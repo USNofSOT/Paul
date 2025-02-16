@@ -1,9 +1,9 @@
 import logging
 from datetime import datetime, timedelta
-from typing import Type
+from typing import Any, Type
 
 from data import VoyageType
-from sqlalchemy import delete, update
+from sqlalchemy import Row, delete, update
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql.functions import coalesce, count
 
@@ -311,6 +311,20 @@ class HostedRepository:
             return ship
         except Exception as e:
             log.error("Error retrieving ship history.")
+            raise e
+
+    def retrieve_unique_ship_name_combinations(self) -> list[Row[tuple[Any, Any]]]:
+        """
+        Retrieves the unique ship name combinations from the Hosted table.
+        [ship_name, auxiliary_ship_name]
+
+        Returns:
+            list[tuple[str]]: The unique ship name combinations.
+        """
+        try:
+            return self.session.query(Hosted.ship_name, Hosted.auxiliary_ship_name).distinct().all()
+        except Exception as e:
+            log.error("Error retrieving unique ship name combinations.")
             raise e
 
 
