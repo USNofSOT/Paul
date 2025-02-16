@@ -42,10 +42,28 @@ class ShipHistory:
     def get_amount_of_voyage_type(self, voyage_type: VoyageType) -> int:
         return sum(1 for entry in self.history if entry.voyage_type == voyage_type)
 
-    def get_top_three_hosts(self) -> list[ShipHostHistory]:
+    def get_top_three_hosts(
+        self,
+        within_id_list: list[int] | None = None,
+    ) -> list[ShipHostHistory]:
+        if within_id_list:
+            return sorted(
+                [entry for entry in self.hosts if entry.target_id in within_id_list],
+                key=lambda x: x.total_voyages,
+                reverse=True,
+            )[:3]
         return sorted(self.hosts, key=lambda x: x.total_voyages, reverse=True)[:3]
 
-    def get_top_three_voyage_types(self) -> list[ShipVoyageTypeHistory]:
+    def get_top_three_voyage_types(
+        self,
+        ignore_unknown: bool = True,
+    ) -> list[ShipVoyageTypeHistory]:
+        if ignore_unknown:
+            return sorted(
+                [entry for entry in self.voyage_types if entry.voyage_type != VoyageType.UNKNOWN],
+                key=lambda x: x.total_voyages,
+                reverse=True,
+            )[:3]
         return sorted(self.voyage_types, key=lambda x: x.total_voyages, reverse=True)[:3]
 
     def __init__(self, ship_name: str):
