@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from functools import lru_cache
 from logging import getLogger
 from typing import Type
 
@@ -94,3 +95,59 @@ class ShipHistory:
                 )
             )
         hosted_repository.close_session()
+
+
+@dataclass
+class ShipName:
+    main_ship_name: str
+    auxiliary_ship_names: list[str] = field(default_factory=list)
+
+
+@lru_cache(maxsize=32)
+def _get_unique_ship_names() -> list[ShipName]:
+    result = []
+    hosted_repository = HostedRepository()
+    try:
+        # Retrieve unique ship names (main and auxiliary) from the database
+        # index 0 is main ship name, 1 is auxiliary ship name
+        ship_names = hosted_repository.retrieve_unique_ship_name_combinations()
+        for main_ship, auxiliary_ship in ship_names:
+            ship_name = next((s for s in result if s.main_ship_name == main_ship), None)
+            if ship_name:
+                if auxiliary_ship:
+                    ship_name.auxiliary_ship_names.append(auxiliary_ship)
+            else:
+                result.append(
+                    ShipName(
+                        main_ship_name=main_ship,
+                        auxiliary_ship_names=[auxiliary_ship] if auxiliary_ship else [],
+                    )
+                )
+    except Exception as e:
+        log.error("Error retrieving unique ship names.")
+        raise e
+    finally:
+        hosted_repository.close_session()
+    return result
+
+
+def get_ship_names(
+    get_main_ship_names: bool = True,
+    get_auxiliary_ship_names: bool = True,
+    map_by_main_ship_name: bool = False,
+    ignore_none: bool = True,
+) -> list[str] | dict[str, list[str]]:
+    ship_names = _get_unique_ship_names()
+    if ignore_none:
+        ship_names = [ship for ship in ship_names if ship.main_ship_name is not None]
+    if map_by_main_ship_name:
+        return {ship.main_ship_name: ship.auxiliary_ship_names for ship in ship_names}
+    if get_main_ship_names and get_auxiliary_ship_names:
+        return sorted(
+            [ship.main_ship_name for ship in ship_names]
+            + [aux_ship for ship in ship_names for aux_ship in ship.auxiliary_ship_names]
+        )
+    if get_main_ship_names:
+        return sorted([ship.main_ship_name for ship in ship_names])
+    if get_auxiliary_ship_names:
+        return sorted([aux_ship for ship in ship_names for aux_ship in ship.auxiliary_ship_names])
