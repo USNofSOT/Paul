@@ -110,30 +110,13 @@ class SailorCO:
         role_ids = set([role.id for role in sailor_roles])
 
         # Traverse the chain of command
-        co_set = False
         CoC = config.ranks_roles.CHAIN_OF_COMMAND
         CoC_keys = list(CoC.keys())
         for role_id in CoC_keys:
             if role_id in role_ids:
                 co_member = _get_co_from_link(role_id, sailor, CoC, CoC_keys, guild)
                 self.immediate = co_member
-                co_set = True
                 break
-
-        # Get Squad Leader
-        if not co_set:
-            role_found = False
-            for role in sailor_roles:
-                if role.name.upper().endswith(' SQUAD'):
-                    squad_role = role
-                    role_found = True
-                    break
-            if role_found:
-                for role_member in squad_role.members:
-                    if config.ranks_roles.SHIP_SL_ROLE in (role.id for role in role_member.roles):
-                        squad_leader = role_member
-                        self.immediate = squad_leader
-                        break
 
         # Get the acting CO (if immediate CO is LOA-2)
         self.acting = self.immediate
@@ -171,12 +154,15 @@ def _get_co_from_link(role_id: int, sailor: Member, CoC: OrderedDict, CoC_keys: 
         return None
 
     co_role = guild.get_role(co_role_id)
-    if common_group == config.ranks_roles.COC_ENUM['Fleet']:
+    if common_group == config.ranks_roles.COC_ENUM.Fleet.value:
         fleet_role = _get_fleet(sailor)
         co_role_members = [m for m in co_role.members if fleet_role in m.roles]
-    elif common_group == config.ranks_roles.COC_ENUM['Ship']:
+    elif common_group == config.ranks_roles.COC_ENUM.Ship.value:
         ship_role = _get_ship(sailor)
         co_role_members = [m for m in co_role.members if ship_role in m.roles]
+    elif common_group == config.ranks_roles.COC_ENUM.Squad.value:
+        squad_role = _get_squad(sailor)
+        co_role_members = [m for m in co_role.members if squad_role in m.roles]
     else:
         co_role_members = co_role.members
 
@@ -212,3 +198,11 @@ def _get_ship(sailor: Member):
             ship_role = role
             break
     return ship_role
+
+def _get_squad(sailor: Member):
+    squad_role = None
+    for role in sailor.roles:
+        if ('Squad' in role.name) and (role.id != config.ranks_roles.SHIP_SL_ROLE):
+            squad_role = role
+            break
+    return squad_role
