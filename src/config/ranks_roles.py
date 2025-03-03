@@ -1,3 +1,4 @@
+from enum import Enum
 from collections import OrderedDict
 
 ###############################################################################
@@ -46,24 +47,28 @@ SHIP_FO_ROLE = 1250613812336398418
 SHIP_COS_ROLE = 1250613959095091343
 SHIP_SL_ROLE = 1143324589968068619
 
-COC_ENUM = {
-    'Navy':  0,
-    'Fleet': 1,
-    'Ship':  2,
-}
+class COC_ENUM(Enum):
+    Navy  = 0
+    Fleet = 1
+    Ship  = 2
+    Squad = 3
 
     # CMD ROLE       # CO ROLE      # COMMON GROUP
 CHAIN_OF_COMMAND = OrderedDict([
-    (AOTN_ROLES[0],  (None,          COC_ENUM['Navy'])),
-    (VADM_ROLES[0],  (AOTN_ROLES[0], COC_ENUM['Navy'])),
-    (MCPON_ROLES[0], (AOTN_ROLES[0], COC_ENUM['Navy'])),
-    (FLEET_CO_ROLE,  (VADM_ROLES[0], COC_ENUM['Navy'])),
-    (SHIP_CO_ROLE,   (FLEET_CO_ROLE, COC_ENUM['Fleet'])),
-    (SHIP_FO_ROLE,   (SHIP_CO_ROLE,  COC_ENUM['Ship'])),
-    (SHIP_COS_ROLE,  (SHIP_FO_ROLE,  COC_ENUM['Ship'])),
-    (SHIP_SL_ROLE,   (SHIP_COS_ROLE, COC_ENUM['Ship'])),
-    (E2_ROLES[1],    (VADM_ROLES[0], COC_ENUM['Navy'])), # Seaman Apprentice
-    (E1_ROLES[0],    (VADM_ROLES[0], COC_ENUM['Navy'])), # Recruit
+    (AOTN_ROLES[0],  (None,          COC_ENUM.Navy.value)),
+    (VADM_ROLES[0],  (AOTN_ROLES[0], COC_ENUM.Navy.value)),
+    (MCPON_ROLES[0], (AOTN_ROLES[0], COC_ENUM.Navy.value)),
+    (FLEET_CO_ROLE,  (VADM_ROLES[0], COC_ENUM.Navy.value)),
+    (SHIP_CO_ROLE,   (FLEET_CO_ROLE, COC_ENUM.Fleet.value)),
+    (SHIP_FO_ROLE,   (SHIP_CO_ROLE,  COC_ENUM.Ship.value)),
+    (SHIP_COS_ROLE,  (SHIP_FO_ROLE,  COC_ENUM.Ship.value)),
+    (SHIP_SL_ROLE,   (SHIP_COS_ROLE, COC_ENUM.Ship.value)),
+    (SNCO_ROLE,      (SHIP_SL_ROLE,  COC_ENUM.Squad.value)),
+    (NCO_ROLE,       (SHIP_SL_ROLE,  COC_ENUM.Squad.value)),
+    (E3_ROLES[0],    (SHIP_SL_ROLE,  COC_ENUM.Squad.value)), # Able Seaman
+    (E2_ROLES[0],    (SHIP_SL_ROLE,  COC_ENUM.Squad.value)), # Seaman
+    (E2_ROLES[1],    (VADM_ROLES[0], COC_ENUM.Navy.value)),  # Seaman Apprentice
+    (E1_ROLES[0],    (VADM_ROLES[0], COC_ENUM.Navy.value)),  # Recruit
 ])
 
 ###############################################################################
