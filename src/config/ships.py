@@ -2,20 +2,20 @@ from src.config.main_server import (
     BC_ADRESTIA,
     BC_ADUN,
     BC_ARIZONA,
-    BC_AUDACIOUS,
     BC_COLLINS,
     BC_HYPERION,
     BC_LUSTY,
     BC_MAELSTROM,
-    BC_ORIGIN,
     BC_PHANTOM,
     BC_PLATYPUS,
+    BC_SILVERCLAW,
+    BC_VALHALLA,
     BC_VENOM,
 )
 from src.data.structs import Ship
 
 ROLE_ID_LUSTY = 933919139700019222
-ROLE_ID_AUDACIOUS = 1164671319338664007
+ROLE_ID_VALHALLA = 1164671319338664007
 ROLE_ID_MAELSTROM = 1002303636522680391
 ROLE_ID_ADUN = 1242143582463332402
 ROLE_ID_ADRESTIA = 1084451910578339880
@@ -23,7 +23,7 @@ ROLE_ID_HYPERION = 1157426517912076318
 ROLE_ID_PLATYPUS = 967531117882261536
 ROLE_ID_ARIZONA = 1058840733248933908
 ROLE_ID_PHANTOM = 1274251672876617792
-ROLE_ID_ORIGIN = 977935623774162954
+ROLE_ID_SILVERCLAW = 977935623774162954
 ROLE_ID_VENOM = 1237838106711822457
 ROLE_ID_COLLINS = 1247405133130764329
 
@@ -38,10 +38,10 @@ SHIPS = [
         emoji="<:Lusty:1079841997021524018>",
     ),
     Ship(
-        name="USS Audacious",
-        boat_command_channel_id=BC_AUDACIOUS,
-        role_id=ROLE_ID_AUDACIOUS,
-        emoji="<:audacious:1312805740284608522>",
+        name="USS Valhalla",
+        boat_command_channel_id=BC_VALHALLA,
+        role_id=ROLE_ID_VALHALLA,
+        emoji="<:valhalla:1345380823947542590>",
     ),
     Ship(
         name="USS Reliant",
@@ -86,10 +86,10 @@ SHIPS = [
         emoji="<:Phantom:1274254756730109953>",
     ),
     Ship(
-        name="USS Origin",
-        boat_command_channel_id=BC_ORIGIN,
-        role_id=ROLE_ID_ORIGIN,
-        emoji="<:Origin:1201214169735757875>",
+        name="USS Silverclaw",
+        boat_command_channel_id=BC_SILVERCLAW,
+        role_id=ROLE_ID_SILVERCLAW,
+        emoji="<:Silverclaw_emoji:1345475394169475104>",
     ),
     Ship(
         name="USS Venom",
