@@ -23,6 +23,7 @@ def get_ship_role_id_by_member(member: discord.Member) -> int:
             return ship.role_id
     return -1
 
+
 def get_ship_by_role_id(role_id: int) -> dict or None:
     """
     Get the ship object by role ID.
@@ -32,8 +33,10 @@ def get_ship_by_role_id(role_id: int) -> dict or None:
             return ship
     return None
 
+
 SHIP_NAME_PATTERN = r"\b(USS[\s][^\s,\.]+)\b"
 FIND_WITHIN = 25
+
 
 def get_main_ship_from_content(content: str, ships: [Ship] = SHIPS) -> str or None:
     """
@@ -67,6 +70,7 @@ def get_main_ship_from_content(content: str, ships: [Ship] = SHIPS) -> str or No
 
     return None
 
+
 def get_auxiliary_ship_from_content(content: str) -> str or None:
     """
     Get the auxiliary ship name from the content.
@@ -89,15 +93,17 @@ def get_auxiliary_ship_from_content(content: str) -> str or None:
 
     return auxiliary_ship
 
+
 def get_voyage_type_from_content(content: str) -> VoyageType:
     """
     Get the voyage type from the content.
     """
-    first_25_words = " ".join(content.split()[:FIND_WITHIN])
+    first_25_words = " ".join(content.lower().split()[:FIND_WITHIN])
     for voyage_type in VoyageType:
-        if voyage_type.value in first_25_words:
+        if voyage_type.value.lower() in first_25_words:
             return voyage_type
     return VoyageType.UNKNOWN
+
 
 def get_count_from_content(content: str) -> int:
     """
@@ -111,6 +117,7 @@ def get_count_from_content(content: str) -> int:
         return -1
 
     return int(matches[0][0])
+
 
 def convert_to_ordinal(count: int) -> str:
     if 10 <= count % 100 <= 20:
