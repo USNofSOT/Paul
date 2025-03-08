@@ -1,6 +1,7 @@
 alembic==1.14.1
 discord.py==2.3.2
 SQLAlchemy==2.0.35
+parameterized==0.9.0
 python-dotenv==1.0.1
 matplotlib==3.9.2
 ruff==0.1.13
