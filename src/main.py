@@ -8,6 +8,7 @@ import discord
 from core import Bot
 from data.engine import engine_string
 from data.migrations.migrate import run_migrations
+from scheduler.scheduler import Scheduler
 
 from src.data import create_tables
 from src.utils.logger import initialise_logger
@@ -30,4 +31,5 @@ if __name__ == "__main__":
     create_tables()
     initialise_logger()
     run_migrations(engine_string)
+    Scheduler().start()
     asyncio.run(main())
