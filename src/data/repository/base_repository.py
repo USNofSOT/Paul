@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
 
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -9,11 +9,13 @@ Session: sessionmaker[Session] = sessionmaker(bind=engine)
 
 logger = logging.getLogger(__name__)
 
+T = TypeVar("T")
+
 
 class BaseRepository:
-    def __init__(self, entity_type: Type[object]):
+    def __init__(self, entity_type: Generic[T]):
         self.session = Session()
-        self.entity_type: Type[object] = entity_type
+        self.entity_type: Type[T] = entity_type
 
     def get_session(self) -> Session:
         return self.session
@@ -21,7 +23,7 @@ class BaseRepository:
     def close_session(self) -> None:
         self.session.close()
 
-    def create(self, entity: object) -> object:
+    def create(self, entity: T) -> T:
         if not isinstance(entity, self.entity_type):
             raise TypeError("Entity is not the same type as the repository")
         try:
@@ -39,7 +41,7 @@ class BaseRepository:
         order_by: Optional[List[Any]] = None,
         limit: Optional[int] = None,
         skip: Optional[int] = None,
-    ) -> List[object]:
+    ) -> List[T]:
         try:
             query = self.session.query(self.entity_type)
             if filters:
@@ -56,7 +58,7 @@ class BaseRepository:
             logger.error("Error finding entities: %s", e)
             raise e
 
-    def get(self, entity_id: Any) -> Optional[object]:
+    def get(self, entity_id: Any) -> Optional[T]:
         try:
             return self.session.query(self.entity_type).get(entity_id)
         except Exception as e:
@@ -64,7 +66,7 @@ class BaseRepository:
             logger.error("Error getting entity: %s", e)
             raise e
 
-    def update(self, entity: object) -> object:
+    def update(self, entity: T) -> T:
         try:
             self.session.add(entity)
             self.session.commit()
@@ -73,7 +75,7 @@ class BaseRepository:
             self.session.rollback()
             logger.error("Error updating entity: %s", e)
 
-    def delete(self, entity: object) -> None:
+    def delete(self, entity: T) -> None:
         try:
             self.session.delete(entity)
             self.session.commit()
@@ -93,7 +95,7 @@ class BaseRepository:
             logger.error("Error counting entities: %s", e)
             raise e
 
-    def refresh(self, entity: object) -> None:
+    def refresh(self, entity: T) -> None:
         try:
             self.session.refresh(entity)
         except Exception as e:
