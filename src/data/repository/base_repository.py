@@ -67,6 +67,8 @@ class BaseRepository:
             raise e
 
     def update(self, entity: T) -> T:
+        if not isinstance(entity, self.entity_type):
+            raise TypeError("Entity is not the same type as the repository")
         try:
             self.session.add(entity)
             self.session.commit()
@@ -76,6 +78,8 @@ class BaseRepository:
             logger.error("Error updating entity: %s", e)
 
     def delete(self, entity: T) -> None:
+        if not isinstance(entity, self.entity_type):
+            raise TypeError("Entity is not the same type as the repository")
         try:
             self.session.delete(entity)
             self.session.commit()
@@ -93,12 +97,4 @@ class BaseRepository:
         except Exception as e:
             self.session.rollback()
             logger.error("Error counting entities: %s", e)
-            raise e
-
-    def refresh(self, entity: T) -> None:
-        try:
-            self.session.refresh(entity)
-        except Exception as e:
-            self.session.rollback()
-            logger.error("Error refreshing entity: %s", e)
             raise e
