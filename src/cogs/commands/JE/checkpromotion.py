@@ -215,7 +215,7 @@ class SummaryView(View):
         else:
             await interaction.response.send_message("No members to display", ephemeral=True)
 
-    @discord.ui.button(label="Send Eligible", style=ButtonStyle.success)
+    @discord.ui.button(label="Show Eligible", style=ButtonStyle.success)
     async def send_eligible(self, interaction: discord.Interaction, button: Button):
         view = PromotionView(self.eligible_members, detailed=True, bot=self.bot)
         if view.pages:
