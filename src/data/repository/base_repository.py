@@ -1,6 +1,7 @@
 import logging
 from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
 
+from sqlalchemy import desc
 from sqlalchemy.orm import Session, sessionmaker
 
 from src.data.engine import engine
@@ -52,6 +53,7 @@ class BaseRepository:
         self,
         filters: Optional[Dict[str, Any]] = None,
         order_by: Optional[List[Any]] = None,
+        order_direction: Optional[str] = "asc",
         limit: Optional[int] = None,
         skip: Optional[int] = None,
     ) -> List[T]:
@@ -60,7 +62,10 @@ class BaseRepository:
             if filters:
                 query = query.filter_by(**filters)
             if order_by:
-                query = query.order_by(*order_by)
+                if order_direction == "desc":
+                    query = query.order_by(*[desc(col) for col in order_by])
+                else:
+                    query = query.order_by(*order_by)
             if limit:
                 query = query.limit(limit)
             if skip:
