@@ -35,6 +35,19 @@ class BaseRepository:
             logger.error("Error creating entity: %s", e)
             raise e
 
+    def create_multiple(self, entities: List[T]) -> List[T]:
+        for entity in entities:
+            if not isinstance(entity, self.entity_type):
+                raise TypeError("Entity is not the same type as the repository")
+        try:
+            self.session.add_all(entities)
+            self.session.commit()
+            return entities
+        except Exception as e:
+            self.session.rollback()
+            logger.error("Error creating entities: %s", e)
+            raise e
+
     def find(
         self,
         filters: Optional[Dict[str, Any]] = None,
@@ -76,6 +89,19 @@ class BaseRepository:
         except Exception as e:
             self.session.rollback()
             logger.error("Error updating entity: %s", e)
+
+    def update_multiple(self, entities: List[T]) -> List[T]:
+        for entity in entities:
+            if not isinstance(entity, self.entity_type):
+                raise TypeError("Entity is not the same type as the repository")
+        try:
+            self.session.add_all(entities)
+            self.session.commit()
+            return entities
+        except Exception as e:
+            self.session.rollback()
+            logger.error("Error updating entities: %s", e)
+            raise
 
     def delete(self, entity: T) -> None:
         if not isinstance(entity, self.entity_type):

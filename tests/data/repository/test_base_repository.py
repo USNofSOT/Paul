@@ -66,6 +66,16 @@ class TestBaseRepository(unittest.TestCase):
 
     @parameterized.expand(
         [
+            ("wrong_entity_for_A", EntityARepository(), [EntityB(), EntityA()]),
+            ("wrong_entity_for_B", EntityBRepository(), [EntityA(), EntityB()]),
+        ]
+    )
+    def test_create_multiple_wrong_entity_type(self, name, repository, entity):
+        with self.assertRaises(TypeError):
+            repository.create_multiple(entity)
+
+    @parameterized.expand(
+        [
             ("wrong_entity_for_A", EntityARepository(), EntityB()),
             ("wrong_entity_for_B", EntityBRepository(), EntityA()),
         ]
@@ -76,6 +86,16 @@ class TestBaseRepository(unittest.TestCase):
 
     @parameterized.expand(
         [
+            ("wrong_entity_for_A", EntityARepository(), [EntityB(), EntityA()]),
+            ("wrong_entity_for_B", EntityBRepository(), [EntityA(), EntityB()]),
+        ]
+    )
+    def test_update_multiple_wrong_entity_type(self, name, repository, entity):
+        with self.assertRaises(TypeError):
+            repository.update_multiple(entity)
+
+    @parameterized.expand(
+        [
             ("wrong_entity_for_A", EntityARepository(), EntityB()),
             ("wrong_entity_for_B", EntityBRepository(), EntityA()),
         ]
@@ -83,6 +103,25 @@ class TestBaseRepository(unittest.TestCase):
     def test_delete_wrong_entity_type(self, name, repository, entity):
         with self.assertRaises(TypeError):
             repository.delete(entity)
+
+    def create_multiple(self):
+        entities = [EntityA(id=6), EntityA(id=7)]
+        self.repositoryA.create_multiple(entities)
+        self.assertEqual(entities[0].id, 6)
+        self.assertEqual(entities[1].id, 7)
+        res = self.session.query(EntityA).all()
+        self.assertEqual(len(res), 2)
+
+    def update_multiple(self):
+        entities = [EntityA(id=6), EntityA(id=7)]
+        self.repositoryA.create_multiple(entities)
+        entities[0].id = 8
+        entities[1].id = 9
+        self.repositoryA.update_multiple(entities)
+        res = self.session.query(EntityA).all()
+        self.assertEqual(len(res), 2)
+        self.assertEqual(res[0].id, 8)
+        self.assertEqual(res[1].id, 9)
 
     @parameterized.expand(
         [
