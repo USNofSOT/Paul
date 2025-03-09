@@ -66,6 +66,26 @@ class TestBaseRepository(unittest.TestCase):
 
     @parameterized.expand(
         [
+            ("wrong_entity_for_A", EntityARepository(), EntityB()),
+            ("wrong_entity_for_B", EntityBRepository(), EntityA()),
+        ]
+    )
+    def test_update_wrong_entity_type(self, name, repository, entity):
+        with self.assertRaises(TypeError):
+            repository.update(entity)
+
+    @parameterized.expand(
+        [
+            ("wrong_entity_for_A", EntityARepository(), EntityB()),
+            ("wrong_entity_for_B", EntityBRepository(), EntityA()),
+        ]
+    )
+    def test_delete_wrong_entity_type(self, name, repository, entity):
+        with self.assertRaises(TypeError):
+            repository.delete(entity)
+
+    @parameterized.expand(
+        [
             ("no_objects", [], 0),
             ("one_object", [EntityA(id=6)], 1),
             ("multiple_objects", [EntityA(id=6), EntityA(id=7)], 2),
