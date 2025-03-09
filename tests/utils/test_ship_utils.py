@@ -1,5 +1,7 @@
 from unittest import TestCase
 
+from parameterized import parameterized
+
 from src.data import VoyageType
 from src.utils.ship_utils import (
     get_auxiliary_ship_from_content,
@@ -44,8 +46,7 @@ class TestVoyageSpecification(TestCase):
     def test_valid_convoy(self):
         # Arrange
         content = (
-            "@Colonel Neverband ‘s Log of the 120th deployment (Convoy) of the "
-            "USS Illustrious"
+            "@Colonel Neverband ‘s Log of the 120th deployment (Convoy) of the " "USS Illustrious"
         )
         # Act
         main_ship = get_main_ship_from_content(content)
@@ -75,6 +76,24 @@ class TestVoyageSpecification(TestCase):
         self.assertEqual(voyage_count, 35)
         self.assertEqual(voyage_type.value, VoyageType.ADVENTURE.value)
 
+    @parameterized.expand(
+        [
+            ("Patrol", VoyageType.PATROL),
+            ("patrol", VoyageType.PATROL),
+            ("PATROL", VoyageType.PATROL),
+            ("paTroL", VoyageType.PATROL),
+            ("Skirmish", VoyageType.SKIRMISH),
+            ("skirmish", VoyageType.SKIRMISH),
+            ("advEnture", VoyageType.ADVENTURE),
+        ]
+    )
+    def test_voyage_type_different_capitalization(self, value, expected):
+        # Act
+        string = "@Terin's Official %s Log of the 7th Voyage of the USS Grizzly" % value
+        voyage_type = get_voyage_type_from_content(string)
+        # Assert
+        self.assertEqual(voyage_type.value, expected.value)
+
 
 class TestGetMainShipName(TestCase):
     def test_main_ship_included(self):
@@ -85,10 +104,7 @@ class TestGetMainShipName(TestCase):
         self.assertEqual(get_main_ship_from_content(content), "USS Platypus")
 
     def test_main_ship_not_included(self):
-        content = (
-            "<@5848673888963>__**'s official log of the 134th voyage of the USS "
-            "Phoenix"
-        )
+        content = "<@5848673888963>__**'s official log of the 134th voyage of the USS " "Phoenix"
         self.assertEqual(get_main_ship_from_content(content), None)
 
     def test_main_ship_name(self):
@@ -141,10 +157,7 @@ class TestGetAuxiliaryShipName(TestCase):
         self.assertEqual(get_auxiliary_ship_from_content(content), "USS Phoenix")
 
     def test_auxiliary_ship_not_included(self):
-        content = (
-            "<@5848673888963>__**'s official log of the 134th voyage of the USS "
-            "Adrestia"
-        )
+        content = "<@5848673888963>__**'s official log of the 134th voyage of the USS " "Adrestia"
         self.assertEqual(get_auxiliary_ship_from_content(content), None)
 
     def test_auxiliary_ship_name(self):
