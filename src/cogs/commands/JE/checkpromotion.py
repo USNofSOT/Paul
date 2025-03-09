@@ -205,7 +205,7 @@ class SummaryView(View):
         except:
             pass
 
-    @discord.ui.button(label="Send All", style=ButtonStyle.primary)
+    @discord.ui.button(label="Show All", style=ButtonStyle.primary)
     async def send_all(self, interaction: discord.Interaction, button: Button):
         view = PromotionView(self.all_members, detailed=True, bot=self.bot)
         if view.pages:
