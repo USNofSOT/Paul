@@ -199,6 +199,52 @@ class TestBaseRepository(unittest.TestCase):
         result = self.repositoryA.find()
         self.assertEqual(len(result), 2)
 
+    def test_find_with_order_by(self):
+        self.session.add_all([EntityA(id=6), EntityA(id=7)])
+        self.session.commit()
+        result = self.repositoryA.find(order_by=[EntityA.id])
+        self.assertEqual(result[0].id, 6)
+
+    def test_find_with_order_by_desc(self):
+        self.session.add_all([EntityA(id=6), EntityA(id=7)])
+        self.session.commit()
+        result = self.repositoryA.find(order_by=[EntityA.id], order_direction="desc")
+        self.assertEqual(result[0].id, 7)
+
+    def test_find_with_limit(self):
+        self.session.add_all([EntityA(id=6), EntityA(id=7)])
+        self.session.commit()
+        result = self.repositoryA.find(limit=1)
+        self.assertEqual(len(result), 1)
+
+    def test_find_with_skip(self):
+        self.session.add_all([EntityA(id=6), EntityA(id=7)])
+        self.session.commit()
+        result = self.repositoryA.find(skip=1)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].id, 7)
+
+    def test_find_with_limit_and_skip(self):
+        self.session.add_all([EntityA(id=6), EntityA(id=7), EntityA(id=8)])
+        self.session.commit()
+        result = self.repositoryA.find(limit=1, skip=1)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].id, 7)
+
+    def test_find_with_filters_order_by_limit_skip(self):
+        self.session.add_all([EntityA(id=6), EntityA(id=7), EntityA(id=8)])
+        self.session.commit()
+        result = self.repositoryA.find(filters={"id": 6}, order_by=[EntityA.id], limit=1, skip=1)
+        self.assertEqual(len(result), 0)
+
+    def test_find_with_filters_order_by_desc_limit_skip(self):
+        self.session.add_all([EntityA(id=6), EntityA(id=7), EntityA(id=8)])
+        self.session.commit()
+        result = self.repositoryA.find(
+            filters={"id": 6}, order_by=[EntityA.id], order_direction="desc", limit=1, skip=1
+        )
+        self.assertEqual(len(result), 0)
+
 
 if __name__ == "__main__":
     unittest.main()
