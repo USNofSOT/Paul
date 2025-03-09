@@ -77,25 +77,68 @@ class TestBaseRepository(unittest.TestCase):
         result = self.repositoryA.find()
         self.assertEqual(len(result), expected_count)
 
-    def test_find_with_filters(self):
-        self.repositoryA.create(EntityA(id=6))
-        self.repositoryA.create(EntityA(id=7))
-        # Actually test filter
-        result = self.repositoryA.find(filters={"id": 6})
-        self.assertEqual(len(result), 1)
+    @parameterized.expand(
+        [
+            ("filter_by_id_6_exists", {"id": 6}, 1, [EntityA(id=6), EntityA(id=7)]),
+            ("filter_by_id_7_not_exists", {"id": 7}, 0, [EntityA(id=6)]),
+            (
+                "filter_by_name_test",
+                {"name": "test"},
+                2,
+                [
+                    EntityB(id=6, name="test"),
+                    EntityB(id=7, name="test"),
+                    EntityB(id=8, name="test2"),
+                ],
+            ),
+            ("filter_by_nonexistent_id", {"id": 999}, 0, [EntityA(id=6), EntityA(id=7)]),
+            ("filter_with_empty_conditions", {}, 2, [EntityA(id=6), EntityA(id=7)]),
+            (
+                "filter_by_multiple_conditions",
+                {"id": 6, "name": "test"},
+                1,
+                [
+                    EntityB(id=6, name="test"),
+                    EntityB(id=7, name="test"),
+                    EntityB(id=8, name="test2"),
+                ],
+            ),
+            (
+                "filter_by_name_nonexistent",
+                {"name": "nonexistent"},
+                0,
+                [
+                    EntityB(id=6, name="test"),
+                    EntityB(id=7, name="test"),
+                    EntityB(id=8, name="test2"),
+                ],
+            ),
+            (
+                "filter_by_partial_name",
+                {"name": "tes"},
+                0,
+                [
+                    EntityB(id=6, name="test"),
+                    EntityB(id=7, name="test"),
+                    EntityB(id=8, name="test2"),
+                ],
+            ),
+        ]
+    )
+    def test_find_with_filters(self, name, filters, expected_count, entities):
+        self.session.add_all(entities)
+        self.session.commit()
+        if "name" in filters:
+            result = self.repositoryB.find(filters=filters)
+        else:
+            result = self.repositoryA.find(filters=filters)
+        self.assertEqual(len(result), expected_count)
 
     def test_find_without_filters(self):
         self.repositoryA.create(EntityA(id=6))
         self.repositoryA.create(EntityA(id=7))
-        # Actually test filter
         result = self.repositoryA.find()
         self.assertEqual(len(result), 2)
-
-    def test_find_with_filters_no_results(self):
-        self.repositoryA.create(EntityA(id=6))
-        # Actually test filter
-        result = self.repositoryA.find(filters={"id": 7})
-        self.assertEqual(len(result), 0)
 
 
 if __name__ == "__main__":
