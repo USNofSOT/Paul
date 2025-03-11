@@ -1,14 +1,13 @@
 from dis import disco
 from enum import member
 import asyncio
+from typing import Union
 
 import discord
-from discord import Interaction, app_commands, Role, ButtonStyle  
+from discord import Interaction, app_commands, Role, ButtonStyle, SelectOption  
 from discord.ext import commands
-from discord.ui import Button, View  
-import matplotlib.pyplot as plt
+from discord.ui import Button, View, Select  
 import io
-from matplotlib.ticker import MaxNLocator
 
 from src.config.awards import CITATION_OF_COMBAT, COMBAT_MEDALS, CITATION_OF_CONDUCT, CONDUCT_MEDALS, \
     NCO_IMPROVEMENT_RIBBON, FOUR_MONTHS_SERVICE_STRIPES, SERVICE_STRIPES, HONORABLE_CONDUCT, MARITIME_SERVICE_MEDAL, \
@@ -16,8 +15,9 @@ from src.config.awards import CITATION_OF_COMBAT, COMBAT_MEDALS, CITATION_OF_CON
 from src.config.main_server import GUILD_ID
 from src.config.netc_server import JLA_GRADUATE_ROLE, NETC_GRADUATE_ROLES, SNLA_GRADUATE_ROLE, OCS_GRADUATE_ROLE, \
     SOCS_GRADUATE_ROLE, NETC_GUILD_ID
-from src.config.ranks_roles import JE_AND_UP, E3_ROLES, E2_ROLES, SPD_ROLES, O1_ROLES, O4_ROLES, O5_ROLES, MARINE_ROLE, \
-    E7_ROLES
+from src.config.ranks_roles import JE_AND_UP, E3_ROLES, E6_ROLES, E2_ROLES, SPD_ROLES, O1_ROLES, O4_ROLES, O5_ROLES, MARINE_ROLE, \
+    E7_ROLES, E1_ROLES, E4_ROLES, E5_ROLES, E8_ROLES, O2_ROLES, O3_ROLES, O6_ROLES, O7_ROLES, O8_ROLES
+from src.config.ranks import RANKS
 from src.data import Sailor, RoleChangeType
 from src.data.repository.auditlog_repository import AuditLogRepository
 from src.data.repository.sailor_repository import SailorRepository, ensure_sailor_exists
@@ -26,26 +26,13 @@ from src.data.structs import NavyRank
 from src.utils.embeds import default_embed
 from src.utils.rank_and_promotion_utils import get_current_rank, get_rank_by_index, has_award_or_higher
 from src.utils.time_utils import get_time_difference_in_days, utc_time_now, format_time, get_time_difference
+from src.utils.ship_utils import get_ship_role_id_by_member, get_ship_by_role_id
 
 
 DISALLOWED_ROLES = [
     "Junior Enlisted",
     "Civilian"
 ]
-
-SEAMAN_ROLE_ID = 933913010806857801  
-ABLE_SEAMAN_ROLE_ID = 933912647999565864  
-JPO_ROLE_ID = 933912557008343120  
-PO_ROLE_ID = 933911949585035275  
-CPO_ROLE_ID = 933911464660570132  
-SPO_ROLE_ID = 933911373669335092  
-MIDSHIPMAN_ROLE_ID = 9339105586951291
-LIEUTENANT_ROLE_ID = 933910174555598879  
-LIEUTENANT_CMDR_ROLE_ID = 933909957437423677  
-COMMANDER_ROLE_ID = 933909780639150101  
-CAPTAIN_ROLE_ID = 933909668550553630  
-COMMODORE_ROLE_ID = 933909182711746570  
-REARADMIRAL_ROLE_ID = 1157429131416449134  
 
 RANK_EMOJIS = {
     'Seaman | E-2': '<:E2:1245860781887590472>',
@@ -63,22 +50,6 @@ RANK_EMOJIS = {
     'Rear Admiral | O-8': '<:O8:1245861113330008065>'
 }
 
-RANK_ORDER = [
-    'Seaman | E-2',
-    'Able Seaman | E-3',
-    'Junior Petty Officer | E-4',
-    'Petty Officer | E-6',
-    'Chief Petty Officer | E-7',
-    'Senior Chief Petty Officer | E-8',
-    'Midshipman | O-1',
-    'Lieutenant | O-3',
-    'Lieutenant Commander | O-4',
-    'Commander | O-5',
-    'Captain | O-6',
-    'Commodore | O-7',
-    'Rear Admiral | O-8'
-]
-
 def is_role_disallowed(role_name):
     """Check if a role is in the disallowed list or doesn't match required patterns."""
     if role_name in DISALLOWED_ROLES:
@@ -87,6 +58,15 @@ def is_role_disallowed(role_name):
         return True
     return False
 
+def get_squad_role_id_by_member(member: discord.Member) -> int:
+    """Get the squad role ID for a member"""
+    if not member:
+        return -2
+    for role in member.roles:
+        if role.name.endswith('Squad'):
+            return role.id
+    return -1
+
 class CounterButton(discord.ui.Button):
     def __init__(self, current, total):
         super().__init__(
@@ -94,6 +74,24 @@ class CounterButton(discord.ui.Button):
             style=ButtonStyle.gray,
             disabled=True
         )
+
+class MemberSelect(Select):
+    def __init__(self, members):
+        options = [
+            SelectOption(
+                label=member.display_name[:25], 
+                value=str(member.id),
+                description=f"View details for {member.display_name[:25]}"
+            ) for member in members
+        ]
+        super().__init__(placeholder="Select a member...", options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        member = interaction.guild.get_member(int(self.values[0]))
+        view = self.view
+        if view.detailed:
+            embed = await view.create_detailed_embed(member)
+            await interaction.response.edit_message(embed=embed)
 
 class PromotionView(View):
     def __init__(self, sailors, detailed=False, bot=None):  
@@ -109,6 +107,9 @@ class PromotionView(View):
             self.add_item(PreviousButton())
             self.add_item(CounterButton(self.current_page, len(self.pages)))
             self.add_item(NextButton())
+        
+        if len(sailors) > 1:
+            self.add_item(MemberSelect(sailors))
 
     async def on_timeout(self):
         for item in self.children:
@@ -225,168 +226,170 @@ class SummaryView(View):
         else:
             await interaction.response.send_message("No eligible members to display", ephemeral=True)
 
+ENABLE_PERMISSION_CHECKS = True  # Set to False to disable role/ship permission checks for testing
+
 class CheckPromotion(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
+    async def handle_role_check(self, interaction: discord.Interaction, role: discord.Role):
+        """Handle checking promotion status for all members with a specific role."""
+        members_with_role = [
+            member for member in interaction.guild.members 
+            if role in member.roles
+        ]
+
+        if not members_with_role:
+            await interaction.response.send_message(
+                f"No members found with the role {role.name}.", ephemeral=True
+            )
+            return
+
+        initial_embed = discord.Embed(
+            title=f"Promotion Status for {role.name}",
+            description=f"Getting promotion status for members with the role {role.mention}...\n\nThere are {len(members_with_role)} members with this role. Please stand by for the results.",
+            color=discord.Color.blue()
+        )
+        await interaction.response.send_message(embed=initial_embed)
+        
+        stats = {
+            'total_members': len(members_with_role),
+            'eligible_count': 0,
+            'rank_breakdown': {},
+            'all_members': [],
+            'eligible_members': []
+        }
+
+        for member in members_with_role:
+            is_eligible, requirements, embed = await self.check_single_promotion_status(member, None)
+            current_rank = self.get_member_rank(member)
+            
+            if current_rank not in stats['rank_breakdown']:
+                stats['rank_breakdown'][current_rank] = {
+                    'total': 0,
+                    'eligible': 0
+                }
+            
+            stats['rank_breakdown'][current_rank]['total'] += 1
+            stats['all_members'].append(member)
+            
+            if is_eligible:
+                stats['eligible_count'] += 1
+                stats['rank_breakdown'][current_rank]['eligible'] += 1
+                stats['eligible_members'].append(member)
+
+        summary_embed = discord.Embed(
+            title=f"Promotion Status Summary for {role.name}",
+            description=f"Total Members: {stats['total_members']}\nEligible for Promotion: {stats['eligible_count']}\n\n",
+            color=discord.Color.blue()
+        )
+
+        rank_order = [
+            'Seaman Apprentice | E-2',
+            'Seaman | E-2',
+            'Able Seaman | E-3',
+            'Junior Petty Officer | E-4',
+            'Petty Officer | E-6',
+            'Chief Petty Officer | E-7',
+            'Senior Chief Petty Officer | E-8',
+            'Midshipman | O-1',
+            'Lieutenant | O-3',
+            'Lieutenant Commander | O-4',
+            'Commander | O-5',
+            'Captain | O-6',
+            'Commodore | O-7',
+            'Rear Admiral | O-8'
+        ]
+        for rank_name in rank_order:
+            if rank_name in stats['rank_breakdown']:
+                data = stats['rank_breakdown'][rank_name]
+                rank_emoji = RANK_EMOJIS.get(rank_name, "")
+                percentage = (data['eligible'] / data['total'] * 100) if data['total'] > 0 else 0
+                summary_embed.add_field(
+                    name=f"{rank_emoji} {rank_name.split('|')[0].strip()}",
+                    value=f"Total: {data['total']}\nEligible: {data['eligible']} ({percentage:.1f}%)",
+                    inline=True
+                )
+
+        promotion_rate = (stats['eligible_count'] / stats['total_members'] * 100) if stats['total_members'] > 0 else 0
+        summary_embed.add_field(
+            name="Overall Statistics",
+            value=f"Promotion Rate: {promotion_rate:.1f}%\nTotal Eligible: {stats['eligible_count']}/{stats['total_members']}",
+            inline=False
+        )
+
+        view = SummaryView(stats['all_members'], stats['eligible_members'], self.bot)
+        await interaction.edit_original_response(embed=summary_embed, view=view)
+
     def get_member_rank(self, member):
         """Get the member's current rank based on roles."""
         member_roles = [role.id for role in member.roles]
-        rank_roles = {
-            'Seaman | E-2': SEAMAN_ROLE_ID,
-            'Able Seaman | E-3': ABLE_SEAMAN_ROLE_ID,
-            'Junior Petty Officer | E-4': JPO_ROLE_ID,
-            'Petty Officer | E-6': PO_ROLE_ID,
-            'Chief Petty Officer | E-7': CPO_ROLE_ID,
-            'Senior Chief Petty Officer | E-8': SPO_ROLE_ID,
-            'Midshipman | O-1': MIDSHIPMAN_ROLE_ID,
-            'Lieutenant | O-3': LIEUTENANT_ROLE_ID,
-            'Lieutenant Commander | O-4': LIEUTENANT_CMDR_ROLE_ID,
-            'Commander | O-5': COMMANDER_ROLE_ID,
-            'Captain | O-6': CAPTAIN_ROLE_ID,
-            'Commodore | O-7': COMMODORE_ROLE_ID,
-            'Rear Admiral | O-8': REARADMIRAL_ROLE_ID,
-        }
         
-        for rank_name, role_id in rank_roles.items():
-            if role_id in member_roles:
+        rank_roles = {
+            'Rear Admiral | O-8': O8_ROLES,
+            'Commodore | O-7': O7_ROLES,
+            'Captain | O-6': O6_ROLES,
+            'Commander | O-5': O5_ROLES,
+            'Lieutenant Commander | O-4': O4_ROLES,
+            'Lieutenant | O-3': O3_ROLES, 
+            'Midshipman | O-1': O1_ROLES,
+            'Senior Chief Petty Officer | E-8': E8_ROLES,
+            'Chief Petty Officer | E-7': E7_ROLES,
+            'Petty Officer | E-6': E6_ROLES,
+            'Junior Petty Officer | E-4': E4_ROLES,
+            'Able Seaman | E-3': E3_ROLES,
+            'Seaman | E-2': E2_ROLES[0:1],  # Exclude Seaman Apprentice
+            'Seaman Apprentice | E-2': E2_ROLES[1:2]  # Only Seaman Apprentice
+        }
+
+        for rank_name, role_ids in rank_roles.items():
+            if any(role_id in member_roles for role_id in role_ids):
                 return rank_name
         return "Unknown"
 
-    @app_commands.command(name="checkpromotion", description="Check promotion eligibility")
-    @app_commands.describe(
-        target="The specific member whose promotion status you want to check.",
-        ship_or_squad="A role representing a ship or squad to check promotions for all its members."
-    )
+    @app_commands.command(name="checkpromotion", description="Check promotion eligibility for a member or role")
+    @app_commands.describe(target="The member or role to check")
     @app_commands.checks.has_any_role(*JE_AND_UP)
-    async def view_moderation(self, interaction: discord.Interaction, target: discord.Member = None, ship_or_squad: discord.Role = None):
-        """Command to check promotion eligibility for a member or all members of a role."""
-        
-        if target is None and ship_or_squad is None:
-            await interaction.response.send_message(
-                "You must provide either a specific member or a ship/squad role.", ephemeral=True
-            )
-            return
-        
-        if target and ship_or_squad:
-            await interaction.response.send_message(
-                "You can only select either a member or a role, not both.", ephemeral=True
-            )
-            return
-        
-        if ship_or_squad:
-            if is_role_disallowed(ship_or_squad.name):
+    async def checkpromotion(self, interaction: discord.Interaction, target: Union[discord.Member, discord.Role]):
+        """Check promotion eligibility for a member or role"""
+        if isinstance(target, discord.Role):
+            if not (target.name.startswith("USS") or target.name.endswith("Squad")):
                 await interaction.response.send_message(
-                    embed=discord.Embed(
-                        title="Error: Disallowed Role",
-                        description=f"The role `{ship_or_squad.name}` is disallowed for this command.",
-                        color=discord.Color.red()
-                    ).add_field(
-                        name="Reason",
-                        value="Role name must either start with 'USS' or end with 'Squad'.",
-                    ),
+                    "The role must be either a ship or squad.", ephemeral=True
+                )
+                return
+
+            if ENABLE_PERMISSION_CHECKS:
+                has_high_rank = any(role.id in O5_ROLES for role in interaction.user.roles)
+                
+                if not has_high_rank:
+                    has_required_rank = any(role.id in [*E6_ROLES, *O4_ROLES] for role in interaction.user.roles)
+                    if not has_required_rank:
+                        await interaction.response.send_message(
+                            "You must be at least E-6 to run ship/squad reports.", ephemeral=True
+                        )
+                        return
+
+                    user_ship_id = get_ship_role_id_by_member(interaction.user)
+                    user_squad_id = get_squad_role_id_by_member(interaction.user)
+                    
+                    if target.id != user_ship_id and target.id != user_squad_id:
+                        await interaction.response.send_message(
+                            "You can only check promotion status for your own ship/squad.", ephemeral=True
+                        )
+                        return
+
+            await self.handle_role_check(interaction, target)
+        else:
+            await interaction.response.defer()
+            try:
+                is_eligible, requirements, embed = await self.check_single_promotion_status(target, interaction)
+                await interaction.followup.send(embed=embed)
+            except Exception as e:
+                await interaction.followup.send(
+                    f"An error occurred while checking promotion status: {str(e)}", 
                     ephemeral=True
                 )
-                return
-
-            member_count = len([m for m in interaction.guild.members if ship_or_squad in m.roles])
-            
-            initial_embed = discord.Embed(
-                title=f"Promotion Status for {ship_or_squad.name}",
-                description=f"Getting promotion status for members with the role {ship_or_squad.mention}...\n\n"
-                           f"There are {member_count} members with this role. "
-                           f"Please stand by for the results.",
-                color=discord.Color.blue()
-            )
-            await interaction.response.send_message(embed=initial_embed)
-            
-            members_with_role = [
-                member for member in interaction.guild.members if ship_or_squad in member.roles
-            ]
-
-            if not members_with_role:
-                await interaction.followup.send(
-                    f"No members found with the role {ship_or_squad.name}.", ephemeral=True
-                )
-                return
-
-            stats = {
-                'total_members': len(members_with_role),
-                'eligible_count': 0,
-                'rank_breakdown': {},
-                'all_members': [],
-                'eligible_members': []
-            }
-
-            for member in members_with_role:
-                is_eligible, requirements, embed = await self.check_single_promotion_status(member, None)
-                current_rank = self.get_member_rank(member)
-                
-                if current_rank not in stats['rank_breakdown']:
-                    stats['rank_breakdown'][current_rank] = {
-                        'total': 0,
-                        'eligible': 0
-                    }
-                
-                stats['rank_breakdown'][current_rank]['total'] += 1
-                stats['all_members'].append(member)
-                
-                if is_eligible:
-                    stats['eligible_count'] += 1
-                    stats['rank_breakdown'][current_rank]['eligible'] += 1
-                    stats['eligible_members'].append(member)
-
-            sorted_ranks = []
-            for rank in RANK_ORDER:
-                if rank in stats['rank_breakdown']:
-                    data = stats['rank_breakdown'][rank]
-                    if data['total'] > 0:
-                        percentage = (data['eligible'] / data['total']) * 100
-                        sorted_ranks.append({
-                            'name': f"{RANK_EMOJIS.get(rank, '')} {rank}",
-                            'value': f"Total: {data['total']}\nEligible: {data['eligible']} ({percentage:.1f}%)",
-                            'inline': True
-                        })
-
-            summary_embed = discord.Embed(
-                title=f"Promotion Status Summary for {ship_or_squad.name}",
-                description=f"Total Members: {stats['total_members']}\nEligible for Promotion: {stats['eligible_count']}",
-                color=discord.Color.blue()
-            )
-
-            field_count = 0
-            for field in sorted_ranks:
-                summary_embed.add_field(**field)
-                field_count += 1
-
-            if field_count > 0:  
-                remaining = 3 - (field_count % 3)
-                if remaining < 3:  
-                    for _ in range(remaining):
-                        summary_embed.add_field(name="\u200b", value="\u200b", inline=True)
-
-            summary_embed.add_field(
-                name="Overall Statistics",
-                value=f"Promotion Rate: {(stats['eligible_count'] / stats['total_members'] * 100):.1f}%\n"
-                      f"Total Eligible: {stats['eligible_count']}/{stats['total_members']}",
-                inline=False
-            )
-
-            chart_buffer = await self.create_analytics_charts(stats, ship_or_squad.name)
-            chart_file = discord.File(chart_buffer, filename='analytics.png')
-            
-            summary_embed.set_image(url="attachment://analytics.png")
-            
-            view = SummaryView(stats['all_members'], stats['eligible_members'], self.bot)
-            message = await interaction.followup.send(embed=summary_embed, view=view, file=chart_file)
-            view.message = message  
-            
-            chart_buffer.close()
-            return
-        
-        if target:
-            await interaction.response.defer()
-            await self.check_single_promotion(interaction, target, ephemeral=False)
 
     async def create_promotion_embed(self, member, is_eligible, requirements):
         embed = discord.Embed(
@@ -817,10 +820,7 @@ class CheckPromotion(commands.Cog):
         is_eligible = requirements.count(":white_check_mark:") > 0 and requirements.count(":x:") == 0
 
         if interaction:
-            await interaction.followup.send(embed=embed, ephemeral=False)
-        audit_log_repository.close_session()
-        voyage_repository.close_session()
-        
+            return is_eligible, requirements, embed
         return is_eligible, requirements, embed
 
     async def check_single_promotion(self, interaction: discord.Interaction, target: discord.Member, ephemeral: bool = False):
@@ -832,86 +832,6 @@ class CheckPromotion(commands.Cog):
                 f"An error occurred while checking promotion status: {str(e)}", 
                 ephemeral=True
             )
-
-    async def create_analytics_charts(self, stats, ship_or_squad_name):
-        """Create analytics charts for promotion data"""
-        buffer = io.BytesIO()
-        
-        fig = plt.figure(figsize=(15, 10))
-        fig.suptitle(f'Promotion Analytics for {ship_or_squad_name}', fontsize=16)
-        
-        ax1 = plt.subplot(221)
-        eligible = stats['eligible_count']
-        non_eligible = stats['total_members'] - eligible
-        ax1.pie([eligible, non_eligible], 
-                labels=['Eligible', 'Not Eligible'],
-                autopct='%1.1f%%',
-                colors=['green', 'red'])
-        ax1.set_title('Promotion Eligibility')
-
-        ax2 = plt.subplot(222)
-        ranks = []
-        totals = []
-        eligible_counts = []
-        
-        for rank in RANK_ORDER:
-            if rank in stats['rank_breakdown']:
-                data = stats['rank_breakdown'][rank]
-                if data['total'] > 0:  
-                    ranks.append(rank.split('|')[0].strip())
-                    totals.append(data['total'])
-                    eligible_counts.append(data['eligible'])
-        
-        if ranks:  
-            x = range(len(ranks))
-            width = 0.35
-            
-            ax2.bar([i - width/2 for i in x], totals, width, label='Total', color='blue')
-            ax2.bar([i + width/2 for i in x], eligible_counts, width, label='Eligible', color='green')
-            
-            ax2.set_ylabel('Number of Members')
-            ax2.set_title('Rank Distribution')
-            ax2.set_xticks(x)
-            ax2.set_xticklabels(ranks, rotation=45, ha='right')
-            ax2.legend()
-
-        ax3 = plt.subplot(212)
-        promotion_rates = []
-        rank_names = []
-        colors = []
-        
-        for rank in RANK_ORDER:
-            if rank in stats['rank_breakdown']:
-                data = stats['rank_breakdown'][rank]
-                if data['total'] > 0: 
-                    rate = (data['eligible'] / data['total']) * 100
-                    promotion_rates.append(rate)
-                    rank_names.append(rank.split('|')[0].strip())
-                    if rate > 50:
-                        colors.append('green')
-                    elif rate > 25:
-                        colors.append('yellow')
-                    else:
-                        colors.append('red')
-
-        if rank_names:  
-            y_pos = range(len(rank_names))
-            ax3.barh(y_pos, promotion_rates, color=colors)
-            ax3.set_yticks(y_pos)
-            ax3.set_yticklabels(rank_names)
-            ax3.set_xlabel('Promotion Rate (%)')
-            ax3.set_title('Promotion Rates by Rank')
-            ax3.set_xlim(0, 100) 
-            
-            for i, v in enumerate(promotion_rates):
-                ax3.text(v + 1, i, f'{v:.1f}%', va='center')
-        
-        plt.tight_layout()
-        plt.savefig(buffer, format='png', bbox_inches='tight', dpi=100)
-        plt.close()
-        
-        buffer.seek(0)
-        return buffer
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(CheckPromotion(bot))
