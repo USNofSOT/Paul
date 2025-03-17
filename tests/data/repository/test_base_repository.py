@@ -1,6 +1,6 @@
 import unittest
 
-from data.repository.base_repository import BaseRepository
+from data.repository.common.base_repository import BaseRepository
 from parameterized import parameterized
 from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
