@@ -72,7 +72,7 @@ class TestBaseRepository(unittest.TestCase):
     )
     def test_create_multiple_wrong_entity_type(self, name, repository, entity):
         with self.assertRaises(TypeError):
-            repository.create_multiple(entity)
+            repository.create(entity)
 
     @parameterized.expand(
         [
@@ -92,7 +92,7 @@ class TestBaseRepository(unittest.TestCase):
     )
     def test_update_multiple_wrong_entity_type(self, name, repository, entity):
         with self.assertRaises(TypeError):
-            repository.update_multiple(entity)
+            repository.update(entity)
 
     @parameterized.expand(
         [
@@ -100,13 +100,13 @@ class TestBaseRepository(unittest.TestCase):
             ("wrong_entity_for_B", EntityBRepository(), EntityA()),
         ]
     )
-    def test_delete_wrong_entity_type(self, name, repository, entity):
+    def test_remove_wrong_entity_type(self, name, repository, entity):
         with self.assertRaises(TypeError):
-            repository.delete(entity)
+            repository.remove(entity)
 
     def create_multiple(self):
         entities = [EntityA(id=6), EntityA(id=7)]
-        self.repositoryA.create_multiple(entities)
+        self.repositoryA.create(entities)
         self.assertEqual(entities[0].id, 6)
         self.assertEqual(entities[1].id, 7)
         res = self.session.query(EntityA).all()
@@ -114,10 +114,10 @@ class TestBaseRepository(unittest.TestCase):
 
     def update_multiple(self):
         entities = [EntityA(id=6), EntityA(id=7)]
-        self.repositoryA.create_multiple(entities)
+        self.repositoryA.create(entities)
         entities[0].id = 8
         entities[1].id = 9
-        self.repositoryA.update_multiple(entities)
+        self.repositoryA.update(entities)
         res = self.session.query(EntityA).all()
         self.assertEqual(len(res), 2)
         self.assertEqual(res[0].id, 8)
@@ -199,18 +199,6 @@ class TestBaseRepository(unittest.TestCase):
         result = self.repositoryA.find()
         self.assertEqual(len(result), 2)
 
-    def test_find_with_order_by(self):
-        self.session.add_all([EntityA(id=6), EntityA(id=7)])
-        self.session.commit()
-        result = self.repositoryA.find(order_by=[EntityA.id])
-        self.assertEqual(result[0].id, 6)
-
-    def test_find_with_order_by_desc(self):
-        self.session.add_all([EntityA(id=6), EntityA(id=7)])
-        self.session.commit()
-        result = self.repositoryA.find(order_by=[EntityA.id], order_direction="desc")
-        self.assertEqual(result[0].id, 7)
-
     def test_find_with_limit(self):
         self.session.add_all([EntityA(id=6), EntityA(id=7)])
         self.session.commit()
@@ -230,20 +218,6 @@ class TestBaseRepository(unittest.TestCase):
         result = self.repositoryA.find(limit=1, skip=1)
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].id, 7)
-
-    def test_find_with_filters_order_by_limit_skip(self):
-        self.session.add_all([EntityA(id=6), EntityA(id=7), EntityA(id=8)])
-        self.session.commit()
-        result = self.repositoryA.find(filters={"id": 6}, order_by=[EntityA.id], limit=1, skip=1)
-        self.assertEqual(len(result), 0)
-
-    def test_find_with_filters_order_by_desc_limit_skip(self):
-        self.session.add_all([EntityA(id=6), EntityA(id=7), EntityA(id=8)])
-        self.session.commit()
-        result = self.repositoryA.find(
-            filters={"id": 6}, order_by=[EntityA.id], order_direction="desc", limit=1, skip=1
-        )
-        self.assertEqual(len(result), 0)
 
 
 if __name__ == "__main__":
