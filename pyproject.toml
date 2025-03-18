@@ -1,5 +1,44 @@
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+package-mode = false
+
+[project]
+name = "paul"
+version = "0.1.0"
+description = "A Discord bot for the The United States Navy SoT"
+readme = "README.md"
+requires-python = ">=3.12"
+
+dependencies = [
+    "alembic==1.14.1",
+    "discord.py==2.3.2",
+    "SQLAlchemy==2.0.35",
+    "python-dotenv==1.0.1",
+    "matplotlib==3.9.2",
+    "ruff==0.1.13",
+    "black==25.1.0",
+    "mysql-connector-python==9.1.0",
+    "PyMySQL==1.1.1",
+    "requests==2.32.3",
+    "pre-commit==4.1.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest==8.3.4",
+    "pytest-mock==3.14.0",
+    "parameterized==0.9.0",
+]
+
+[tool.black]
+line-length = 88
+target-version = ["py312"]
+
 [tool.ruff]
-line-length = 100
+line-length = 88
 indent-width = 4
 target-version = "py312"
 
@@ -19,6 +58,4 @@ select = [
 ]
 
 [tool.pytest.ini_options]
-pythonpath = [
-  ".", "src",
-]
+pythonpath = [".", "src", ]
