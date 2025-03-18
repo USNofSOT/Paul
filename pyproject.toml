@@ -55,6 +55,7 @@ select = [
     "T20", # flake8-print
     "PERF", # Perflint
 ]
+ignore = ["E501"] # Line too long is handled by black
 
 [tool.ruff.format]
 quote-style = "double"
@@ -65,7 +66,3 @@ line-ending = "auto"
 [tool.pytest.ini_options]
 pythonpath = [".", "src", ]
 
-[flake8]
-max-line-length = 80
-extend-select = B950
-extend-ignore = E203,E501,E701
