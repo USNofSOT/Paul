@@ -1,25 +1,29 @@
 import logging
 from datetime import datetime
 
-from sqlalchemy.orm import sessionmaker
+from data.repository.common.base_repository import BaseRepository
 from sqlalchemy import func
+from sqlalchemy.orm import sessionmaker
+
 from src.data.engine import engine
 from src.data.models import Coins
 
 log = logging.getLogger(__name__)
 Session = sessionmaker(bind=engine)
 
-class CoinRepository:
+
+class CoinRepository(BaseRepository):
     def __init__(self):
-        self.session = Session()
+        super().__init__(Coins)
 
-    def get_session(self):
-        return self.session
-
-    def close_session(self):
-        self.session.close()
-
-    def save_coin(self, target_id: int, coin_type: str, moderator_id: int, old_name: str, coin_time: datetime = None) -> Coins:
+    def save_coin(
+        self,
+        target_id: int,
+        coin_type: str,
+        moderator_id: int,
+        old_name: str,
+        coin_time: datetime = None,
+    ) -> Coins:
         """
         Save a coin transaction to the database.
 
@@ -35,12 +39,18 @@ class CoinRepository:
         coin_time = coin_time or datetime.now()
 
         try:
-            coin = Coins(target_id=target_id, coin_type=coin_type, moderator_id=moderator_id, old_name=old_name, coin_time=coin_time)
+            coin = Coins(
+                target_id=target_id,
+                coin_type=coin_type,
+                moderator_id=moderator_id,
+                old_name=old_name,
+                coin_time=coin_time,
+            )
             self.session.add(coin)
             self.session.commit()
             return coin
         except Exception as e:
-            log.error(f"Error adding coin: {e}")
+            log.error("Error adding coin: %s", e)
             self.session.rollback()
             raise e
         finally:
@@ -64,13 +74,15 @@ class CoinRepository:
             self.session.delete(coin)
             self.session.commit()
         except Exception as e:
-            log.error(f"Error removing coin: {e}")
+            log.error("Error removing coin: %s", e)
             self.session.rollback()
             raise e
         finally:
             self.session.close()
 
-    def find_coin_by_target_and_moderator_and_type(self, target_id: int, moderator_id: int, coin_type: str) -> Coins or None:
+    def find_coin_by_target_and_moderator_and_type(
+        self, target_id: int, moderator_id: int, coin_type: str
+    ) -> Coins or None:
         """
         Find a coin transaction by target and moderator IDs.
 
@@ -82,15 +94,23 @@ class CoinRepository:
         """
 
         try:
-            coin = self.session.query(Coins).filter_by(target_id=target_id, moderator_id=moderator_id, coin_type=coin_type).first()
+            coin = (
+                self.session.query(Coins)
+                .filter_by(
+                    target_id=target_id, moderator_id=moderator_id, coin_type=coin_type
+                )
+                .first()
+            )
             return coin
         except Exception as e:
-            log.error(f"Error finding coin: {e}")
+            log.error("Error finding coin: %s", e)
             raise e
         finally:
             self.session.close()
-    
-    def find_coin_by_target_and_OldName_and_type(self, target_id: int, old_name: str, coin_type: str) -> Coins or None:
+
+    def find_coin_by_target_and_OldName_and_type(  # noqa
+        self, target_id: int, old_name: str, coin_type: str
+    ) -> Coins or None:
         """
         Find a coin transaction by target and moderator IDs.
 
@@ -102,10 +122,14 @@ class CoinRepository:
         """
 
         try:
-            coin = self.session.query(Coins).filter_by(target_id=target_id, old_name=old_name, coin_type=coin_type).first()
+            coin = (
+                self.session.query(Coins)
+                .filter_by(target_id=target_id, old_name=old_name, coin_type=coin_type)
+                .first()
+            )
             return coin
         except Exception as e:
-            log.error(f"Error finding coin: {e}")
+            log.error("Error finding coin: %s", e)
             raise e
         finally:
             self.session.close()
@@ -120,7 +144,7 @@ class CoinRepository:
         Returns:
             A tuple containing two lists: regular_coins and commander_coins.
         """
-        
+
         try:
             regular_coins = []
             commander_coins = []
@@ -135,29 +159,36 @@ class CoinRepository:
 
             return regular_coins, commander_coins
         except Exception as e:
-            log.error(f"Error retriving coins by user: {e}")
+            log.error("Error retrieving coins by user: %s", e)
         finally:
             self.session.close()
 
     def get_top_coin_holders(self, limit, member_list):
         """
-         Gets the top coin holders.
+        Gets the top coin holders.
 
-         Args:
-            limit: The maximum number of coin holders to return.
+        Args:
+           limit: The maximum number of coin holders to return.
 
-         Returns:
-            A list of tuples, where each tuple contains the target_id and their total coin count.
+        Returns:
+           A list of tuples, where each tuple contains the target_id and their total coin count.
         """
-        if limit == None:
+        if limit is None:
             limit = 3
         try:
-                results = self.session.query(
-            Coins.target_id, func.count(Coins.target_id).label('total_coins')
-        ).group_by(Coins.target_id).filter(Coins.target_id.in_(member_list)).order_by(func.count(Coins.target_id).desc()).limit(limit).all()
-                return results
-        
+            results = (
+                self.session.query(
+                    Coins.target_id, func.count(Coins.target_id).label("total_coins")
+                )
+                .group_by(Coins.target_id)
+                .filter(Coins.target_id.in_(member_list))
+                .order_by(func.count(Coins.target_id).desc())
+                .limit(limit)
+                .all()
+            )
+            return results
+
         except Exception as e:
-            log.error(f"Error getting top coin holders: {e}")
+            log.error("Error getting top coin holders: %s", e)
         finally:
             self.session.close()
