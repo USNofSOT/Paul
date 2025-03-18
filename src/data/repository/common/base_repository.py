@@ -14,15 +14,31 @@ T = TypeVar("T")
 
 class BaseRepository(Generic[T]):
     def __init__(self, entity_type: Type[T]):
-        self.session = Session()
+        self.session = None
         self.entity_type: Type[T] = entity_type
         self.setup()
 
     def setup(self) -> None:
         logger.debug("Setting up the repository for %s", self.entity_type.__name__)
+        self.session = Session()
 
     def teardown(self) -> None:
         logger.debug("Tearing down the repository for %s", self.entity_type.__name__)
+        self.close_session()
+
+    def get_session(self):
+        if self.session is None:
+            logger.error(
+                "Session is not set up for repository of type %s",
+                self.entity_type.__name__,
+            )
+            raise Exception(
+                "Session is not set up for repository of type %s",
+                self.entity_type.__name__,
+            )
+        return self.session
+
+    def close_session(self):
         self.session.close()
 
     def find(
@@ -46,8 +62,7 @@ class BaseRepository(Generic[T]):
         try:
             query = self.session.query(self.entity_type)
             if filters:
-                for key, value in filters.items():
-                    query = query.filter(getattr(self.entity_type, key) == value)
+                query = query.filter_by(**filters)
             if limit:
                 query = query.limit(limit)
             if skip:
@@ -62,7 +77,9 @@ class BaseRepository(Generic[T]):
             return result
         except Exception as e:
             self.session.rollback()
-            logger.error("Error finding entities of type %s: %s", self.entity_type.__name__, e)
+            logger.error(
+                "Error finding entities of type %s: %s", self.entity_type.__name__, e
+            )
             raise e
 
     def get(self, entity_id: Any) -> Optional[T]:
@@ -78,7 +95,9 @@ class BaseRepository(Generic[T]):
         """
         try:
             entity = self.session.query(self.entity_type).get(entity_id)
-            logger.debug("Got entity of type %s with ID %s", self.entity_type.__name__, entity_id)
+            logger.debug(
+                "Got entity of type %s with ID %s", self.entity_type.__name__, entity_id
+            )
             return entity
         except Exception as e:
             self.session.rollback()
@@ -131,12 +150,16 @@ class BaseRepository(Generic[T]):
             self.session.delete(entity)
             self.session.commit()
             logger.debug(
-                "Removed entity of type %s with data %s", self.entity_type.__name__, entity
+                "Removed entity of type %s with data %s",
+                self.entity_type.__name__,
+                entity,
             )
             return entity
         except Exception as e:
             self.session.rollback()
-            logger.error("Error removing entity of type %s: %s", self.entity_type.__name__, e)
+            logger.error(
+                "Error removing entity of type %s: %s", self.entity_type.__name__, e
+            )
             raise e
 
     def _create_multiple(self, entities: List[T]) -> List[T]:
@@ -145,12 +168,18 @@ class BaseRepository(Generic[T]):
         try:
             self.session.add_all(entities)
             self.session.commit()
-            logger.debug("Created %d entities of type %s", len(entities), self.entity_type.__name__)
+            logger.debug(
+                "Created %d entities of type %s",
+                len(entities),
+                self.entity_type.__name__,
+            )
             return entities
         except Exception as e:
             self.session.rollback()
             logger.error(
-                "Error creating multiple entities of type %s: %s", self.entity_type.__name__, e
+                "Error creating multiple entities of type %s: %s",
+                self.entity_type.__name__,
+                e,
             )
             raise e
 
@@ -161,12 +190,16 @@ class BaseRepository(Generic[T]):
             self.session.add(entity)
             self.session.commit()
             logger.debug(
-                "Created entity of type %s with data %s", self.entity_type.__name__, entity
+                "Created entity of type %s with data %s",
+                self.entity_type.__name__,
+                entity,
             )
             return entity
         except Exception as e:
             self.session.rollback()
-            logger.error("Error creating entity of type %s: %s", self.entity_type.__name__, e)
+            logger.error(
+                "Error creating entity of type %s: %s", self.entity_type.__name__, e
+            )
             raise e
 
     def _update_multiple(self, entities: List[T]) -> List[T]:
@@ -176,12 +209,18 @@ class BaseRepository(Generic[T]):
             for entity in entities:
                 self.session.add(entity)
             self.session.commit()
-            logger.debug("Updated %d entities of type %s", len(entities), self.entity_type.__name__)
+            logger.debug(
+                "Updated %d entities of type %s",
+                len(entities),
+                self.entity_type.__name__,
+            )
             return entities
         except Exception as e:
             self.session.rollback()
             logger.error(
-                "Error updating multiple entities of type %s: %s", self.entity_type.__name__, e
+                "Error updating multiple entities of type %s: %s",
+                self.entity_type.__name__,
+                e,
             )
             raise e
 
@@ -192,10 +231,14 @@ class BaseRepository(Generic[T]):
             self.session.add(entity)
             self.session.commit()
             logger.debug(
-                "Updated entity of type %s with data %s", self.entity_type.__name__, entity
+                "Updated entity of type %s with data %s",
+                self.entity_type.__name__,
+                entity,
             )
             return entity
         except Exception as e:
             self.session.rollback()
-            logger.error("Error updating entity of type %s: %s", self.entity_type.__name__, e)
+            logger.error(
+                "Error updating entity of type %s: %s", self.entity_type.__name__, e
+            )
             raise e

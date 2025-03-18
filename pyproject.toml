@@ -35,23 +35,22 @@ test = [
 
 [tool.black]
 line-length = 88
-target-version = ["py312"]
 
 [tool.ruff]
 line-length = 88
 indent-width = 4
-target-version = "py312"
 
 [tool.ruff.lint]
+fixable = ["ALL"]
 select = [
-    "F", # Pyflakes
-    "E", # pycodestyle
-    "W", # pycodestyle
-    "I", # Isort
-    "N", # pep8-naming
-    "S", # flake8-bandit
+    "F",  # Pyflakes
+    "E",  # pycodestyle
+    "W",  # pycodestyle
+    "I",  # Isort
+    "N",  # pep8-naming
+    "S",  # flake8-bandit
     "C4", # flake8-comprehensions
-    "G", # flake8-logging-format
+    "G",  # flake8-logging-format
     "PIE", # flake8-pie
     "T20", # flake8-print
     "PERF", # Perflint
