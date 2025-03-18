@@ -56,5 +56,16 @@ select = [
     "PERF", # Perflint
 ]
 
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
 [tool.pytest.ini_options]
 pythonpath = [".", "src", ]
+
+[flake8]
+max-line-length = 80
+extend-select = B950
+extend-ignore = E203,E501,E701
