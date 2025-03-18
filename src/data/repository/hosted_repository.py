@@ -327,7 +327,6 @@ class HostedRepository:
             log.error("Error retrieving unique ship name combinations.")
             raise e
 
-
 def remove_hosted_entry_by_log_id(log_id: int) -> bool:
     """
     Removes the entry from the Hosted table associated with the given log_id.
