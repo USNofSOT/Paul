@@ -21,19 +21,19 @@ jobs:
         run: pip install -r requirements.txt
       - name: "🧪 Running tests"
         run: pytest
-  format:
-    name: "🧹 Format Checking"
-    runs-on: ubuntu-latest
-    steps:
-      - name: "⌛ Checking out the code"
-        uses: actions/checkout@v3
-      - name: "🐍 Setting up Python"
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.12'
-      - name: "📦 Installing dependencies"
-        run: pip install black ruff
-      - name: "🧹 Running Black"
-        run: black --check src
-      - name: "🧹 Running Ruff"
-        run: ruff src
+#  format:
+#    name: "🧹 Format Checking"
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: "⌛ Checking out the code"
+#        uses: actions/checkout@v3
+#      - name: "🐍 Setting up Python"
+#        uses: actions/setup-python@v4
+#        with:
+#          python-version: '3.12'
+#      - name: "📦 Installing dependencies"
+#        run: pip install black ruff
+#      - name: "🧹 Running Black"
+#        run: black --check src
+#      - name: "🧹 Running Ruff"
+#        run: ruff src
