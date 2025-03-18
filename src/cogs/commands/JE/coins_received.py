@@ -8,57 +8,45 @@ from discord.ext import commands
 from utils.embeds import error_embed
 
 
-async def autocomplete(
-    interaction: discord.Interaction, current_input: str
-) -> list[app_commands.Choice]:
-    coin_repository = CoinRepository()
-    coin_givers = {coin.old_name for coin in coin_repository.find()}
-    coin_repository.close_session()
-
-    choices = []
-    for giver in coin_givers:
-        if current_input == "":
-            choices.append(app_commands.Choice(name=giver, value=giver))
-            continue
-        elif giver.lower().startswith(current_input.lower()):
-            choices.append(app_commands.Choice(name=giver, value=giver))
-
-    return choices[:25]
-
-
-class CoinsGiven(commands.Cog):
+class CoinsReceived(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
     @app_commands.command(
-        name="coins_given", description="Information on coins given by a specific user"
+        name="coins_received",
+        description="Information on coins given by a specific user",
     )
-    @app_commands.autocomplete(target=autocomplete)
-    @app_commands.describe(target="Name of the user who gave out coins")
+    @app_commands.describe(target="Name of the user who received the coins")
     @app_commands.checks.has_any_role(
         *JE_AND_UP,
     )
-    async def coins_given(self, interaction: discord.interactions, target: str):
+    async def coins_given(
+        self, interaction: discord.interactions, target: discord.Member = None
+    ):
         coin_repository = CoinRepository()
         await interaction.response.defer()
 
+        # If no target is given, default to the author
+        if not target:
+            target = interaction.user
+
         coins_for_target = coin_repository.find(
             {
-                "old_name": target,
+                "target_id": target.id,
             }
         )
         if not coins_for_target:
             await interaction.followup.send(
                 embed=error_embed(
                     title="No coins found",
-                    description=f"No coins found given out by {target}",
+                    description=f"No coins found given to {target}",
                 )
             )
             return
 
         embed = discord.Embed(
-            title=f"Coins given by {target}",
-            description=f"Information about the coins given out by {target}",
+            title=f"Coins given to {target}",
+            description=f"Information about the coins given to {target}",
             color=discord.Color.gold(),
         )
 
@@ -92,7 +80,7 @@ class CoinsGiven(commands.Cog):
         coins_by_date = defaultdict(list)
         for coin in coins_for_target:
             year_month = coin.coin_time.strftime("%Y-%m")
-            coin_info = f"Gave {coin.coin_type} to <@{coin.target_id}> on {coin.coin_time.strftime('%Y-%m-%d')}\n"
+            coin_info = f"Received {coin.old_name}'s {coin.coin_type}  on {coin.coin_time.strftime('%Y-%m-%d')}\n"
             coins_by_date[year_month].append(coin_info)
 
         for year_month, coin_infos in sorted(coins_by_date.items()):
@@ -121,4 +109,4 @@ class CoinsGiven(commands.Cog):
 
 
 async def setup(bot: commands.Bot):
-    await bot.add_cog(CoinsGiven(bot))
+    await bot.add_cog(CoinsReceived(bot))
