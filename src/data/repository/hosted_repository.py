@@ -1,9 +1,9 @@
 import logging
 from datetime import datetime, timedelta
-from typing import Type
+from typing import Any, Type
 
 from data import VoyageType
-from sqlalchemy import delete, update
+from sqlalchemy import Row, delete, update
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql.functions import coalesce, count
 
@@ -235,6 +235,34 @@ class HostedRepository:
             log.error("Error getting hosted log entries by target IDs and month count.")
             raise e
 
+    def get_filtered_hosted(
+        self,
+        main_ship=None,
+        auxiliary_ship=None,
+        ship_role_id=None,
+        voyage_type=None,
+        host_id=None,
+        crew_member_id=None,
+    ):
+        query = self.session.query(Hosted).order_by(Hosted.log_time.desc())
+
+        if main_ship:
+            query = query.filter(
+                Hosted.ship_name == main_ship, Hosted.auxiliary_ship_name.is_(None)
+            )
+        if auxiliary_ship:
+            query = query.filter(Hosted.auxiliary_ship_name == auxiliary_ship)
+        if ship_role_id:
+            query = query.filter(Hosted.ship_role_id == ship_role_id)
+        if voyage_type:
+            query = query.filter(Hosted.voyage_type == voyage_type)
+        if host_id:
+            query = query.filter(Hosted.target_id == host_id)
+        if crew_member_id:
+            query = query.filter(Hosted.voyages.any(target_id=crew_member_id))
+
+        return query.all()
+
     def get_last_hosted_by_target_ids(self, target_ids: list) -> dict:
         """
         Get the last hosted log entry for a list of target IDs
@@ -258,6 +286,46 @@ class HostedRepository:
             log.error("Error getting last hosted log entries.")
             raise e
 
+    def retrieve_ship_history(self, ship_name: str) -> list[Type[Hosted]]:
+        """
+        Retrieves the ship history for the given ship name.
+
+        Args:
+            ship_name (str): The name of the ship.
+
+        Returns:
+            list[Hosted] | None: The ship history if found, otherwise None.
+        """
+        try:
+            # Try to find info for main ship,
+            # if not found, try to find info for auxiliary ship
+            ship = (
+                self.session.query(Hosted)
+                .filter(Hosted.ship_name == ship_name, Hosted.auxiliary_ship_name is None)
+                .all()
+            )
+            if not ship:
+                ship = (
+                    self.session.query(Hosted).filter(Hosted.auxiliary_ship_name == ship_name).all()
+                )
+            return ship
+        except Exception as e:
+            log.error("Error retrieving ship history.")
+            raise e
+
+    def retrieve_unique_ship_name_combinations(self) -> list[Row[tuple[Any, Any]]]:
+        """
+        Retrieves the unique ship name combinations from the Hosted table.
+        [ship_name, auxiliary_ship_name]
+
+        Returns:
+            list[tuple[str]]: The unique ship name combinations.
+        """
+        try:
+            return self.session.query(Hosted.ship_name, Hosted.auxiliary_ship_name).distinct().all()
+        except Exception as e:
+            log.error("Error retrieving unique ship name combinations.")
+            raise e
 
 def remove_hosted_entry_by_log_id(log_id: int) -> bool:
     """
