@@ -34,7 +34,9 @@ async def is_valid_auxiliary_ship(auxiliary_ship: str) -> bool:
     )
 
 
-async def is_aux_part_of_main_ship(main_ship: str, auxiliary_ship: str) -> bool or list[str]:
+async def is_aux_part_of_main_ship(
+    main_ship: str, auxiliary_ship: str
+) -> bool or list[str]:
     ship_map = get_ship_names(
         get_main_ship_names=True,
         get_auxiliary_ship_names=True,
@@ -42,20 +44,24 @@ async def is_aux_part_of_main_ship(main_ship: str, auxiliary_ship: str) -> bool 
     )
     if auxiliary_ship in ship_map.get(main_ship, []):
         return True
-    ships_with_aux = [ship for ship, aux_list in ship_map.items() if auxiliary_ship in aux_list]
+    ships_with_aux = [
+        ship for ship, aux_list in ship_map.items() if auxiliary_ship in aux_list
+    ]
     return ships_with_aux if ships_with_aux else False
 
 
-async def autocomplete_ship(current_input: str, list_ships_func) -> list[app_commands.Choice]:
+async def autocomplete_ship(
+    current_input: str, list_ships_func
+) -> list[app_commands.Choice]:
     ship_names: List[str] = list_ships_func()
     choices = []
     for ship in ship_names:
         ship_name = ship.replace("USS ", "")
         if current_input == "":
             choices.append(app_commands.Choice(name=ship, value=ship))
-        elif ship.lower().startswith(current_input.lower()) or ship_name.lower().startswith(
+        elif ship.lower().startswith(
             current_input.lower()
-        ):
+        ) or ship_name.lower().startswith(current_input.lower()):
             choices.append(app_commands.Choice(name=ship, value=ship))
     return choices[:25]
 
@@ -121,7 +127,11 @@ async def build_embed(
 
     embed.add_field(
         name="Voyage Count",
-        value=convert_to_ordinal(hosted.ship_voyage_count) if hosted.ship_voyage_count else "N/A",
+        value=(
+            convert_to_ordinal(hosted.ship_voyage_count)
+            if hosted.ship_voyage_count
+            else "N/A"
+        ),
         inline=True,
     )
 
@@ -139,7 +149,9 @@ async def build_embed(
         if hosted.voyage_type else 'N/A'}",
         inline=True,
     )
-    embed.add_field(name="Gold", value=f"{GOLD_EMOJI} {hosted.gold_count:,}", inline=True)
+    embed.add_field(
+        name="Gold", value=f"{GOLD_EMOJI} {hosted.gold_count:,}", inline=True
+    )
     embed.add_field(
         name="Doubloons",
         value=f"{DOUBLOONS_EMOJI} {hosted.doubloon_count:,}",
@@ -149,9 +161,11 @@ async def build_embed(
     embed.add_field(name="\u200b", value="\u200b", inline=True)
     embed.add_field(
         name="Ancient Coins",
-        value=f"{ANCIENT_COINS_EMOJI} {hosted.ancient_coin_count:,}"
-        if hosted.ancient_coin_count
-        else f"{ANCIENT_COINS_EMOJI} 0",
+        value=(
+            f"{ANCIENT_COINS_EMOJI} {hosted.ancient_coin_count:,}"
+            if hosted.ancient_coin_count
+            else f"{ANCIENT_COINS_EMOJI} 0"
+        ),
         inline=True,
     )
     embed.add_field(
@@ -162,17 +176,23 @@ async def build_embed(
 
     log_channel = bot.get_channel(VOYAGE_LOGS)
     try:
-        log_message: Message or None = await log_channel.fetch_message(int(hosted.log_id))
+        log_message: Message or None = await log_channel.fetch_message(
+            int(hosted.log_id)
+        )
     except discord.errors.NotFound:
         log_message = None
 
     if log_message:
         embed.add_field(
-            name="Created at", value=f"<t:{int(log_message.created_at.timestamp())}>", inline=True
+            name="Created at",
+            value=f"<t:{int(log_message.created_at.timestamp())}>",
+            inline=True,
         )
         if log_message.edited_at:
             embed.add_field(
-                name="Edited at", value=f"<t:{int(log_message.edited_at.timestamp())}>", inline=True
+                name="Edited at",
+                value=f"<t:{int(log_message.edited_at.timestamp())}>",
+                inline=True,
             )
 
     return embed
@@ -180,13 +200,16 @@ async def build_embed(
 
 class LogBookView(discord.ui.View):
     def __init__(self, bot, hosted: [Hosted]):
-        super().__init__()
+        super().__init__(timeout=120)
         self.bot = bot
         self.hosted: [Hosted] = hosted
         self.selected_index = 0
+        self.message = None  # Initialize the message attribute
 
     @discord.ui.button(style=discord.ButtonStyle.primary, emoji="⬅️")
-    async def on_back(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def on_back(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
         self.selected_index += 1
         if self.selected_index >= len(self.hosted):
             self.selected_index = 0
@@ -202,7 +225,9 @@ class LogBookView(discord.ui.View):
         await interaction.response.defer()
 
     @discord.ui.button(style=discord.ButtonStyle.primary, emoji="🔄")
-    async def on_refresh(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def on_refresh(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
         # Update the original message
         embed = await build_embed(
             self.bot,
@@ -215,7 +240,9 @@ class LogBookView(discord.ui.View):
         await interaction.response.defer()
 
     @discord.ui.button(style=discord.ButtonStyle.primary, emoji="➡️")
-    async def on_next(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def on_next(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
         self.selected_index -= 1
         if self.selected_index < 0:
             self.selected_index = len(self.hosted) - 1
@@ -231,8 +258,13 @@ class LogBookView(discord.ui.View):
         await interaction.response.defer()
 
     async def on_timeout(self):
-        # Remove the view after 5 minutes
-        self.stop()
+        try:
+            log.info("Removing buttons due to timeout")
+            for item in self.children:
+                self.remove_item(item)
+                await self.message.edit(view=self)
+        except Exception as e:
+            log.error("Error in on_timeout: %s", e)
 
 
 class Logbook(commands.Cog):
@@ -268,13 +300,17 @@ class Logbook(commands.Cog):
     ):
         if voyage_type and voyage_type not in VoyageType.__members__:
             return await interaction.response.send_message(
-                embed=error_embed(title="Logbook Information", description="Invalid voyage type."),
+                embed=error_embed(
+                    title="Logbook Information", description="Invalid voyage type."
+                ),
                 ephemeral=True,
             )
 
         if main_ship and not await is_valid_main_ship(main_ship):
             return await interaction.response.send_message(
-                embed=error_embed(title="Logbook Information", description="Invalid main ship."),
+                embed=error_embed(
+                    title="Logbook Information", description="Invalid main ship."
+                ),
                 ephemeral=True,
             )
 
@@ -318,28 +354,36 @@ class Logbook(commands.Cog):
 
         if not hosted:
             return await interaction.response.send_message(
-                embed=error_embed(title="Logbook Information", description="No logs found."),
+                embed=error_embed(
+                    title="Logbook Information", description="No logs found."
+                ),
                 ephemeral=True,
             )
 
         embed = await build_embed(self.bot, hosted[0], len(hosted), len(hosted))
         view = LogBookView(self.bot, hosted)
         await interaction.response.send_message(embed=embed, view=view)
+        view.message = await interaction.original_response()
 
         hosted_repository.close_session()
 
     @logbook.error
-    async def logbook_error(self, interaction: discord.Interaction, error: commands.CommandError):
+    async def logbook_error(
+        self, interaction: discord.Interaction, error: commands.CommandError
+    ):
         log.error("Error in logbook command")
         if isinstance(error, app_commands.errors.MissingAnyRole):
             await interaction.followup.send(
                 embed=error_embed(
-                    title="Missing Permissions", description="You lack the required permissions."
+                    title="Missing Permissions",
+                    description="You lack the required permissions.",
                 ),
                 ephemeral=True,
             )
         else:
-            await interaction.followup.send(embed=error_embed(exception=error), ephemeral=True)
+            await interaction.followup.send(
+                embed=error_embed(exception=error), ephemeral=True
+            )
 
 
 async def setup(bot: commands.Bot):
