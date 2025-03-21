@@ -104,7 +104,9 @@ BOA_NSC = BOA_ROLE, NSC_ROLE
 # Pure roles list without any additional permissions (e.g. NSC)
 NCO_AND_UP_PURE = NCO_ROLE, SNCO_ROLE, JO_ROLE, SO_ROLE, BOA_ROLE
 
-O8_AND_UP = O8_ROLES + [BOA_ROLE]  # some overlap, but includes BOA members without ranks
+O8_AND_UP = O8_ROLES + [
+    BOA_ROLE
+]  # some overlap, but includes BOA members without ranks
 O7_AND_UP = O7_ROLES + O8_AND_UP
 O6_AND_UP = O6_ROLES + O7_AND_UP
 O5_AND_UP = O5_ROLES + O6_AND_UP
@@ -125,4 +127,5 @@ E1_AND_UP = E1_ROLES + E2_AND_UP
 # Misc
 ###############################################################################
 MARINE_ROLE = 1169308325586931753
+USMC_ROLE = 1164156272707383297
 VOYAGE_PERMISSIONS = 935340203965567006
