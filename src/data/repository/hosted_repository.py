@@ -107,7 +107,8 @@ class HostedRepository:
             )
         except Exception as e:
             log.error(
-                "Error getting hosted log entries by role IDs, " "target IDs, and between dates."
+                "Error getting hosted log entries by role IDs, "
+                "target IDs, and between dates."
             )
             raise e
 
@@ -164,9 +165,11 @@ class HostedRepository:
                         doubloon_count=doubloon_count,
                         ancient_coin_count=ancient_coin_count,
                         fish_count=fish_count,
-                        voyage_type=VoyageType(voyage_type).value
-                        if voyage_type
-                        else VoyageType.UNKNOWN.value,
+                        voyage_type=(
+                            VoyageType(voyage_type).value
+                            if voyage_type
+                            else VoyageType.UNKNOWN.value
+                        ),
                     )
                 )
 
@@ -201,7 +204,10 @@ class HostedRepository:
             bool: True if the log ID exists, False otherwise.
         """
         try:
-            exists = self.session.query(Hosted).filter(Hosted.log_id == log_id).scalar() is not None
+            exists = (
+                self.session.query(Hosted).filter(Hosted.log_id == log_id).scalar()
+                is not None
+            )
             return exists
         except Exception as e:
             log.error("Error checking if hosted log ID exists.")
@@ -225,7 +231,9 @@ class HostedRepository:
 
             ret = (
                 self.session.query(Hosted.target_id, count(Hosted.target_id))
-                .filter(Hosted.target_id.in_(target_ids), Hosted.log_time >= thirty_days_ago)
+                .filter(
+                    Hosted.target_id.in_(target_ids), Hosted.log_time >= thirty_days_ago
+                )
                 .group_by(Hosted.target_id)
                 .all()
             )
@@ -301,12 +309,16 @@ class HostedRepository:
             # if not found, try to find info for auxiliary ship
             ship = (
                 self.session.query(Hosted)
-                .filter(Hosted.ship_name == ship_name, Hosted.auxiliary_ship_name is None)
+                .filter(
+                    Hosted.ship_name == ship_name, Hosted.auxiliary_ship_name.is_(None)
+                )
                 .all()
             )
             if not ship:
                 ship = (
-                    self.session.query(Hosted).filter(Hosted.auxiliary_ship_name == ship_name).all()
+                    self.session.query(Hosted)
+                    .filter(Hosted.auxiliary_ship_name == ship_name)
+                    .all()
                 )
             return ship
         except Exception as e:
@@ -322,10 +334,15 @@ class HostedRepository:
             list[tuple[str]]: The unique ship name combinations.
         """
         try:
-            return self.session.query(Hosted.ship_name, Hosted.auxiliary_ship_name).distinct().all()
+            return (
+                self.session.query(Hosted.ship_name, Hosted.auxiliary_ship_name)
+                .distinct()
+                .all()
+            )
         except Exception as e:
             log.error("Error retrieving unique ship name combinations.")
             raise e
+
 
 def remove_hosted_entry_by_log_id(log_id: int) -> bool:
     """
