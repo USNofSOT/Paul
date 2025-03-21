@@ -2,13 +2,13 @@ from src.config.main_server import (
     BC_ADRESTIA,
     BC_ADUN,
     BC_ARIZONA,
-    BC_COLLINS,
     BC_HYPERION,
     BC_LUSTY,
     BC_MAELSTROM,
     BC_PHANTOM,
     BC_PLATYPUS,
     BC_SILVERCLAW,
+    BC_TITAN,
     BC_VALHALLA,
     BC_VENOM,
 )
@@ -25,7 +25,7 @@ ROLE_ID_ARIZONA = 1058840733248933908
 ROLE_ID_PHANTOM = 1274251672876617792
 ROLE_ID_SILVERCLAW = 977935623774162954
 ROLE_ID_VENOM = 1237838106711822457
-ROLE_ID_COLLINS = 1247405133130764329
+ROLE_ID_TITAN = 1247405133130764329
 
 ###############################################################################
 # Ships - Ship objects
@@ -98,9 +98,9 @@ SHIPS = [
         emoji="<:Venom:1239895956489633852>",
     ),
     Ship(
-        name="USS Journey",
-        boat_command_channel_id=BC_COLLINS,
-        role_id=ROLE_ID_COLLINS,
-        emoji="<:Collins:1263703567978729593>",
+        name="USS Titan",
+        boat_command_channel_id=BC_TITAN,
+        role_id=ROLE_ID_TITAN,
+        emoji="<:Titan:1352591957804978277>",
     ),
 ]
