@@ -31,7 +31,7 @@ BC_ARIZONA: Final[int] = 1058850504630866050
 BC_PHANTOM: Final[int] = 1274254041823580225
 BC_SILVERCLAW: Final[int] = 995299843448770690
 BC_VENOM: Final[int] = 1237840915914297414
-BC_COLLINS: Final[int] = 1247403752210694197
+BC_TITAN: Final[int] = 1247403752210694197
 
 # BOA is a side channel so that bot does not need to be in main boa channel
 BC_BOA: Final[int] = 1101193993909456956
