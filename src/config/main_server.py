@@ -6,6 +6,7 @@ TOKEN: Final[str] = os.getenv("DISCORD_TOKEN")
 
 # GUILD ID For Main Server
 GUILD_ID: Final[int] = 933907909954371654
+# NOTE: If changed also change in data/models/award_model.py
 
 # GUILD OWNER ID
 GUILD_OWNER_ID: Final[int] = 215990848465141760
