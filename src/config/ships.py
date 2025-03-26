@@ -74,10 +74,10 @@ SHIPS = [
         emoji="<:Platypus:1282806780342177845>",
     ),
     Ship(
-        name="USS Arizona",
+        name="USS Defiant",
         boat_command_channel_id=BC_ARIZONA,
         role_id=ROLE_ID_ARIZONA,
-        emoji="<:Arizona:1238520496442839150>",
+        emoji="<:Defiant:1354503521747075072>",
     ),
     Ship(
         name="USS Phantom",
