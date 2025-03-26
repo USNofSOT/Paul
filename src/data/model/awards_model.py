@@ -7,6 +7,8 @@ from sqlalchemy import Boolean, Column, Enum, Integer
 from sqlalchemy.dialects.mysql import BIGINT, DATETIME, VARCHAR
 from utils.rank_and_promotion_utils import has_award_or_higher
 
+from src.config import GUILD_ID
+
 log = logging.getLogger(__name__)
 
 
@@ -32,7 +34,7 @@ class Awards(Base):
     name = Column(VARCHAR(64), nullable=False)
     description = Column(VARCHAR(255), nullable=True)
     category = Column(
-        Enum(AwardCategory), nullable=True, default=AwardCategory.MISCELLANEOUS
+        Enum(AwardCategory), nullable=True, server_default="MISCELLANEOUS"
     )
 
     # Threshold value for the award, and the ranks responsible for the award
@@ -45,9 +47,9 @@ class Awards(Base):
     embed_id = Column(BIGINT, nullable=True)
 
     # Whether the award is a streak award
-    is_streak = Column(Boolean, default=False)
+    is_streak = Column(Boolean)
     # Whether the award is a tiered award
-    is_tiered = Column(Boolean, default=False, nullable=False)
+    is_tiered = Column(Boolean, server_default="0")
 
     # Created, edited, and deleted timestamps
     created_at = Column(DATETIME, nullable=True)
@@ -58,10 +60,13 @@ class Awards(Base):
         return self.role_id is not None
 
     @property
-    def embed_url(self) -> str:
+    def embed_url(self) -> str or None:
+        """
+        Return the URL for the embed if it exists, otherwise return None
+        """
         if self.channel_thread_id == 0 or self.embed_id == 0:
             return None
-        return f"https://discord.com/channels/{933907909954371654}/{self.channel_thread_id}/{self.embed_id}"
+        return f"https://discord.com/channels/{GUILD_ID}/{self.channel_thread_id}/{self.embed_id}"
 
     def has_award(self, member: discord.Member, category_awards=None) -> bool:
         """
