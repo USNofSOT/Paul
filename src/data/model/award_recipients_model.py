@@ -5,8 +5,6 @@ from sqlalchemy import Column, ForeignKey, Integer
 from sqlalchemy.dialects.mysql import DATETIME
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.data.model.awards_model import Awards
-
 log = logging.getLogger(__name__)
 
 
@@ -26,7 +24,9 @@ class AwardRecipients(Base):
     # Relationships
     target: Mapped["Sailor"] = relationship("Sailor", foreign_keys=[target_id])
     moderator: Mapped["Sailor"] = relationship("Sailor", foreign_keys=[moderator_id])
-    award: Mapped["Awards"] = relationship("Awards", foreign_keys=[award_id])
+    award: Mapped["Awards"] = relationship(  # noqa: F821
+        "Awards", foreign_keys=[award_id]
+    )
 
     # Created, edited, and deleted timestamps
     created_at = Column(DATETIME, nullable=False)
