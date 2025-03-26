@@ -1,10 +1,13 @@
 import enum
 import logging
+from typing import List
 
 import discord
 from data import Base
+from data.model.award_recipients_model import AwardRecipients
 from sqlalchemy import Boolean, Column, Enum, Integer
 from sqlalchemy.dialects.mysql import BIGINT, DATETIME, VARCHAR
+from sqlalchemy.orm import Mapped, relationship
 from utils.rank_and_promotion_utils import has_award_or_higher
 
 from src.config import GUILD_ID
@@ -55,6 +58,12 @@ class Awards(Base):
     created_at = Column(DATETIME, nullable=True)
     edited_at = Column(DATETIME, nullable=True)
 
+    # Relationships
+    recipients: Mapped[List["AwardRecipients"]] = relationship(
+        "AwardRecipients",
+        back_populates="award",
+    )
+
     @property
     def is_role_award(self) -> bool:
         return self.role_id is not None
@@ -78,15 +87,14 @@ class Awards(Base):
 
         Returns: True if the member has the award, False otherwise
         """
-        has_award = False
         try:
+            has_award = any(
+                recipient.target_id == member.id for recipient in self.recipients
+            )
             if self.is_role_award:
                 has_award = self.role_id in [role.id for role in member.roles]
-                if self.is_role_award and category_awards:
+                if category_awards:
                     has_award = has_award_or_higher(member, self, category_awards)
-            else:
-                # TODO: Implement database check
-                return False
         except Exception as e:
             log.exception("Error checking if member has award: %s", e)
             return False
