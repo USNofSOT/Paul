@@ -1,10 +1,11 @@
 import logging
 
 from data import Base, Sailor
-from data.model.awards_model import Awards
 from sqlalchemy import Column, ForeignKey, Integer
 from sqlalchemy.dialects.mysql import DATETIME
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from src.data.model.awards_model import Awards
 
 log = logging.getLogger(__name__)
 
