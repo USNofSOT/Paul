@@ -1,3 +1,11 @@
+"""'
+LEGACY NOTICE:
+This file is deprecated and will be removed in the future.
+Please use the
+ - /model/ directory instead to define model.
+- /migration/ directory to define migrations.
+"""
+
 import enum
 import logging
 from typing import List

@@ -11,6 +11,9 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
+# set logger to debug
+logger.setLevel(logging.DEBUG)
+
 
 class BaseRepository(Generic[T]):
     def __init__(self, entity_type: Type[T]):

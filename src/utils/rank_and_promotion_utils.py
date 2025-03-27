@@ -3,19 +3,19 @@ import logging
 import discord
 
 from src.config.ranks import RANKS
-from src.data.structs import NavyRank, Award
+from src.data.structs import Award, NavyRank
 
 log = logging.getLogger(__name__)
 
-def get_next_award(
-        target: discord.Member,
-        category_awards: [Award]
-) -> Award or None:
+
+def get_next_award(target: discord.Member, category_awards: [Award]) -> Award or None:
     """
     Given the current member, return the next award that the member will achieve.
     """
     member_role_ids = [role.id for role in target.roles]
-    member_awards = [award for award in category_awards if award.role_id in member_role_ids]
+    member_awards = [
+        award for award in category_awards if award.role_id in member_role_ids
+    ]
     highest_award = None
     for award in member_awards:
         if highest_award is None or award.threshold > highest_award.threshold:
@@ -29,41 +29,52 @@ def get_next_award(
         return category_awards[0]
     return next_award
 
-def get_current_award(
-        target: discord.Member,
-        category_awards: [Award]
-) -> Award:
+
+def get_current_award(target: discord.Member, category_awards: [Award]) -> Award:
     """
     Given the current member, return the award with the highest index that the member has.
     """
     highest_award = None
     member_role_ids = [role.id for role in target.roles]
-    member_awards = [award for award in category_awards if award.role_id in member_role_ids]
+    member_awards = [
+        award for award in category_awards if award.role_id in member_role_ids
+    ]
     for award in member_awards:
         if highest_award is None or award.threshold < highest_award.threshold:
             highest_award = award
     return highest_award
 
+
 def has_award_or_higher(
-    target: discord.Member,
-    required_award: Award,
-    category_awards: [Award]
+    target: discord.Member, required_award, category_awards
 ) -> bool:
     """
     Check if the target has the required award or higher.
     """
     member_role_ids = [role.id for role in target.roles]
-    member_awards = [award for award in category_awards if award.role_id in member_role_ids]
+    member_awards = [
+        award for award in category_awards if award.role_id in member_role_ids
+    ]
     required_threshold = required_award.threshold
-    log.info(f"Checking if {target.display_name} has the required award or higher: {required_award}")
+    log.info(
+        "Checking if %s has the required award or higher: %s",
+        target.display_name,
+        required_award,
+    )
     for award in member_awards:
         if award.threshold >= required_threshold:
-            log.info(f"{target.display_name} has the required award or higher: {award} - {award.threshold} >= {required_threshold}")
+            log.info(
+                "%s has the required award or higher: %s - %s >= %s",
+                target.display_name,
+                award,
+                award.threshold,
+                required_threshold,
+            )
+
             return True
 
-def get_current_rank(
-        target: discord.Member
-) -> NavyRank:
+
+def get_current_rank(target: discord.Member) -> NavyRank:
     """
     Given the current member, return the rank with the highest index that the member has.
     """
@@ -74,9 +85,8 @@ def get_current_rank(
                 highest_rank = rank
     return highest_rank
 
-def get_rank_by_index(
-        index: int
-) -> NavyRank:
+
+def get_rank_by_index(index: int) -> NavyRank:
     """
     Given a given index, return the corresponding NavyRank object
     """

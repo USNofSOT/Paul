@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 from logging import getLogger
 
-import config
 import discord
 from core import Bot
 from data.engine import engine_string
@@ -30,4 +29,6 @@ if __name__ == "__main__":
     create_tables()
     initialise_logger()
     run_migrations(engine_string)
+    import config
+
     asyncio.run(main())
