@@ -15,7 +15,7 @@ def build_embed(
     category: AwardCategory, target: discord.Member = None
 ) -> discord.Embed:
     awards_repository = AwardsRepository()
-    awards = awards_repository.find(filters={"category": category})
+    awards = awards_repository.find(filters={"category": category, "is_hidden": False})
 
     if target:
         embed = discord.Embed(title=f"{category} Awards for {target.display_name}")
@@ -24,6 +24,12 @@ def build_embed(
         for awards in awards:
             embed.add_field(name=awards.name, value=awards.description, inline=False)
         return embed
+
+    awards = [
+        award
+        for award in awards
+        if not (award.only_show_for_recipient and award.role_id != target.id)
+    ]
 
     for award in awards:
         if award.has_award(target, awards):

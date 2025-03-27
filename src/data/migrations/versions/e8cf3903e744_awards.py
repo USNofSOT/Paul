@@ -50,6 +50,8 @@ def upgrade() -> None:
         sa.Column("embed_id", BIGINT, nullable=True),
         sa.Column("is_streak", Boolean),
         sa.Column("is_tiered", Boolean, server_default="0"),
+        sa.Column("is_hidden", Boolean, server_default="0"),
+        sa.Column("only_show_for_recipient", Boolean, server_default="0"),
         sa.Column("created_at", DATETIME, nullable=True),
         sa.Column("edited_at", DATETIME, nullable=True),
     )

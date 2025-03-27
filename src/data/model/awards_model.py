@@ -51,8 +51,11 @@ class Awards(Base):
 
     # Whether the award is a streak award
     is_streak = Column(Boolean)
-    # Whether the award is a tiered award
     is_tiered = Column(Boolean, server_default="0")
+
+    # Flags for showing and hiding the award
+    is_hidden = Column(Boolean, server_default="0")
+    only_show_for_recipient = Column(Boolean, server_default="0")
 
     # Created, edited, and deleted timestamps
     created_at = Column(DATETIME, nullable=True)
