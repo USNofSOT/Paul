@@ -10,8 +10,6 @@ from sqlalchemy.dialects.mysql import BIGINT, DATETIME, VARCHAR
 from sqlalchemy.orm import Mapped, relationship
 from utils.rank_and_promotion_utils import has_award_or_higher
 
-from src.config import GUILD_ID
-
 log = logging.getLogger(__name__)
 
 
@@ -76,6 +74,8 @@ class Awards(Base):
         """
         Return the URL for the embed if it exists, otherwise return None
         """
+        from src.config import GUILD_ID
+
         if self.channel_thread_id == 0 or self.embed_id == 0:
             return None
         return f"https://discord.com/channels/{GUILD_ID}/{self.channel_thread_id}/{self.embed_id}"
