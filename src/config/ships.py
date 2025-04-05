@@ -11,6 +11,8 @@ from src.config.main_server import (
     BC_TITAN,
     BC_VALHALLA,
     BC_VENOM,
+    BC_Gletsjer
+    BC_Serenity
 )
 from src.data.structs import Ship
 
@@ -26,6 +28,8 @@ ROLE_ID_PHANTOM = 1274251672876617792
 ROLE_ID_SILVERCLAW = 977935623774162954
 ROLE_ID_VENOM = 1237838106711822457
 ROLE_ID_TITAN = 1247405133130764329
+ROLE_ID_Gletsjer = 1084451910578339880
+ROLE_ID_Serenity = 1002303636522680391
 
 ###############################################################################
 # Ships - Ship objects
@@ -36,6 +40,18 @@ SHIPS = [
         boat_command_channel_id=BC_LUSTY,
         role_id=ROLE_ID_LUSTY,
         emoji="<:Lusty:1079841997021524018>",
+    ),
+    Ship(
+        name="USS Serenity",
+        boat_command_channel_id=BC_Serenity,
+        role_id=ROLE_ID_Serenity,
+        emoji="<:Serenity:1356016930032713879>",
+    ),
+    Ship(
+        name="USS Gletsjer",
+        boat_command_channel_id=BC_Gletsjer,
+        role_id=ROLE_ID_Gletsjer,
+        emoji="<:Gletsjer:1356717285171265818>",
     ),
     Ship(
         name="USS Valhalla",
