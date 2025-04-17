@@ -44,7 +44,7 @@ SHIPS = [
         emoji="<:valhalla:1345380823947542590>",
     ),
     Ship(
-        name="USS Reliant",
+        name="USS Serenity",
         boat_command_channel_id=BC_SERENITY,
         role_id=ROLE_ID_SERENITY,
         emoji="<:Serenity:1356016930032713879>",
