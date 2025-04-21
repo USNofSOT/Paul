@@ -44,6 +44,9 @@ class BaseRepository(Generic[T]):
     def close_session(self):
         self.session.close()
 
+    def rollback(self):
+        self.session.rollback()
+
     def find(
         self,
         filters: Optional[Dict[str, Any]] = None,

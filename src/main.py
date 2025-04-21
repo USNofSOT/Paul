@@ -18,7 +18,7 @@ async def main():
     discord.utils.setup_logging()
     async with Bot() as bot:
         log.info("Attempting to start up bot")
-        await bot.start(config.TOKEN, reconnect=True)
+        await bot.start(main_server.TOKEN, reconnect=True)
 
         @bot.event
         async def on_message(message):
@@ -29,6 +29,6 @@ if __name__ == "__main__":
     create_tables()
     initialise_logger()
     run_migrations(engine_string)
-    import config
+    import src.config.main_server as main_server
 
     asyncio.run(main())

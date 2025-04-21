@@ -13,7 +13,7 @@ from utils.rank_and_promotion_utils import has_award_or_higher
 log = logging.getLogger(__name__)
 
 
-class AwardCategory(enum.Enum):
+class AwardSeries(enum.Enum):
     VOYAGE = "Voyage"
     HOSTED = "Hosted"
     COMBAT = "Combat"
@@ -22,6 +22,12 @@ class AwardCategory(enum.Enum):
     RECRUIT = "Recruit"
     ATTENDANCE = "Attendance"
     SERVICE = "Service"
+    SUBCLASS_CANNONEER = "Subclass Cannoneer"
+    SUBCLASS_HELM = "Subclass Helm"
+    SUBCLASS_CARPENTER = "Subclass Carpenter"
+    SUBCLASS_FLEX = "Subclass Flex"
+    SUBCLASS_SURGEON = "Subclass Surgeon"
+    SUBCLASS_GRENADIER = "Subclass Grenadier"
     MISCELLANEOUS = "Miscellaneous"
 
 
@@ -32,11 +38,10 @@ class Awards(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
 
     # Contextual information about the award
-    name = Column(VARCHAR(64), nullable=False)
+    name = Column(VARCHAR(64), nullable=False, unique=True)
     description = Column(VARCHAR(255), nullable=True)
-    category = Column(
-        Enum(AwardCategory), nullable=True, server_default="MISCELLANEOUS"
-    )
+    series = Column(Enum(AwardSeries), nullable=True, server_default=None)
+    category = Column(VARCHAR(64), nullable=True)
 
     # Threshold value for the award, and the ranks responsible for the award
     threshold = Column(Integer, nullable=True)
@@ -47,9 +52,10 @@ class Awards(Base):
     channel_thread_id = Column(BIGINT, nullable=True)
     embed_id = Column(BIGINT, nullable=True)
 
-    # Whether the award is a streak award
-    is_streak = Column(Boolean)
+    is_streak = Column(Boolean, server_default="0")
     is_tiered = Column(Boolean, server_default="0")
+    is_awardable = Column(Boolean, server_default="1")
+    is_immutable = Column(Boolean, server_default="0")
 
     # Flags for showing and hiding the award
     is_hidden = Column(Boolean, server_default="0")
@@ -96,7 +102,7 @@ class Awards(Base):
             )
             if self.is_role_award:
                 has_award = self.role_id in [role.id for role in member.roles]
-                if category_awards:
+                if self.is_tiered and category_awards:
                     has_award = has_award_or_higher(member, self, category_awards)
         except Exception as e:
             log.exception("Error checking if member has award: %s", e)

@@ -1,14 +1,16 @@
+from __future__ import annotations
+
 import logging
 
 import discord
 
 from src.config.ranks import RANKS
-from src.data.structs import Award, NavyRank
+from src.data.structs import NavyRank
 
 log = logging.getLogger(__name__)
 
 
-def get_next_award(target: discord.Member, category_awards: [Award]) -> Award or None:
+def get_next_award(target: discord.Member, category_awards: [any]) -> any or None:
     """
     Given the current member, return the next award that the member will achieve.
     """
@@ -30,7 +32,7 @@ def get_next_award(target: discord.Member, category_awards: [Award]) -> Award or
     return next_award
 
 
-def get_current_award(target: discord.Member, category_awards: [Award]) -> Award:
+def get_current_award(target: discord.Member, category_awards: [any]) -> any:
     """
     Given the current member, return the award with the highest index that the member has.
     """
