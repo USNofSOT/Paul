@@ -3,24 +3,26 @@ name = "paul"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
     "alembic==1.14.1",
     "discord-py==2.3.2",
     "matplotlib==3.9.2",
     "mysql-connector-python==9.2.0",
-    "parameterized==0.9.0",
     "pre-commit==4.1.0",
     "pymysql==1.1.1",
     "python-dotenv==1.0.1",
     "requests==2.32.3",
-    "ruff==0.1.13",
     "sqlalchemy==2.0.35",
 ]
 [dependency-groups]
-tests = [
+dev = [
     "pytest==8.3.4",
     "pytest-mock==3.14.0",
+    "parameterized==0.9.0"
+]
+lint = [
+    "ruff==0.1.13",
 ]
 
 [build-system]
@@ -28,7 +30,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/paul"]
+packages = ["src", "tests"]
 
 [tool.pytest.ini_options]
-pythonpath = [".", "src", ]
+pythonpath = [".", "src"]

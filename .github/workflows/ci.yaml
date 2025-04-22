@@ -10,13 +10,17 @@ jobs:
   test:
     name: "🧪 Running Tests"
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version:
+          - "3.12"
     steps:
       - name: "⌛ Checking out the code"
         uses: actions/checkout@v3
-      - name: "🐍 Setting up Python"
-        uses: actions/setup-python@v4
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: '3.12'
+          python-version: ${{ matrix.python-version }}
       - name: "📦 Installing dependencies"
         run: pip install -r requirements.txt
       - name: "🧪 Running tests"
