@@ -22,9 +22,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: "📦 Installing dependencies"
-        run: pip install -r requirements.txt
+        run: uv sync --locked --all-extras --dev
       - name: "🧪 Running tests"
-        run: pytest
+        # For example, using `pytest`
+        run: uv run pytest tests
 #  format:
 #    name: "🧹 Format Checking"
 #    runs-on: ubuntu-latest
