@@ -10,3 +10,11 @@ repos:
       - id: uv-lock
       # To autoexport uv.lock to requirements.txt:
       - id: uv-export
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.6
+    hooks:
+      # Run the ruff linter.
+      - id: ruff
+        args: [ --fix ]
+      # Run the ruff formatter.
+      - id: ruff-format
