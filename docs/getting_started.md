@@ -30,3 +30,13 @@ uv run src/main.py
 ```bash
 uv run pytest tests
 ```
+
+### Run linter
+```bash
+uvx ruff check --fix
+```
+
+### Run formatter
+```bash
+uvx ruff format
+```
