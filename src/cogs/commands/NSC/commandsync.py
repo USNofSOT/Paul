@@ -1,7 +1,9 @@
 from discord.ext import commands
-
 from src.config import NSC_ROLES
+from src.data.repository.sailor_repository import ensure_sailor_exists
+from logging import getLogger
 
+log = getLogger(__name__)
 
 class CommandSync(commands.Cog):
     def __init__(self, bot):
@@ -11,6 +13,9 @@ class CommandSync(commands.Cog):
     @commands.has_any_role(*NSC_ROLES)
     async def commandsync(self, ctx):
         """Syncs the application commands."""
+        # Ensure the user exists in the database before proceeding
+        ensure_sailor_exists(ctx.author.id)
+        
         await self.bot.tree.sync()
         await ctx.send("Application commands synced!")
 
