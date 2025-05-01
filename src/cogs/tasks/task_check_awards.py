@@ -7,7 +7,8 @@ from discord.ext import commands, tasks
 from discord.ext.commands.view import StringView
 
 from src.config import MAX_MESSAGE_LENGTH
-from src.config.main_server import GUILD_ID
+from src.config import BOA_ROLE
+from src.config.main_server import GUILD_ID, BC_BOA
 from src.config.ships import SHIPS
 from src.data.repository.sailor_repository import SailorRepository
 from src.utils.check_awards import check_sailor
@@ -45,6 +46,7 @@ class AutoCheckAwards(commands.Cog):
         GUILD = self.bot.get_guild(GUILD_ID)
 
         sailor_repo = SailorRepository()
+        boa_role = GUILD.get_role(BOA_ROLE)
         try:
             for ship in SHIPS:
                 log.info(f"Checking awards for {ship}")
@@ -56,6 +58,10 @@ class AutoCheckAwards(commands.Cog):
                     # Check if member in database
                     sailor = sailor_repo.get_sailor(member.id)
                     if sailor is None:
+                        continue
+                    
+                    # Skip BOA members
+                    if boa_role in sailor.roles:
                         continue
 
                     # Check for award messages for sailor
@@ -69,6 +75,23 @@ class AutoCheckAwards(commands.Cog):
                             msg_str = sailor_str
                 if msg_str:
                     await channel.send(msg_str)
+            
+            # BOA members
+            log.info(f"Checking awards for BOA")
+            channel = GUILD.get_channel(BC_BOA)
+            msg_str = ""
+            for member in boa_role.members:
+                sailor = sailor_repo.get_sailor(member.id)
+                if sailor is None:
+                    continue
+                sailor_strs = check_sailor(GUILD, fake_context(self.bot, "Board of Admiralty"), sailor, member)
+                for sailor_str in sailor_strs:
+                    if len(msg_str + sailor_str) <= MAX_MESSAGE_LENGTH:
+                        msg_str += sailor_str
+                    else:
+                        await channel.send(msg_str)
+            if msg_str:
+                await channnel.send(msg_str)
 
         except Exception as e:
             log.error(f"Error in AutoCheckAwards: {e}", exc_info=True)
