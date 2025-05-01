@@ -93,7 +93,7 @@ class AutoCheckAwards(commands.Cog):
             # BOA members
             log.info(f"Checking awards for BOA")
             channel = GUILD.get_channel(BC_BOA)
-            context = fake_context(self.bot, GUILD, "Board of Admirality")
+            context = fake_context(self.bot, GUILD, "Board of Admiralty")
             award_msgs = create_award_messages(boa_role, sailor_repo, GUILD, context)
             for msg_str in award_msgs:
                 await channel.send(msg_str)
