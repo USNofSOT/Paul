@@ -30,7 +30,7 @@ def fake_context(bot, GUILD, channel_name="test-channel"):
     ctx.send = AsyncMock()
     return ctx
 
-def create_award_messages(role, sailor_repo, GUILD, exclude_roles=[]):
+def create_award_messages(role, sailor_repo, GUILD, context_str, exclude_roles=[]):
     messages = []
     msg_str = ""
     for member in role.members:
@@ -49,7 +49,7 @@ def create_award_messages(role, sailor_repo, GUILD, exclude_roles=[]):
             continue
 
         # Check for award messages for sailor
-        sailor_strs = check_sailor(GUILD, fake_context(self.bot, GUILD, f"{ship.name}"), sailor, member)
+        sailor_strs = check_sailor(GUILD, fake_context(self.bot, GUILD, context_str), sailor, member)
 
         # Add strings to message, printing early if message would be too long
         for sailor_str in sailor_strs:
@@ -85,14 +85,14 @@ class AutoCheckAwards(commands.Cog):
                 channel = GUILD.get_channel(ship.boat_command_channel_id)
                 role = GUILD.get_role(ship.role_id)
 
-                award_msgs = create_award_messages(role, sailor_repo, GUILD, exclude_roles=[boa_role])
+                award_msgs = create_award_messages(role, sailor_repo, GUILD, f"{ship.name}", exclude_roles=[boa_role])
                 for msg_str in award_msgs:
                     await channel.send(msg_str)
             
             # BOA members
             log.info(f"Checking awards for BOA")
             channel = GUILD.get_channel(BC_BOA)
-            award_msgs = create_award_messages(boa_role, sailor_repo, GUILD)
+            award_msgs = create_award_messages(boa_role, sailor_repo, "Board of Admiralty", GUILD)
             for msg_str in award_msgs:
                 await channel.send(msg_str)
 
