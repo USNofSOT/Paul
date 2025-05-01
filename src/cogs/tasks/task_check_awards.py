@@ -90,6 +90,7 @@ class AutoCheckAwards(commands.Cog):
                         msg_str += sailor_str
                     else:
                         await channel.send(msg_str)
+                        msg_str = sailor_str
             if msg_str:
                 await channnel.send(msg_str)
 
