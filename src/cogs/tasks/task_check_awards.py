@@ -92,7 +92,7 @@ class AutoCheckAwards(commands.Cog):
                         await channel.send(msg_str)
                         msg_str = sailor_str
             if msg_str:
-                await channnel.send(msg_str)
+                await channel.send(msg_str)
 
         except Exception as e:
             log.error(f"Error in AutoCheckAwards: {e}", exc_info=True)
