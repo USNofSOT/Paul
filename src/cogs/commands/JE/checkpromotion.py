@@ -439,6 +439,8 @@ class CheckPromotion(commands.Cog):
             role = target
             members = role.members
             interaction_user_roles = [role.id for role in interaction.user.roles]
+            
+            has_boa_nsc_bypass = any(bypass_role in interaction_user_roles for bypass_role in BOA_NSC)
 
             if not (role.name.startswith("USS") or role.name.endswith("Squad")):
                 embed = error_embed(
@@ -450,11 +452,21 @@ class CheckPromotion(commands.Cog):
                 return
 
             user_uss_roles = [r for r in interaction.user.roles if r.name == role.name and r.name.startswith("USS")]
-            if user_uss_roles:
-                if not (
+            if user_uss_roles or has_boa_nsc_bypass:
+                if has_boa_nsc_bypass and not user_uss_roles:
+                    await interaction.followup.send(
+                        embed=default_embed(
+                            title="Permission Bypass",
+                            description="You don't have the required permissions to run this command, but you get a bypass as BOA/NSC member! Yay!"
+                        ),
+                        ephemeral=True
+                    )
+                
+                if not has_boa_nsc_bypass and not (
                     SHIP_COS_ROLE in interaction_user_roles
                     or SHIP_FO_ROLE in interaction_user_roles
                     or SHIP_CO_ROLE in interaction_user_roles
+                    or FLEET_CO_ROLE in interaction_user_roles
                 ):
                     embed = error_embed(
                         title="Permission Denied",
@@ -473,13 +485,23 @@ class CheckPromotion(commands.Cog):
                 return
             
         
-            user_squad_roles = [r for r in interaction.user.roles if r.name == role.name and r.endswith("Squad")]
-            if user_squad_roles:
-                if not (
+            user_squad_roles = [r for r in interaction.user.roles if r.name == role.name and r.name.endswith("Squad")]
+            if user_squad_roles or has_boa_nsc_bypass:
+                if has_boa_nsc_bypass and not user_squad_roles:
+                    await interaction.followup.send(
+                        embed=default_embed(
+                            title="Permission Bypass",
+                            description="You don't have the required permissions to run this command, but you get a bypass as BOA/NSC member! Yay!"
+                        ),
+                        ephemeral=True
+                    )
+                
+                if not has_boa_nsc_bypass and not (
                     SHIP_SL_ROLE in interaction_user_roles
                     or SHIP_COS_ROLE in interaction_user_roles
                     or SHIP_FO_ROLE in interaction_user_roles
                     or SHIP_CO_ROLE in interaction_user_roles
+                    or FLEET_CO_ROLE in interaction_user_roles
                 ):
                     embed = error_embed(
                         title="Permission Denied",
