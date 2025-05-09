@@ -26,6 +26,24 @@ from src.utils.rank_and_promotion_utils import get_current_rank, get_rank_by_ind
 from src.utils.time_utils import get_time_difference_in_days, utc_time_now, format_time, get_time_difference
 
 
+class ConfirmationView(discord.ui.View):
+    def __init__(self, *, timeout=180):
+        super().__init__(timeout=timeout)
+        self.value = None
+
+    @discord.ui.button(label="Confirm", style=discord.ButtonStyle.green, emoji="✅")
+    async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.value = True
+        await interaction.response.defer()
+        self.stop()
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.red, emoji="❌")
+    async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.value = False
+        await interaction.response.send_message("Command cancelled.", ephemeral=True)
+        self.stop()
+
+
 class CheckPromotion(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
@@ -442,7 +460,39 @@ class CheckPromotion(commands.Cog):
             
             has_boa_nsc_bypass = any(bypass_role in interaction_user_roles for bypass_role in BOA_NSC)
 
-            if not (role.name.startswith("USS") or role.name.endswith("Squad")):
+            is_not_ship_or_squad = not (role.name.startswith("USS") or role.name.endswith("Squad"))
+            
+            if is_not_ship_or_squad and has_boa_nsc_bypass:
+                view = ConfirmationView()
+                await interaction.followup.send(
+                    embed=discord.Embed(
+						title="⚠️ Warning: Large Member Processing",
+						description=f"Yes, you have the permissions to bypass normal restrictions. That's amazing!\n\nBut you will be checking **{len(members)} members**. That's dangerous and could cause rate limiting or slowdowns.\n\nDo you want to continue?",
+						color=discord.Color.yellow()
+					),
+                    view=view,
+                    ephemeral=True
+                )
+            
+                await view.wait()
+                if not view.value:
+                    return
+                
+                await interaction.channel.send(
+                    embed=discord.Embed(
+                        title=f"Retrieving all members with the role {role.name}",
+                        description=f"Processing {len(members)} members, this may take a while.",
+                        color=discord.Color.green()
+                    ),
+                )
+                
+                for member in members:
+                    embed = await self.check_member_promotion(member, interaction)
+                    await interaction.channel.send(embed=embed)
+                    await asyncio.sleep(0.5)
+                
+                return
+            elif is_not_ship_or_squad:
                 embed = error_embed(
                     title="Invalid Role",
                     description="You must mention a ship (role starting with 'USS') or a squad (role ending with 'Squad').",
@@ -475,6 +525,22 @@ class CheckPromotion(commands.Cog):
                     )
                     await interaction.followup.send(embed=embed, ephemeral=True)
                     return
+                
+                if len(members) >= 30:
+                    view = ConfirmationView()
+                    await interaction.followup.send(
+                        embed=discord.Embed(
+                            title="⚠️ Warning: Large Member Processing",
+                            description=f"You are about to check **{len(members)} members** in this ship. Processing this many members at once could cause Discord rate limiting or slowdowns.\n\nDo you want to continue?",
+                            color=discord.Color.yellow()
+                        ),
+                        view=view,
+                        ephemeral=True
+                    )
+                
+                    await view.wait()
+                    if not view.value:
+                        return
             else:
                 embed = error_embed(
                     title="Permission Denied",
@@ -510,6 +576,24 @@ class CheckPromotion(commands.Cog):
                     )
                     await interaction.followup.send(embed=embed, ephemeral=True)
                     return
+                
+
+                if len(members) >= 30:
+                    view = ConfirmationView()
+					
+                    await interaction.followup.send(
+                        embed=discord.Embed(
+                            title="⚠️ Warning: Large Member Processing",
+                            description=f"You are about to check **{len(members)} members** in this squad. Processing this many members at once could cause Discord rate limiting or slowdowns.\n\nDo you want to continue?",
+                            color=discord.Color.yellow()
+                        ),
+                        view=view,
+                        ephemeral=True
+                    )
+                
+                    await view.wait()
+                    if not view.value:
+                        return
             else:
                 embed = error_embed(
                     title="Permission Denied",
