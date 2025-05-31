@@ -1,7 +1,7 @@
 [project]
 name = "paul"
 version = "0.1.0"
-description = "Add your description here"
+description = "A Discord bot for the The United States Navy SoT"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
