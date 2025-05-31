@@ -13,6 +13,7 @@ from .engine import engine
 
 log = logging.getLogger(__name__)
 
+
 # Enumerated types for the different types of subclasses
 class SubclassType(enum.Enum):
     CARPENTER = "Carpenter"
@@ -22,9 +23,11 @@ class SubclassType(enum.Enum):
     GRENADIER = "Grenadier"
     SURGEON = "Surgeon"
 
+
 class TrainingCategory(enum.Enum):
     NRC = "NRC"
     NETC = "NETC"
+
 
 class TraingType(enum.Enum):
     NRC = "NRC"
@@ -35,8 +38,10 @@ class TraingType(enum.Enum):
     OCS = "OCS"
     SOCS = "SOCS"
 
+
 # Base class for all models
 Base = declarative_base()
+
 
 class Coins(Base):
     __tablename__ = "coins"
@@ -59,12 +64,14 @@ class ForceAdd(Base):
     moderator_id = mapped_column(ForeignKey("sailor.discord_id"))
     add_time = Column(DATETIME)
 
+
 class VoyageType(enum.Enum):
     UNKNOWN = "Unknown"
     SKIRMISH = "Skirmish"
     PATROL = "Patrol"
     ADVENTURE = "Adventure"
     CONVOY = "Convoy"
+
 
 class Hosted(Base):
     __tablename__ = "hosted"
@@ -75,22 +82,38 @@ class Hosted(Base):
     log_time = Column(DATETIME)
     ship_role_id = Column(BIGINT, nullable=True)
 
-    voyage_type = Column(Enum(VoyageType), server_default="Unknown", nullable=False) # The type of voyage
+    voyage_type = Column(
+        Enum(VoyageType), server_default="Unknown", nullable=False
+    )  # The type of voyage
 
-    gold_count = Column(Integer, server_default="0", nullable=True) # The number of gold given in the log
-    doubloon_count = Column(Integer, server_default="0", nullable=True) # The number of doubloons given in the log
-    ancient_coin_count = Column(Integer, server_default="0", nullable=True) # The number of ancient coins given in the log
-    fish_count = Column(Integer, server_default="0", nullable=True) # The number of fish given in the log
+    gold_count = Column(
+        Integer, server_default="0", nullable=True
+    )  # The number of gold given in the log
+    doubloon_count = Column(
+        Integer, server_default="0", nullable=True
+    )  # The number of doubloons given in the log
+    ancient_coin_count = Column(
+        Integer, server_default="0", nullable=True
+    )  # The number of ancient coins given in the log
+    fish_count = Column(
+        Integer, server_default="0", nullable=True
+    )  # The number of fish given in the log
 
-    ship_voyage_count = Column(Integer, server_default="0", nullable=True) # The voyage number for the ship for this log
+    ship_voyage_count = Column(
+        Integer, server_default="0", nullable=True
+    )  # The voyage number for the ship for this log
 
-    ship_name = Column(VARCHAR(32), nullable=True) # e.g. "USS Venom"
-    auxiliary_ship_name = Column(VARCHAR(32), nullable=True) # e.g. "USS Auxiliary" which would be the auxiliary ship for the USS Venom
+    ship_name = Column(VARCHAR(32), nullable=True)  # e.g. "USS Venom"
+    auxiliary_ship_name = Column(
+        VARCHAR(32), nullable=True
+    )  # e.g. "USS Auxiliary" which would be the auxiliary ship for the USS Venom
 
     # One-To-Many relationship with Voyages
     voyages: Mapped[List["Voyages"]] = relationship("Voyages", back_populates="hosted")
     # One-To-Many relationship with Subclasses
-    subclasses: Mapped[List["Subclasses"]] = relationship("Subclasses", back_populates="hosted")
+    subclasses: Mapped[List["Subclasses"]] = relationship(
+        "Subclasses", back_populates="hosted"
+    )
     # Many-to-One relationship with Sailor
     target: Mapped["Sailor"] = relationship("Sailor", foreign_keys=[target_id])
 
@@ -107,6 +130,7 @@ class ModNotes(Base):
     who_hid = mapped_column(ForeignKey("sailor.discord_id"))
     hide_time = Column(DATETIME)
 
+
 class Subclasses(Base):
     __tablename__ = "subclasses"
 
@@ -119,10 +143,13 @@ class Subclasses(Base):
     log_time = Column(DATETIME)
 
     # Many-to-One relationship with Hosted
-    hosted: Mapped["Hosted"] = relationship("Hosted", back_populates="subclasses", foreign_keys=[log_id])
+    hosted: Mapped["Hosted"] = relationship(
+        "Hosted", back_populates="subclasses", foreign_keys=[log_id]
+    )
     # Many-to-One relationship with Sailor for both the author and the target
     target: Mapped["Sailor"] = relationship("Sailor", foreign_keys=[target_id])
     author: Mapped["Sailor"] = relationship("Sailor", foreign_keys=[author_id])
+
 
 class Voyages(Base):
     __tablename__ = "voyages"
@@ -134,9 +161,12 @@ class Voyages(Base):
     ship_role_id = Column(BIGINT, nullable=True)
 
     # Many-to-One relationship with Hosted
-    hosted: Mapped["Hosted"] = relationship("Hosted", back_populates="voyages", foreign_keys=[log_id])
+    hosted: Mapped["Hosted"] = relationship(
+        "Hosted", back_populates="voyages", foreign_keys=[log_id]
+    )
     # Many-to-One relationship with Sailor
     target: Mapped["Sailor"] = relationship("Sailor", foreign_keys=[target_id])
+
 
 class Sailor(Base):
     __tablename__ = "sailor"
@@ -163,14 +193,21 @@ class Sailor(Base):
     force_hosted_count = Column(Integer, server_default="0")
 
     # One-to-Many relationship with Hosted
-    hosted: Mapped[List["Hosted"]] = relationship("Hosted", back_populates="target", foreign_keys=[Hosted.target_id])
+    hosted: Mapped[List["Hosted"]] = relationship(
+        "Hosted", back_populates="target", foreign_keys=[Hosted.target_id]
+    )
     # One-to-Many relationship with Subclasses
-    subclasses: Mapped[List["Subclasses"]] = relationship("Subclasses", back_populates="target", foreign_keys=[Subclasses.target_id])
+    subclasses: Mapped[List["Subclasses"]] = relationship(
+        "Subclasses", back_populates="target", foreign_keys=[Subclasses.target_id]
+    )
     # One-to-Many relationship with Voyages
-    voyages: Mapped[List["Voyages"]] = relationship("Voyages", back_populates="target", foreign_keys=[Voyages.target_id])
+    voyages: Mapped[List["Voyages"]] = relationship(
+        "Voyages", back_populates="target", foreign_keys=[Voyages.target_id]
+    )
 
     def __str__(self):
         return f"[Sailor] {self.gamertag} ({self.discord_id})"
+
 
 class ShipSize(Base):
     __tablename__ = "ship_size"
@@ -179,6 +216,7 @@ class ShipSize(Base):
     ship_role_id = Column(BIGINT, primary_key=True)
     member_count = Column(Integer, nullable=False)
     log_time = Column(DATETIME, nullable=False)
+
 
 class TrainingRecord(Base):
     __tablename__ = "training_records"
@@ -205,6 +243,7 @@ class TrainingRecord(Base):
     nla_training_points = Column(Integer, nullable=False, server_default="0")
     vla_training_points = Column(Integer, nullable=False, server_default="0")
 
+
 class Training(Base):
     __tablename__ = "training"
 
@@ -214,6 +253,7 @@ class Training(Base):
     training_type = Column(Enum(TraingType), nullable=False)
     training_category = Column(Enum(TrainingCategory), nullable=False)
     log_time = Column(DATETIME, nullable=False)
+
 
 """ AUDIT LOGS
 The following classes are used for audit logging
@@ -229,29 +269,39 @@ We may refer to the Sailor class for the discord_id as
 - changed_by (the person who took the action)
 """
 
+
 class AuditLogBare(Base):
     __abstract__ = True
 
-    id = Column(Integer, primary_key=True, autoincrement=True) # The internal identifier
+    id = Column(
+        Integer, primary_key=True, autoincrement=True
+    )  # The internal identifier
 
-    target_id = mapped_column(ForeignKey("sailor.discord_id"), nullable=False) # The person who the action was taken on
-    guild_id = Column(BIGINT, nullable=False) # The guild the action was taken in
+    target_id = mapped_column(
+        ForeignKey("sailor.discord_id"), nullable=False
+    )  # The person who the action was taken on
+    guild_id = Column(BIGINT, nullable=False)  # The guild the action was taken in
 
     log_time = Column(DATETIME, nullable=False)
 
 
 class AuditLog(AuditLogBare):
     __abstract__ = True
-    changed_by_id = mapped_column(ForeignKey("sailor.discord_id")) # The person who took the action
+    changed_by_id = mapped_column(
+        ForeignKey("sailor.discord_id")
+    )  # The person who took the action
+
 
 class BanChangeLog(AuditLog):
     __tablename__ = "log_ban_change"
     reason = Column(TEXT, nullable=True)
 
+
 class LeaveChangeLog(AuditLogBare):
     __tablename__ = "log_leave_change"
     e2_or_above = Column(BOOLEAN, server_default="0")
     ship_role_id = Column(BIGINT, nullable=True)
+
 
 class NameChangeLog(AuditLog):
     __tablename__ = "log_name_change"
@@ -259,16 +309,21 @@ class NameChangeLog(AuditLog):
     name_before = Column(VARCHAR(32))
     name_after = Column(VARCHAR(32))
 
+
 class RoleChangeType(enum.Enum):
     ADDED = "Add"
     REMOVED = "Remove"
 
+
 class RoleChangeLog(AuditLog):
     __tablename__ = "log_role_change"
 
-    change_type = Column(Enum(RoleChangeType), nullable=False) # Whether the role was added or removed
-    role_id = Column(BIGINT, nullable=False) # The role that was added or removed
-    role_name = Column(VARCHAR(32), nullable=False) # The name of the role
+    change_type = Column(
+        Enum(RoleChangeType), nullable=False
+    )  # Whether the role was added or removed
+    role_id = Column(BIGINT, nullable=False)  # The role that was added or removed
+    role_name = Column(VARCHAR(32), nullable=False)  # The name of the role
+
 
 class TimeoutLog(AuditLog):
     __tablename__ = "log_timeout"
@@ -295,9 +350,11 @@ class TimeoutLog(AuditLog):
             return 0
         return get_time_difference(self.timed_out_until, self.log_time)
 
+
 class BotInteractionType(enum.Enum):
     INTERACTION = "Interaction"
     COMMAND = "Command"
+
 
 class BotInteractionLog(AuditLogBare):
     __tablename__ = "log_bot_interaction"
@@ -324,6 +381,7 @@ class BotInteractionLog(AuditLogBare):
             return 0
         return get_time_difference(self.timed_out_until, self.log_time)
 
+
 # Nifty function to create all tables
 def create_tables():
     try:
@@ -332,5 +390,6 @@ def create_tables():
     except Exception as e:
         log.error("Failed to create tables: %s", e)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     create_tables()
