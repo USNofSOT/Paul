@@ -1,11 +1,11 @@
 from data.structs import Award, CombatAward, AwardsCollector
 
-_AWARDS_THREAD_ID=1292510151219347519 
+_AWARDS_THREAD_ID=1374118521927241779 
 
 ###############################################################################
 ## Medals And Ribbons - Voyage Medals
 ###############################################################################
-_VOYAGE_EMBED_ID=1292514303936561183
+_VOYAGE_EMBED_ID=1375472706237239317
 CITATION_OF_VOAYGES = Award(
     threshold=5,
     ranks_responsible="E-6+",
@@ -48,7 +48,7 @@ VOYAGE_MEDALS = (CITATION_OF_VOAYGES, LEGION_OF_VOYAGES, HONORABLE_VOYAGER_MEDAL
 ###############################################################################
 ## Medals And Ribbons - Voyages Hosted Medals
 ###############################################################################
-_HOSTED_EMBED_ID=1292514303936561183
+_HOSTED_EMBED_ID=1375472706237239317
 SEA_SERVICE_RIBBON = Award(
     threshold=25,
     ranks_responsible="E-7+",
@@ -85,7 +85,7 @@ HOSTED_MEDALS = (SEA_SERVICE_RIBBON, MARITIME_SERVICE_MEDAL,
 ###############################################################################
 ## Medals And Ribbons - Conduct Medals
 ###############################################################################
-_CITATION_EMBED_ID=1292514180208787519
+_CITATION_EMBED_ID=1375472616240054312
 CITATION_OF_CONDUCT = Award(
     threshold=1, # This is not per se a threshold, but more an index of award importance
     ranks_responsible="E-6+",
@@ -129,7 +129,7 @@ CONDUCT_MEDALS = (CITATION_OF_CONDUCT, LEGION_OF_CONDUCT, HONORABLE_CONDUCT,
 ###############################################################################
 ## Medals And Ribbons - Combat Medals
 ###############################################################################
-_COMBAT_EMBED_ID=1292514373751017586
+_COMBAT_EMBED_ID=1375472809110671402
 CITATION_OF_COMBAT = CombatAward(
     threshold=2,
     streak=False,
@@ -178,7 +178,7 @@ COMBAT_MEDALS = (CITATION_OF_COMBAT, LEGION_OF_COMBAT, HONORABLE_COMBAT_ACTION,
 ###############################################################################
 ## Medals And Ribbons - Training and Recruiting
 ###############################################################################
-_TRAINING_EMBED_ID=1292514591854559263
+_TRAINING_EMBED_ID=1375472904933871646
 HONORABLE_TRAINING_RIBBON = Award(
     threshold=25,
     ranks_responsible="CO/XO of NRC or NETC",
@@ -204,7 +204,7 @@ ADMIRABLE_TRAINING_RIBBON = Award(
 # Medals must be ordered lowest to highest training count
 TRAINING_MEDALS = (HONORABLE_TRAINING_RIBBON, MERITORIOUS_TRAINING_RIBBON, ADMIRABLE_TRAINING_RIBBON)
 
-_RECRUIT_EMBED_ID=1292514591854559263
+_RECRUIT_EMBED_ID=1375472904933871646
 RECRUITMENT_RIBBON = Award(
     threshold=15,
     ranks_responsible="CO/XO of NRC",
@@ -220,7 +220,7 @@ RECRUIT_MEDALS = (RECRUITMENT_RIBBON,)
 ###############################################################################
 ## Medals And Ribbons - Attendance
 ###############################################################################
-_ATTENDANCE_EMBED_ID=1292514591854559263
+_ATTENDANCE_EMBED_ID=1375472904933871646
 CITATION_OF_ATTENDANCE = Award(
     threshold=1,
     ranks_responsible="Head or XO of Scheduling Department",
@@ -258,7 +258,7 @@ ATTENDANCE_MEDALS = (CITATION_OF_ATTENDANCE, LEGION_OF_ATTENDANCE,
 ###############################################################################
 ## Medals And Ribbons - Service Stripes
 ###############################################################################
-_SERVICE_EMBED_ID=1292514684506734643
+_SERVICE_EMBED_ID=1375473002199646301
 FOUR_MONTHS_SERVICE_STRIPES = Award(
     threshold=4,
     ranks_responsible="CO+",
