@@ -71,7 +71,7 @@ SHIPS = [
         name="USS Nightingale",
         boat_command_channel_id=BC_NIGHTINGALE,
         role_id=ROLE_ID_NIGHTINGALE,
-        emoji="<:Platypus:1282806780342177845>",
+        emoji="<:nightingale:1382145592934924370>",
     ),
     Ship(
         name="USS Defiant",
