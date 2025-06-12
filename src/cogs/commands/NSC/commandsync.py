@@ -13,9 +13,6 @@ class CommandSync(commands.Cog):
     @commands.has_any_role(*NSC_ROLES)
     async def commandsync(self, ctx):
         """Syncs the application commands."""
-        # Ensure the user exists in the database before proceeding
-        ensure_sailor_exists(ctx.author.id)
-        
         await self.bot.tree.sync()
         await ctx.send("Application commands synced!")
 
