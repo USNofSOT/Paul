@@ -467,7 +467,7 @@ class CheckPromotion(commands.Cog):
                 await interaction.followup.send(
                     embed=discord.Embed(
 						title="⚠️ Warning: Large Member Processing",
-						description=f"Yes, you have the permissions to bypass normal restrictions. That's amazing!\n\nBut you will be checking **{len(members)} members**. That's dangerous and could cause rate limiting or slowdowns.\n\nDo you want to continue?",
+						description=f"You are about to check **{len(members)} members**. \n\nDo you want to continue?",
 						color=discord.Color.yellow()
 					),
                     view=view,
