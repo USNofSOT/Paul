@@ -99,9 +99,9 @@ class TestGetMainShipName(TestCase):
     def test_main_ship_included(self):
         content = (
             "<@5848673888963>__**'s official log of the 134th voyage of the USS "
-            "Phoenix , Auxiliary to the USS Platypus"
+            "Phoenix , Auxiliary to the USS Hyperion"
         )
-        self.assertEqual(get_main_ship_from_content(content), "USS Platypus")
+        self.assertEqual(get_main_ship_from_content(content), "USS Hyperion")
 
     def test_main_ship_not_included(self):
         content = "<@5848673888963>__**'s official log of the 134th voyage of the USS " "Phoenix"
@@ -110,25 +110,25 @@ class TestGetMainShipName(TestCase):
     def test_main_ship_name(self):
         content = (
             "<@5848673888963>__**'s official log of the 134th voyage of the USS "
-            "Phoenix , Auxiliary to the USS Platypus**__ We started our adventure "
+            "Phoenix , Auxiliary to the USS Hyperion**__ We started our adventure "
             "at Plunder"
         )
-        self.assertEqual(get_main_ship_from_content(content), "USS Platypus")
+        self.assertEqual(get_main_ship_from_content(content), "USS Hyperion")
 
     def test_main_ship_name_with_emoji(self):
         content = (
             "<@5848673888963>__**'s official log of the 134th voyage of the USS "
-            "Phoenix , Auxiliary to the USS Platypus**__ We started our adventure "
+            "Phoenix , Auxiliary to the USS Hyperion**__ We started our adventure "
             "at Plunder <:USS_Platypus:123456789>"
         )
-        self.assertEqual(get_main_ship_from_content(content), "USS Platypus")
+        self.assertEqual(get_main_ship_from_content(content), "USS Hyperion")
 
     def test_main_ship_within_the_first_25_words(self):
         content = (
             "We started our adventure at Plunder on the USS Phoenix, Auxiliary to "
-            "the USS Platypus"
+            "the USS Hyperion"
         )
-        self.assertEqual(get_main_ship_from_content(content), "USS Platypus")
+        self.assertEqual(get_main_ship_from_content(content), "USS Hyperion")
         content = (
             "We started our adventure at Plunder on the we dit a lot of yapping at "
             "least a good 25 words, so that is like more than 25 words. USS Phoenix"
@@ -138,9 +138,9 @@ class TestGetMainShipName(TestCase):
     def test_main_ship_with_dash_between_words(self):
         content = (
             "We started our adventure at Plunder on the USS Phoenix, Auxiliary to "
-            "the USS Platypus"
+            "the USS Hyperion"
         )
-        self.assertEqual(get_main_ship_from_content(content), "USS Platypus")
+        self.assertEqual(get_main_ship_from_content(content), "USS Hyperion")
         content = (
             "We started our adventure at Plunder on the USS Phoenix, Auxiliary to "
             "the USS-Platypus"
@@ -203,8 +203,8 @@ class TestGetAuxiliaryShipName(TestCase):
 
     def test_auxiliary_is_main_ship(self):
         content = (
-            "We started our adventure at Plunder on the USS Platypus, Auxiliary to "
-            "the USS Platypus"
+            "We started our adventure at Plunder on the USS Hyperion, Auxiliary to "
+            "the USS Hyperion"
         )
         self.assertEqual(get_auxiliary_ship_from_content(content), None)
-        self.assertEqual(get_main_ship_from_content(content), "USS Platypus")
+        self.assertEqual(get_main_ship_from_content(content), "USS Hyperion")
