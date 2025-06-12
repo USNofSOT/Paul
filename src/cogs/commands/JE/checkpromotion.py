@@ -557,7 +557,7 @@ class CheckPromotion(commands.Cog):
                     await interaction.followup.send(
                         embed=default_embed(
                             title="Permission Bypass",
-                            description="You don't have the required permissions to run this command, but you get a bypass as BOA/NSC member! Yay!"
+                            description="You don't have the required permissions to run this command"
                         ),
                         ephemeral=True
                     )
