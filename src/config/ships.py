@@ -6,7 +6,7 @@ from src.config.main_server import (
     BC_LUSTY,
     BC_SERENITY,
     BC_PHANTOM,
-    BC_PLATYPUS,
+    BC_NIGHTINGALE,
     BC_SILVERCLAW,
     BC_TITAN,
     BC_VALHALLA,
@@ -20,7 +20,7 @@ ROLE_ID_SERENITY = 1002303636522680391
 ROLE_ID_ADUN = 1242143582463332402
 ROLE_ID_GLETSJER = 1084451910578339880
 ROLE_ID_HYPERION = 1157426517912076318
-ROLE_ID_PLATYPUS = 967531117882261536
+ROLE_ID_NIGHTINGALE = 967531117882261536
 ROLE_ID_ARIZONA = 1058840733248933908
 ROLE_ID_PHANTOM = 1274251672876617792
 ROLE_ID_SILVERCLAW = 977935623774162954
@@ -68,10 +68,10 @@ SHIPS = [
         emoji="<:hyperion1:1162043891185369199>",
     ),
     Ship(
-        name="USS Platypus",
-        boat_command_channel_id=BC_PLATYPUS,
-        role_id=ROLE_ID_PLATYPUS,
-        emoji="<:Platypus:1282806780342177845>",
+        name="USS Nightingale",
+        boat_command_channel_id=BC_NIGHTINGALE,
+        role_id=ROLE_ID_NIGHTINGALE,
+        emoji="<:nightingale:1382145592934924370>",
     ),
     Ship(
         name="USS Defiant",
