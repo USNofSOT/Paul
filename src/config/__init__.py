@@ -18,5 +18,5 @@ load_dotenv()
 
 NSC_ROLES = NSC_ROLE, SPD_NSC_ROLE  # roles from either main server or SPD server
 
-ENGINEERS = [281119159012556800, 646516242949341236]  # Discord IDs of engineers
+ENGINEERS = []  # Discord IDs of engineers
 MAX_MESSAGE_LENGTH = 2000
