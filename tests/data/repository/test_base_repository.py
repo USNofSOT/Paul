@@ -1,12 +1,13 @@
 import unittest
 
-from data.repository.common.base_repository import BaseRepository
+import sqlalchemy
 from parameterized import parameterized
 from sqlalchemy import Column, Integer, String, create_engine
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-Base = declarative_base()
+from src.data.repository.common.base_repository import BaseRepository
+
+Base = sqlalchemy.orm.declarative_base()
 
 
 class EntityA(Base):

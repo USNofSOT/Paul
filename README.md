@@ -17,13 +17,8 @@ Users guides for various groups could be auto-generated PDFs, with links put in 
 
 ## Developer Guide
 
-### Initial Setup
-- Clone this repo
-- Open the repo in Visual Studio Code
-- Create a virtual environment for the repo using Python 3.12 and the requirements listed in [requirements.txt](https://github.com/USNofSOT/Paul/blob/main/requirements.txt).
-- Copy the file content from [Navy Systems Command > engine-room](https://discord.com/channels/971718695602778162/1288304233409548309/1293910688900714518) into a file named `.env` at the top level of the repo
-- Include `PYTHONPATH=./src;${PYTHONPATH}` at the top of the `.env` file
-
+### Getting Started
+To get started with the bot please refer to the [Getting Started](docs/getting_started.md) guide. This will help you set up your local development environment and get the bot running.
 
 ### GitHub Workflow
 Changes to the main branch can only be made by approved pull requests. Regardless of the size of the change or the author, everything is tracked through pull requests with approval.
