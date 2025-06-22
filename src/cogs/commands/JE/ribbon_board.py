@@ -3,11 +3,10 @@ from logging import getLogger
 from typing import Union
 
 import discord
-from config import HIGH_COMMAND_OF_NETC_ROLES
 from discord import app_commands
 from discord.ext import commands
 
-from src.config import JE_AND_UP
+from src.config import JE_AND_UP, VT_ROLES, RT_ROLES
 from src.utils.embeds import error_embed
 from src.utils.member.user import get_ribbon_board_embed
 
@@ -20,8 +19,8 @@ class RibbonBoard(commands.Cog):
 
     @app_commands.command(name="ribbon_board", description="Get ribbon board for a member")
     @app_commands.describe(target="Select the user you want to get the ribbon board for")
-    @app_commands.checks.has_any_role(*JE_AND_UP, *HIGH_COMMAND_OF_NETC_ROLES)
-    async def addinfo(self, interaction: discord.interactions, target: Union[discord.Member, discord.Role] = None):
+    @app_commands.checks.has_any_role(*JE_AND_UP, *VT_ROLES, *RT_ROLES)
+    async def ribbon_board(self, interaction: discord.interactions, target: Union[discord.Member, discord.Role] = None):
         await interaction.response.defer()
         # If no mention is provided, get the information of the user who used the command
         if target is None:
@@ -66,17 +65,6 @@ class RibbonBoard(commands.Cog):
                 await interaction.followup.send(embed=embed, ephemeral=True)
                 return
 
-
-            # Check if the role contains the word "squad" or "USS"
-            # if "squad" not in role.name.lower() and "uss" not in role.name.lower():
-            #     embed = error_embed(
-            #         title="Invalid Role",
-            #         description="Please provide a squad or USS role only.",
-            #         footer=False
-            #     )
-            #     await interaction.response.send_message(embed=embed, ephemeral=True)
-            #     return
-
             await interaction.followup.send(
                 embed=discord.Embed(
                     title=f"Retrieving all members with the role {role.name}",
@@ -100,8 +88,8 @@ class RibbonBoard(commands.Cog):
         )
         await interaction.followup.send(embed=embed, ephemeral=True)
 
-    @addinfo.error
-    async def addinfo_error(self, interaction: discord.Interaction, error: commands.CommandError):
+    @ribbon_board.error
+    async def ribbon_board_error(self, interaction: discord.Interaction, error: commands.CommandError):
         log.error(f"Error occurred in member command: {error}")
         if isinstance(error, app_commands.errors.MissingAnyRole):
             embed = error_embed(
