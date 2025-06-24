@@ -20,13 +20,13 @@ class RibbonBoard(commands.Cog):
     @app_commands.command(name="ribbonboard", description="Get ribbon board for a member")
     @app_commands.describe(target="Select the user you want to get the ribbon board for")
     @app_commands.checks.has_any_role(*JE_AND_UP, *VT_ROLES, *RT_ROLES)
-    async def ribbon_board(self, interaction: discord.interactions, target: Union[discord.Member, discord.Role] = None):
+    async def ribbon_board(self, interaction: discord.Interaction, target: Union[discord.Member, discord.Role] = None):
         await interaction.response.defer()
         # If no mention is provided, get the information of the user who used the command
         if target is None:
             embed, file = await get_ribbon_board_embed(self.bot, interaction, interaction.user)
             log.info(f"Ribbon board requested for self {interaction.user.display_name or interaction.user.name}")
-            await interaction.followup.send(embed=embed, file=file)
+            await self._send_embed(embed, file, interaction)
             return
         else:
             # Check if it's a valid mention
@@ -43,7 +43,7 @@ class RibbonBoard(commands.Cog):
         if isinstance(target, discord.Member):
             embed, file = await get_ribbon_board_embed(self.bot, interaction, target)
             log.info(f"Ribbon board requested for {target.display_name or target.name}")
-            await interaction.followup.send(embed=embed, file=file)
+            await self._send_embed(embed, file, interaction)
             return
 
 
@@ -76,7 +76,7 @@ class RibbonBoard(commands.Cog):
             for member in members:
                 embed, file = await get_ribbon_board_embed(self.bot, interaction, member)
                 log.info(f"Ribbon board requested for {member.display_name or member.name} with role {role.name}")
-                await interaction.channel.send(embed=embed, file=file)
+                await self._send_embed(embed, file, interaction)
                 await asyncio.sleep(0.5)
             return
 
@@ -87,6 +87,12 @@ class RibbonBoard(commands.Cog):
             footer=False
         )
         await interaction.followup.send(embed=embed, ephemeral=True)
+
+    async def _send_embed(self, embed : discord.Embed, file : {discord.File, None}, interaction : discord.Interaction):
+        if file is None:
+            await interaction.followup.send(embed=embed)
+        else:
+            await interaction.followup.send(embed=embed, file=file)
 
     @ribbon_board.error
     async def ribbon_board_error(self, interaction: discord.Interaction, error: commands.CommandError):
