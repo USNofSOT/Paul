@@ -17,7 +17,7 @@ class RibbonBoard(commands.Cog):
         self.bot = bot
 
 
-    @app_commands.command(name="ribbon_board", description="Get ribbon board for a member")
+    @app_commands.command(name="ribbonboard", description="Get ribbon board for a member")
     @app_commands.describe(target="Select the user you want to get the ribbon board for")
     @app_commands.checks.has_any_role(*JE_AND_UP, *VT_ROLES, *RT_ROLES)
     async def ribbon_board(self, interaction: discord.interactions, target: Union[discord.Member, discord.Role] = None):
