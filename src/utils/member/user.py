@@ -5,7 +5,7 @@ import io
 from logging import getLogger
 from PIL import Image
 
-from src.config import NCO_AND_UP
+from src.config import COIN_IDS, NCO_AND_UP
 from src.config.main_server import GUILD_ID
 from src.config.requirements import (
     HOSTING_REQUIREMENT_IN_DAYS,
@@ -236,10 +236,7 @@ async def get_ribbon_board_embed(bot: Bot, interaction, member: discord.Member) 
     _, awards_and_titles_roles = await other_medals(member)
 
     # check for challenge coins
-    CC_ID = 1140636392674828321
-    CMDR_CC_ID = 972552406837653564
-    CC_IDs = [CMDR_CC_ID, CC_ID]
-    CC_roles = [role for role in member.roles if role.id in CC_IDs]
+    CC_roles = [role for role in member.roles if role.id in COIN_IDS]
 
     # Assemble awards, fix for order of precedence
     award_roles = awards_and_titles_roles + tiered_roles + CC_roles

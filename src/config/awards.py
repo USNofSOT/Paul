@@ -317,6 +317,10 @@ NCO_IMPROVEMENT_RIBBON = Award(
     channelthread_id=_AWARDS_THREAD_ID
 )
 
+CHALLENGE_COIN_ID = 1140636392674828321
+CMDR_CHALLENGE_COIN_ID = 972552406837653564
+COIN_IDS = (CMDR_CHALLENGE_COIN_ID, CHALLENGE_COIN_ID)
+
 ###############################################################################
 ## Collector
 ###############################################################################
