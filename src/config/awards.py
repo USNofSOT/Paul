@@ -317,6 +317,10 @@ NCO_IMPROVEMENT_RIBBON = Award(
     channelthread_id=_AWARDS_THREAD_ID
 )
 
+CHALLENGE_COIN_ID = 1140636392674828321
+CMDR_CHALLENGE_COIN_ID = 972552406837653564
+COIN_IDS = (CMDR_CHALLENGE_COIN_ID, CHALLENGE_COIN_ID)
+
 ###############################################################################
 ## Collector
 ###############################################################################
@@ -330,3 +334,12 @@ MEDALS_AND_RIBBONS = AwardsCollector(
     service=SERVICE_STRIPES
 )
 
+###############################################################################
+## Ribbon Boards
+###############################################################################
+RIBBON_BOARD_VERSION = 1  # increment this to ignore old caches
+RIBBON_BOARD_CACHE_PATH = 'cache/ribbon_board'
+RIBBON_BOARD_BASENAME = 'ribbons.png'
+RIBBON_BOARD_COLUMNS = 3
+RIBBON_BOARD_IMG_HEIGHT = 64 # pixels
+RIBBON_BOARD_IMG_SPACING = 5 # pixels

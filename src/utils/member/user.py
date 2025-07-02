@@ -1,8 +1,12 @@
 import discord
 from config.ranks import DECKHAND
 from discord.ext.commands import Bot
+import io
+from logging import getLogger
+import os
+from PIL import Image
 
-from src.config import NCO_AND_UP
+from src.config import COIN_IDS, NCO_AND_UP, RIBBON_BOARD_CACHE_PATH, RIBBON_BOARD_COLUMNS, RIBBON_BOARD_IMG_HEIGHT, RIBBON_BOARD_IMG_SPACING, RIBBON_BOARD_VERSION, RIBBON_BOARD_BASENAME
 from src.config.main_server import GUILD_ID
 from src.config.requirements import (
     HOSTING_REQUIREMENT_IN_DAYS,
@@ -20,6 +24,9 @@ from src.utils.report_utils import (
     tiered_medals,
 )
 from src.utils.time_utils import format_time, get_time_difference_past
+
+
+log = getLogger(__name__)
 
 
 def modify_points(base_points: int, force_points: int) -> int:
@@ -192,7 +199,7 @@ async def get_member_embed(bot: Bot, interaction, member: discord.Member) -> dis
         inline=True
     )
 
-    tiered_awards = await tiered_medals(member)
+    tiered_awards, _ = await tiered_medals(member)
     if tiered_awards != "":
         embed.add_field(name="Tiered Awards", value=tiered_awards, inline=True)
     else:
@@ -207,3 +214,168 @@ async def get_member_embed(bot: Bot, interaction, member: discord.Member) -> dis
 
     coin_repository.close_session()
     return embed
+
+
+async def get_ribbon_board_embed(bot: Bot, interaction : discord.Interaction, member: discord.Member) -> tuple[discord.Embed, {discord.File, None}, int]:
+    ensure_sailor_exists(member.id)
+
+    # Get the appropriate avatar URL
+
+    embed = default_embed(
+        title=f"{member.display_name or member.name}",
+        description=f"{member.mention}",
+        author=False
+    )
+    
+    try:
+        avatar_url = member.guild_avatar.url if member.guild_avatar else member.avatar.url
+        embed.set_thumbnail(url=avatar_url)
+    except AttributeError:
+        pass
+    
+    _, tiered_roles = await tiered_medals(member)
+    _, awards_and_titles_roles = await other_medals(member)
+
+    # check for challenge coins
+    CC_roles = [role for role in member.roles if role.id in COIN_IDS]
+
+    # Assemble awards, fix for order of precedence
+    log.info('assembling roles')
+    award_roles = awards_and_titles_roles + tiered_roles + CC_roles
+    if tiered_roles and 'Service Stripes' in tiered_roles[-1].name:
+        award_roles = awards_and_titles_roles + tiered_roles[:-1] + CC_roles + [tiered_roles[-1]]
+
+    if not award_roles:
+        log.info(f"No award roles found for {member.name}.")
+        return embed, None
+    
+    file = await generate_ribbon_board_image(bot, member, award_roles)
+    embed.set_image(url=f'attachment://{RIBBON_BOARD_BASENAME}')
+
+    awards_str = generate_ribbon_board_str(award_roles)
+    embed.add_field(name="Awards", value=awards_str, inline=True)
+    return embed, file
+
+def generate_ribbon_board_str(award_roles : list[discord.Role]) -> str:
+    awards_str = '1. '
+    row_num = 1
+
+	# Arrange ribbons in a grid
+    columns = RIBBON_BOARD_COLUMNS
+    top_row_ribbons = len(award_roles) % columns  # Check how many ribbons are in the first row
+
+    if top_row_ribbons:
+        for index in range(top_row_ribbons):
+            awards_str += f"{award_roles[index].name}"
+            if index < (top_row_ribbons - 1):
+                awards_str += ', '
+            else:
+                awards_str += '\n'
+        row_num += 1
+        if top_row_ribbons < len(award_roles):
+            awards_str += f"{row_num}. "
+
+    k = 0
+    for index in range(top_row_ribbons, len(award_roles)):
+        awards_str += f"{award_roles[index].name}"
+        k += 1
+        if k < columns:
+            awards_str += ', '
+        else:
+            k = 0
+            awards_str += '\n'
+            if index < len(award_roles) - 1:
+                row_num += 1
+                awards_str += f"{row_num}. "
+
+    return awards_str
+
+async def generate_ribbon_board_image(bot: Bot, member: discord.Member, award_roles : list[discord.Role]) -> discord.File:
+    # Load the cached image data if it exists
+    award_hash = hash(tuple(award_roles + [RIBBON_BOARD_VERSION]))
+    filename = os.path.join(RIBBON_BOARD_CACHE_PATH, f"{award_hash}.png")
+    if os.path.exists(filename):
+        log.info(f"Found cache file: {filename}")
+        with open(filename, "rb") as image_file:
+            image_data = image_file.read()
+        image_bytes = io.BytesIO(image_data)
+        file = discord.File(image_bytes, filename=RIBBON_BOARD_BASENAME)
+        return file
+
+    # Otherwise regenerate the image
+    log.info("No cache found, generating image")
+    award_images = []
+    session = bot.http._HTTPClient__session
+    for role in award_roles:
+        log.info(f"Requesting image for {role.name}.")
+        if role.display_icon:
+            async with session.get(role.display_icon.url) as resp:
+                if resp.status == 200:
+                    img_data = await resp.read()
+                    award_images.append(Image.open(io.BytesIO(img_data)))
+                else:
+                    award_images.append(None)
+        else:
+            award_images.append(None)
+    images = [img for img in award_images if img is not None]
+
+    if not images:
+        log.info(f"No award images found for {member.name}, despite having award roles.")
+        return None
+    log.info("Gathered all ribbon images.")
+
+	# Arrange images in a grid
+    columns = RIBBON_BOARD_COLUMNS
+    img_height = RIBBON_BOARD_IMG_HEIGHT
+    spacing = RIBBON_BOARD_IMG_SPACING
+    aspect_ratio = images[0].width / images[0].height  # Assume all images have the same aspect ratio
+    img_width = int(img_height * aspect_ratio)  # Calculate proportional width
+
+    rows = (len(images) + columns - 1) // columns
+    top_row_ribbons = len(images) % columns  # Check how many ribbons are in the first row
+
+    canvas_width = (columns * img_width) + ((columns - 1) * spacing)
+    canvas_height = (rows * img_height) + ((rows - 1) * spacing)
+    canvas = Image.new("RGBA", (canvas_width, canvas_height), (0, 0, 0, 0))  # Transparent background
+
+    x = 0
+    y = 0
+    row_num = 1
+    if top_row_ribbons:
+        offset_x = canvas_width - top_row_ribbons*img_width - (top_row_ribbons-1)*spacing
+        offset_x //= 2
+        x = offset_x
+        for index in range(top_row_ribbons):
+            img = images[index].resize((img_width, img_height))
+            canvas.paste(img, (x, y), img)
+            x += img_width + spacing
+        x = 0
+        y = img_height + spacing
+        row_num += 1
+
+    k = 0
+    for index in range(top_row_ribbons, len(images)):
+        img = images[index].resize((img_width, img_height))
+        canvas.paste(img, (x, y), img)
+        k += 1
+        if k < columns:
+            x += img_width + spacing
+        else:
+            k = 0
+            x = 0
+            y += img_height + spacing
+
+
+    # Convert to byte stream for Discord upload
+    image_bytes = io.BytesIO()
+    canvas.save(image_bytes, format="PNG")
+    image_bytes.seek(0)
+
+    file = discord.File(image_bytes, filename=RIBBON_BOARD_BASENAME)
+    
+    # Save images to cache
+    with open(filename, "wb") as image_file:
+        image_file.write(image_bytes.getvalue())
+    log.info(f"saved image to cache file: {filename}")
+
+    return file

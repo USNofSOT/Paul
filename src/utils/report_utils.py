@@ -1,7 +1,7 @@
 import discord
 from config.ranks_roles import DH_ROLES, VT_ROLES, RT_ROLES
 
-async def tiered_medals(member: discord.Member) -> str:
+async def tiered_medals(member: discord.Member) -> tuple[str, list[discord.Role]]:
     found_titles = []
 
     conduct_titles = [
@@ -68,16 +68,18 @@ async def tiered_medals(member: discord.Member) -> str:
     ]
 
     result = ""
+    result_roles = []
 
     for category_name, titles in categories:
         for role in member.roles:
             if role.name in titles:
                 result += f"<@&{role.id}>\n"
+                result_roles.append(role)
                 break
 
-    return result
+    return result, result_roles
 
-async def other_medals(member: discord.Member) -> (list[str], list[discord.Role]):
+async def other_medals(member: discord.Member) -> tuple[list[str], list[discord.Role]]:
     found_titles = []
     found_roles = []
 
