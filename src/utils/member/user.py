@@ -242,8 +242,7 @@ async def get_ribbon_board_embed(bot: Bot, interaction : discord.Interaction, me
     # Assemble awards, fix for order of precedence
     log.info('assembling roles')
     award_roles = awards_and_titles_roles + tiered_roles + CC_roles
-    if tiered_roles and 'Service Stripes' in tiered_roles[-1].name:
-        award_roles = awards_and_titles_roles + tiered_roles[:-1] + CC_roles + [tiered_roles[-1]]
+    award_roles.sort(key=lambda x: x.position, reverse=True)
 
     if not award_roles:
         log.info(f"No award roles found for {member.name}.")
