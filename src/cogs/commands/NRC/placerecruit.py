@@ -7,11 +7,6 @@ from discord.ext import commands
 
 from src.config import GUILD_ID, NRC_ROLE
 from src.config.ships import SHIP_MAX_SIZE, SHIPS, FLEETS_OF_THE_NAVY
-from src.data import SubclassType, Sailor
-from src.data.repository.forceadd_repository import save_forceadd
-from src.data.repository.sailor_repository import SailorRepository
-from src.utils.discord_utils import get_best_display_name
-from src.utils.embeds import error_embed, default_embed
 
 log = getLogger(__name__)
 
