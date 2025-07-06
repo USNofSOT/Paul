@@ -11,6 +11,7 @@ from src.config.main_server import (
     BC_TITAN,
     BC_BERSERKER,
     BC_VENOM,
+    BC_BOA,
 )
 from src.data.structs import Ship, Fleet, NavyFleetCollector
 
