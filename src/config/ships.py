@@ -99,7 +99,7 @@ DEVILS_ROAR_FLEET = Fleet(
     name="The Devil's Roar Fleet",
     ships=(USS_DEFIANT, USS_SILVERCLAW, USS_VENOM),
     role_id=ROLE_ID_DEVILS_ROAR,
-    flagship="USS Defiant",
+    flagship=USS_DEFIANT,
     emoji="<:DevilsRoar:1270890826574204988>",
 )
 
