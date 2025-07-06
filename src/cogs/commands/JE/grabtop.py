@@ -4,6 +4,7 @@ from discord.ext import commands
 from discord import app_commands
 from src.config import GUILD_ID
 from src.config.ranks_roles import JE_AND_UP
+from config.subclasses import SUBCLASS_AWARDS
 from src.data.repository.sailor_repository import SailorRepository
 from src.data.repository.coin_repository import CoinRepository
 from src.utils.leaderboard import create_leaderboard_embed, create_master_embed, create_subclass_leaderboard_embed, create_dual_leaderboard_embed
@@ -56,11 +57,11 @@ class GrabTop(commands.Cog):
 
             top_coin_holder = coin_repo.get_top_coin_holders(limit, id_list_of_members) #Top 3 Coin Holders
 
-           # Get lists of members with over 50 points in ALL specified subclasses
+           # Get lists of members with over 25 points in ALL specified subclasses
             subclass_masters = []
             for member in interaction.guild.members:
                 member_role_ids = [role.id for role in member.roles]
-                if all(role_id in member_role_ids for role_id in [src.config.MASTER_CANNONEER.role_id, src.config.MASTER_HELM.role_id, src.config.MASTER_CARPENTER.role_id, src.config.MASTER_FLEX.role_id]):
+                if all(role_id in member_role_ids for role_id in [SUBCLASS_AWARDS.cannoneer[-1].role_id, SUBCLASS_AWARDS.helm[-1].role_id, SUBCLASS_AWARDS.carpenter[-1].role_id, SUBCLASS_AWARDS.flex[-1].role_id]):
                    subclass_masters.append((int(member.id)))
                    
             # Create embeds for each category
