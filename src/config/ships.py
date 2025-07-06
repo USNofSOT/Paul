@@ -165,6 +165,67 @@ WILDS_FLEET = Fleet(
     emoji="<:Wilds:1270890769292591134>",
 )
 
+# Legendary/Ceremonial Ships
+#######################################
+USS_CONSTITUTION = Ship(
+    name="USS Constitution",
+    boat_command_channel_id=BC_BOA,
+    legendary=True,
+    emoji="<:Constitution:1076167730299940874>",
+)
+
+USS_DEVASTATOR = Ship(
+    name="USS Devastator",
+    boat_command_channel_id=BC_BOA,
+    legendary=True,
+    emoji="<:Devastator:1063980063541973072>",
+)
+
+USS_ICHTHYOLOGIST = Ship(
+    name="USS Ichthyologist",
+    boat_command_channel_id=BC_BOA,
+    legendary=True,
+)
+
+USS_AUDACIOUS = Ship(
+    name="USS Audacious",
+    boat_command_channel_id=BC_BOA,
+    legendary=True,
+    emoji="<:audacious:1312805740284608522>",
+)
+
+USS_ALBATROSS = Ship(
+    name="USS Albatross",
+    boat_command_channel_id=BC_BOA,
+    legendary=True,
+    emoji="<:Albatross:967738036169371718>",
+)
+
+USS_KEARSARGE = Ship(
+    name="USS Kearsarge",
+    boat_command_channel_id=BC_BOA,
+    legendary=True,
+    emoji="<:Kearsarge:1039333614111961129>",
+)
+
+USS_ORIGIN = Ship(
+    name="USS Origin",
+    boat_command_channel_id=BC_BOA,
+    legendary=True,
+    emoji="<:origin:1201214169735757875>",
+)
+
+LEGENDARY_SHIPS = (
+    USS_CONSTITUTION,
+    USS_DEVASTATOR,
+    USS_ICHTHYOLOGIST,
+    USS_AUDACIOUS,
+    USS_ALBATROSS,
+    USS_KEARSARGE,
+    USS_ORIGIN,
+    )
+
+
 # Navy collector
 #######################################
 FLEETS_OF_THE_NAVY = NavyFleetCollector(
@@ -175,3 +236,4 @@ FLEETS_OF_THE_NAVY = NavyFleetCollector(
 )
 
 SHIPS = FLEETS_OF_THE_NAVY.ships
+SAILING_SHIPS = SHIPS + list(LEGENDARY_SHIPS)
