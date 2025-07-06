@@ -9,13 +9,13 @@ from src.config.main_server import (
     BC_NIGHTINGALE,
     BC_SILVERCLAW,
     BC_TITAN,
-    BC_VALHALLA,
+    BC_BERSERKER,
     BC_VENOM,
 )
 from src.data.structs import Ship
 
 ROLE_ID_LUSTY = 933919139700019222
-ROLE_ID_VALHALLA = 1164671319338664007
+ROLE_ID_BERSERKER = 1164671319338664007
 ROLE_ID_SERENITY = 1002303636522680391
 ROLE_ID_ADUN = 1242143582463332402
 ROLE_ID_GLETSJER = 1084451910578339880
@@ -38,10 +38,10 @@ SHIPS = [
         emoji="<:Lusty:1079841997021524018>",
     ),
     Ship(
-        name="USS Valhalla",
-        boat_command_channel_id=BC_VALHALLA,
-        role_id=ROLE_ID_VALHALLA,
-        emoji="<:valhalla:1345380823947542590>",
+        name="USS Berserker",
+        boat_command_channel_id=BC_BERSERKER,
+        role_id=ROLE_ID_BERSERKER,
+        emoji="<:Berserker:1390427238922719275>",
     ),
     Ship(
         name="USS Serenity",
