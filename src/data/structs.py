@@ -35,9 +35,9 @@ class Fleet:
 class NavyFleetCollector:
     ancient_isles           : Optional[Fleet]
     devils_roar             : Optional[Fleet]
-    first_navy_strike_group : Optional[Fleet]
     shores_of_plenty        : Optional[Fleet]
     wilds                   : Optional[Fleet] 
+    first_navy_strike_group : Optional[Fleet] = None
 
     @property
     def ships(self) -> list[Ship]:
