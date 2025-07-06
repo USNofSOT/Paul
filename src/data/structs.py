@@ -28,7 +28,7 @@ class Fleet:
     name : str
     ships : tuple[Ship, ...]
     role_id : int
-    flagship : Optional[str] = None
+    flagship : Optional[Ship] = None
     emoji: str = None
 
 
