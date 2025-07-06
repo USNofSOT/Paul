@@ -77,11 +77,25 @@ class CombatAward(Award):
 class AwardsCollector:
     voyages: tuple[Award]
     hosted: tuple[Award]
+    conduct: tuple[Award]
     combat: tuple[CombatAward]
     training: tuple[Award]
     recruit: tuple[Award]
-    attendance: tuple[Award]
+    representation: tuple[Award]
     service: tuple[Award]
+
+    @property
+    def tiered_awards(self) -> tuple[str, ...]:
+        return (
+            'conduct',
+            'hosted',
+            'voyages',
+            'combat',
+            'training',
+            'representation',
+            'recruit',
+            'service',
+        )
 
 @dataclass
 class SubclassCollector:
