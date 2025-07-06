@@ -33,10 +33,10 @@ class Fleet:
 
 @dataclass
 class NavyFleetCollector:
-    ancient_isles           : Optional[Fleet]
-    devils_roar             : Optional[Fleet]
-    shores_of_plenty        : Optional[Fleet]
-    wilds                   : Optional[Fleet] 
+    ancient_isles           : Optional[Fleet] = None
+    devils_roar             : Optional[Fleet] = None
+    shores_of_plenty        : Optional[Fleet] = None
+    wilds                   : Optional[Fleet] = None
     first_navy_strike_group : Optional[Fleet] = None
 
     @property
