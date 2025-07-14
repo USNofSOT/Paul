@@ -1,25 +1,23 @@
 from logging import getLogger
 
 import discord
+from discord import app_commands
+from discord.ext import commands
+
 from config import MARINE_ROLE, USMC_ROLE
 from data import RoleChangeType
 from data.repository.auditlog_repository import AuditLogRepository
-from discord import app_commands
-from discord.ext import commands
-from utils.time_utils import format_time, get_time_difference_past
-
 from src.config.awards import COMBAT_MEDALS, MERITORIOUS_COMBAT_ACTION
 from src.config.ranks_roles import JE_AND_UP
 from src.config.subclasses import (
     CANNONEER_SUBCLASSES,
+    CARPENTER_SUBCLASSES,
     FLEX_SUBCLASSES,
     HELM_SUBCLASSES,
-    MASTER_FLEX,
-    PRO_CANNONEER,
-    PRO_HELM,
 )
 from src.utils.embeds import error_embed, member_embed
-from src.utils.rank_and_promotion_utils import get_current_award
+from src.utils.rank_and_promotion_utils import get_current_award, has_award_or_higher
+from utils.time_utils import format_time, get_time_difference_past
 
 log = getLogger(__name__)
 
@@ -33,7 +31,10 @@ def progres_bar(current, total):
     percentage = round(progress * 100)
     if progress == 1:
         return f"{full_achieved_emoji * length} {percentage}% ( {current}/{total} )"
-    return f"{achieved_emoji * round(progress * length) + not_achieved_emoji * (length - round(progress * length))} {percentage}% ( {current}/{total} )"
+    return f"{
+        achieved_emoji * round(progress * length)
+        + not_achieved_emoji * (length - round(progress * length))
+    } {percentage}% ( {current}/{total} )"
 
 
 class MarineProgress(commands.Cog):
@@ -42,7 +43,8 @@ class MarineProgress(commands.Cog):
 
     @app_commands.command(
         name="marineprogress",
-        description="Track your or another member's progress towards becoming a Marine.",
+        description="Track your or another member's progress "
+        "towards becoming a Marine.",
     )
     @app_commands.describe(target="Select the user you want to get information about")
     @app_commands.checks.has_any_role(*JE_AND_UP)
@@ -72,13 +74,17 @@ class MarineProgress(commands.Cog):
 
         audit_log_repository.close_session()
 
-        if latest_marine_role_log:
-            if latest_marine_role_log.change_type == RoleChangeType.REMOVED:
-                latest_marine_role_log = None
+        if (
+            latest_marine_role_log
+            and latest_marine_role_log.change_type == RoleChangeType.REMOVED
+        ):
+            latest_marine_role_log = None
 
-        if latest_usmc_role_log:
-            if latest_usmc_role_log.change_type == RoleChangeType.REMOVED:
-                latest_usmc_role_log = None
+        if (
+            latest_usmc_role_log
+            and latest_usmc_role_log.change_type == RoleChangeType.REMOVED
+        ):
+            latest_usmc_role_log = None
 
         # Create initial embed
         embed = member_embed(target)
@@ -90,7 +96,8 @@ class MarineProgress(commands.Cog):
             else:
                 embed.add_field(
                     name="Marine Status",
-                    value=f":white_check_mark: Marine for {format_time(get_time_difference_past(latest_marine_role_log.log_time))}",
+                    value=f":white_check_mark: Marine for "
+                    f"{format_time(get_time_difference_past(latest_marine_role_log.log_time))}",
                 )
 
             if is_usmc:
@@ -99,48 +106,65 @@ class MarineProgress(commands.Cog):
                 else:
                     embed.add_field(
                         name="USMC Status",
-                        value=f":white_check_mark: USMC for {format_time(get_time_difference_past(latest_usmc_role_log.log_time))}",
+                        value=f":white_check_mark: USMC for "
+                        f"{format_time(get_time_difference_past(latest_usmc_role_log.log_time))}",
                     )
 
             return await interaction.followup.send(embed=embed)
 
         def get_subclass_streak(target, subclasses):
             current_subclass = get_current_award(target, subclasses)
-            return current_subclass.threshold if current_subclass is not None else 0
-
-        # Master Flex Subclass
-        current_flex_subclass_streak = get_subclass_streak(target, FLEX_SUBCLASSES)
-        if current_flex_subclass_streak >= MASTER_FLEX.threshold:
-            embed.add_field(
-                name="**Flex Subclass**",
-                value=f":white_check_mark: <@&{MASTER_FLEX.role_id}> achieved!",
-                inline=False,
-            )
-        else:
-            embed.add_field(
-                name="**Flex Subclass**",
-                value=f"Requires: <@&{MASTER_FLEX.role_id}> \n {progres_bar(current_flex_subclass_streak, MASTER_FLEX.threshold)}",
-                inline=False,
+            return (
+                current_subclass.threshold
+                if current_subclass and current_subclass.threshold is not None
+                else 0
             )
 
-        # Pro Cannoneer or Pro Helm Subclass or higher
-        current_helm_subclass_streak = get_subclass_streak(target, HELM_SUBCLASSES)
-        current_cannoneer_subclass_streak = get_subclass_streak(
-            target, CANNONEER_SUBCLASSES
+        ADEPT_INDEX = 0
+        PRO_INDEX = 1
+
+        SUBCLASSES = {
+            "cannoneer": CANNONEER_SUBCLASSES,
+            "carpenter": CARPENTER_SUBCLASSES,
+            "helm": HELM_SUBCLASSES,
+            "flex": FLEX_SUBCLASSES,
+        }
+
+        adept_count = sum(
+            has_award_or_higher(target, subclass[ADEPT_INDEX], subclass) or 0
+            for subclass in SUBCLASSES.values()
         )
-        if (
-            current_helm_subclass_streak >= PRO_HELM.threshold
-            or current_cannoneer_subclass_streak >= PRO_CANNONEER.threshold
-        ):
+        pro_count = sum(
+            has_award_or_higher(target, subclass[PRO_INDEX], subclass) or 0
+            for subclass in SUBCLASSES.values()
+        )
+
+        # Require 2 Pro subclasses
+        if pro_count < 2:
             embed.add_field(
-                name="**Pro Cannoneer or Helm Subclass**",
-                value=f":white_check_mark: <@&{PRO_CANNONEER.role_id}> or <@&{PRO_HELM.role_id}> achieved!",
+                name="Pro subclasses",
+                value=f"Requires 2 Pro subclasses \n > {progres_bar(pro_count, 2)}",
                 inline=False,
             )
         else:
             embed.add_field(
-                name="**Pro Cannoneer or Helm Subclass**",
-                value=f"Requires: <@&{PRO_CANNONEER.role_id}> or <@&{PRO_HELM.role_id}> \n {progres_bar(max(current_helm_subclass_streak, current_cannoneer_subclass_streak), PRO_HELM.threshold)}",
+                name="Pro subclasses",
+                value=f":white_check_mark: You have {pro_count}/2 Pro subclasses.",
+                inline=False,
+            )
+
+        # Require 4 Adept subclasses
+        if adept_count < 4:
+            embed.add_field(
+                name="Adept subclasses",
+                value=f"Requires 4 Adept subclasses \n > {progres_bar(adept_count, 4)}",
+                inline=False,
+            )
+            progres_bar(adept_count, 4)
+        else:
+            embed.add_field(
+                name="Adept subclasses",
+                value=f":white_check_mark: You have {adept_count}/4 Adept subclasses.",
                 inline=False,
             )
 
@@ -149,20 +173,30 @@ class MarineProgress(commands.Cog):
         if current_highest_streak >= MERITORIOUS_COMBAT_ACTION.threshold:
             embed.add_field(
                 name="**Meritorious Combat Ribbon or higher**",
-                value=f":white_check_mark: <@&{MERITORIOUS_COMBAT_ACTION.role_id}> achieved!",
+                value=f":white_check_mark: "
+                f"<@&{MERITORIOUS_COMBAT_ACTION.role_id}> achieved!",
                 inline=False,
             )
         else:
             embed.add_field(
                 name="**Meritorious Combat Ribbon or higher**",
-                value=f"Requires: <@&{MERITORIOUS_COMBAT_ACTION.role_id}> \n {progres_bar(current_highest_streak, MERITORIOUS_COMBAT_ACTION.threshold)}",
+                value=f"Requires: <@&{MERITORIOUS_COMBAT_ACTION.role_id}> \n "
+                f"> {
+                    progres_bar(
+                        current_highest_streak, MERITORIOUS_COMBAT_ACTION.threshold
+                    )
+                }",
                 inline=False,
             )
 
         embed.add_field(
             name="Additional Requirements",
-            value="- Recommendation from Ship CO \n"
-            "- Going on a Skirmish with 2 members of the Marine Committee so they can determine the candidate's skill (can be one Skirmish with 2 Committee members, or 2 separate Skirmish voyage with a different Committee member each)",
+            value="- An extensive recommendation from a Marine member \n"
+            "- Going on a Skirmish with 2 members of the Marine Committee "
+            "so they can determine the candidate's skill "
+            "\n \t - A minimum of 2 separate Skirmish voyages is required "
+            "\n \t - Each evaluation must be done by a different "
+            "Marine Committee member",
         )
 
         await interaction.followup.send(embed=embed)
