@@ -114,7 +114,7 @@ class ShipHistoryCommand(commands.Cog):
                         f"{
                             self.bot.get_user(host.target_id).mention
                             if self.bot.get_user(host.target_id)
-                            else 'Unknown'
+                            else 'REDACTED'
                         } "
                         f"- {host.total_voyages} "
                         for host in history.get_top_three_hosts()
