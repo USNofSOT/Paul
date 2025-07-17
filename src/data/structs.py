@@ -106,6 +106,15 @@ class SubclassCollector:
     helm: tuple[Award]
     surgeon: tuple[Award]
 
+    @property
+    def master_role_ids(self, idx_master: int) -> tuple[int, ...]:
+        return (
+            self.cannoneer[idx_master].role_id,
+            self.carpenter[idx_master].role_id,
+            self.flex[idx_master].role_id,
+            self.helm[idx_master].role_id,
+        )
+
 @dataclass
 class SailorCO:
     immediate: Member | None
