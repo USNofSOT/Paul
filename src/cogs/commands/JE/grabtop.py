@@ -4,7 +4,7 @@ from discord.ext import commands
 from discord import app_commands
 from src.config import GUILD_ID
 from src.config.ranks_roles import JE_AND_UP
-from config.subclasses import SUBCLASS_AWARDS, MASTER_AWARD_INDEX
+from config.subclasses import SUBCLASS_AWARDS
 from src.data.repository.sailor_repository import SailorRepository
 from src.data.repository.coin_repository import CoinRepository
 from src.utils.leaderboard import create_leaderboard_embed, create_master_embed, create_subclass_leaderboard_embed, create_dual_leaderboard_embed
@@ -59,7 +59,7 @@ class GrabTop(commands.Cog):
 
            # Get lists of members with over 25 points in ALL specified subclasses
             subclass_masters = []
-            master_role_ids = SUBCLASS_AWARDS.master_role_ids(MASTER_AWARD_INDEX)
+            master_role_ids = [award.role_id for award in SUBCLASS_AWARDS.masters]
             for member in interaction.guild.members:
                 member_role_ids = [role.id for role in member.roles]
                 if all(role_id in member_role_ids for role_id in master_role_ids):
