@@ -63,7 +63,6 @@ class Award:
     role_id: int = 0
     embed_id: int = 0
     channelthread_id: int = 0
-    top : bool = False
 
     @property
     def embed_url(self) -> str:
