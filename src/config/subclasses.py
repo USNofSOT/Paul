@@ -164,5 +164,11 @@ SUBCLASS_AWARDS = SubclassCollector(
     flex=FLEX_SUBCLASSES,
     grenadier=GRENADIER_SUBCLASSES,
     helm=HELM_SUBCLASSES,
-    surgeon=SURGEON_SUBCLASSES
+    surgeon=SURGEON_SUBCLASSES,
+    masters=(
+        MASTER_CANNONEER,
+        MASTER_CARPENTER,
+        MASTER_FLEX,
+        MASTER_HELM,
+    ),
 )
