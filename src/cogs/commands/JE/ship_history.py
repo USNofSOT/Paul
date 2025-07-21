@@ -1,16 +1,15 @@
 import logging
-from typing import List
 
 import discord
-from config import GUILD_ID, VOYAGE_LOGS
-from config.emojis import ANCIENT_COINS_EMOJI, DOUBLOONS_EMOJI, GOLD_EMOJI
 from discord import app_commands
 from discord.ext import commands
+
+from config import GUILD_ID, VOYAGE_LOGS
+from config.emojis import ANCIENT_COINS_EMOJI, DOUBLOONS_EMOJI, GOLD_EMOJI
+from src.config.ranks_roles import JE_AND_UP
 from utils.embeds import error_embed
 from utils.hosted_utils import ShipHistory, get_ship_names
 from utils.ship_utils import convert_to_ordinal
-
-from src.config.ranks_roles import JE_AND_UP
 
 log = logging.getLogger(__name__)
 
@@ -18,14 +17,16 @@ log = logging.getLogger(__name__)
 async def autocomplete_ship(
     interaction: discord.Interaction, current_input: str
 ) -> list[app_commands.Choice]:
-    ship_names: List[str] = get_ship_names(get_main_ship_names=True, get_auxiliary_ship_names=True)
+    ship_names: list[str] = get_ship_names(
+        get_main_ship_names=True, get_auxiliary_ship_names=True
+    )
     choices = []
     for ship in ship_names:
         ship_name = ship.replace("USS ", "")
-        if current_input == "":
-            choices.append(app_commands.Choice(name=ship, value=ship))
-        elif ship.lower().startswith(current_input.lower()) or ship_name.lower().startswith(
-            current_input.lower()
+        if (
+            current_input == ""
+            or ship.lower().startswith(current_input.lower())
+            or ship_name.lower().startswith(current_input.lower())
         ):
             choices.append(app_commands.Choice(name=ship, value=ship))
     return choices[:25]
@@ -36,7 +37,8 @@ class ShipHistoryCommand(commands.Cog):
         self.bot = bot
 
     @app_commands.command(
-        name="ship_history", description="Get information about the ships you or a user has hosted"
+        name="ship_history",
+        description="Get information about the ships you or a user has hosted",
     )
     @app_commands.autocomplete(ship=autocomplete_ship)
     @app_commands.describe(ship="Select the ship you want to get information about")
@@ -45,12 +47,18 @@ class ShipHistoryCommand(commands.Cog):
         await interaction.response.defer(ephemeral=False)
         if ship is None:
             await interaction.followup.send(
-                embed=error_embed("This ship does not exist.", "Please select a valid ship.")
+                embed=error_embed(
+                    "This ship does not exist.", "Please select a valid ship."
+                )
             )
             return
-        if ship not in get_ship_names(get_main_ship_names=True, get_auxiliary_ship_names=True):
+        if ship not in get_ship_names(
+            get_main_ship_names=True, get_auxiliary_ship_names=True
+        ):
             await interaction.followup.send(
-                embed=error_embed("This ship does not exist.", "Please select a valid ship.")
+                embed=error_embed(
+                    "This ship does not exist.", "Please select a valid ship."
+                )
             )
             return
 
@@ -59,7 +67,8 @@ class ShipHistoryCommand(commands.Cog):
         except ValueError:
             await interaction.followup.send(
                 embed=error_embed(
-                    "This ship does not have a history.", "Please select a different ship."
+                    "This ship does not have a history.",
+                    "Please select a different ship.",
                 )
             )
 
@@ -70,10 +79,14 @@ class ShipHistoryCommand(commands.Cog):
         )
 
         embed.add_field(
-            name="Voyage Count", value=f"{convert_to_ordinal(history.voyage_count)}", inline=True
+            name="Voyage Count",
+            value=f"{convert_to_ordinal(history.voyage_count)}",
+            inline=True,
         )
         embed.add_field(
-            name="Gold", value=f"{GOLD_EMOJI} {history.total_gold_earned:,}", inline=True
+            name="Gold",
+            value=f"{GOLD_EMOJI} {history.total_gold_earned:,}",
+            inline=True,
         )
         embed.add_field(
             name="Doubloons",
@@ -88,7 +101,9 @@ class ShipHistoryCommand(commands.Cog):
             inline=True,
         )
         embed.add_field(
-            name="Fish Caught", value=f":fish: {history.total_fishes_caught:,}", inline=True
+            name="Fish Caught",
+            value=f":fish: {history.total_fishes_caught:,}",
+            inline=True,
         )
 
         if history.get_top_three_hosts():
@@ -96,7 +111,12 @@ class ShipHistoryCommand(commands.Cog):
                 name=":trophy:  Top 3 Hosts",
                 value="\n".join(
                     [
-                        f"{self.bot.get_user(host.target_id).mention} - {host.total_voyages} "
+                        f"{
+                            self.bot.get_user(host.target_id).mention
+                            if self.bot.get_user(host.target_id)
+                            else 'REDACTED'
+                        } "
+                        f"- {host.total_voyages} "
                         for host in history.get_top_three_hosts()
                     ]
                 ),
@@ -109,7 +129,8 @@ class ShipHistoryCommand(commands.Cog):
                 name=":sailboat:  Top 3 Voyage Types",
                 value="\n".join(
                     [
-                        f"{voyage.voyage_type.name.capitalize()} - {voyage.total_voyages} "
+                        f"{voyage.voyage_type.name.capitalize()} "
+                        f"- {voyage.total_voyages} "
                         for voyage in top_three_voyage_types
                     ]
                 ),
@@ -118,7 +139,8 @@ class ShipHistoryCommand(commands.Cog):
 
         if not history.history:
             embed.add_field(
-                name=":stopwatch: Recent Voyages", value="No voyages have been hosted on this ship."
+                name=":stopwatch: Recent Voyages",
+                value="No voyages have been hosted on this ship.",
             )
         else:
             most_recent_voyages = history.history[-3:]
@@ -128,8 +150,10 @@ class ShipHistoryCommand(commands.Cog):
                 value="\n".join(
                     [
                         f""
-                        f"https://discord.com/channels/{GUILD_ID}/{VOYAGE_LOGS}/{voyage.log_id} "
-                        f"<t:{int(voyage.log_time.timestamp())}:R> - <@{voyage.target_id}>"
+                        f"https://discord.com/channels/"
+                        f"{GUILD_ID}/{VOYAGE_LOGS}/{voyage.log_id} "
+                        f"<t:{int(voyage.log_time.timestamp())}:R> "
+                        f"- <@{voyage.target_id}>"
                         f""
                         for voyage in most_recent_voyages
                     ]
@@ -138,7 +162,8 @@ class ShipHistoryCommand(commands.Cog):
             )
 
         embed.set_footer(
-            text="Only voyages with correct specifications are counted (starting from 2025-02-01)"
+            text="Only voyages with correct specifications "
+            "are counted (starting from 2025-02-01)"
         )
 
         await interaction.followup.send(embed=embed)

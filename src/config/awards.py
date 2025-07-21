@@ -355,7 +355,7 @@ MEDALS_AND_RIBBONS = AwardsCollector(
 ## Ribbon Boards
 ###############################################################################
 RIBBON_BOARD_VERSION = 1  # increment this to ignore old caches
-RIBBON_BOARD_CACHE_PATH = 'cache/ribbon_board'
+RIBBON_BOARD_CACHE_PATH = '.cache/ribbon_board'
 RIBBON_BOARD_BASENAME = 'ribbons.png'
 RIBBON_BOARD_COLUMNS = 3
 RIBBON_BOARD_IMG_HEIGHT = 64 # pixels
