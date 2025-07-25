@@ -102,11 +102,14 @@ class MarineProgress(commands.Cog):
 
             if is_usmc:
                 if not latest_usmc_role_log:
-                    embed.add_field(name="USMC Status", value=":white_check_mark: USMC")
+                    embed.add_field(
+                        name="Committee Status",
+                        value=":white_check_mark: Committee Member",
+                    )
                 else:
                     embed.add_field(
-                        name="USMC Status",
-                        value=f":white_check_mark: USMC for "
+                        name="Committee Status",
+                        value=f":white_check_mark: Committee for "
                         f"{format_time(get_time_difference_past(latest_usmc_role_log.log_time))}",
                     )
 
