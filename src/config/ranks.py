@@ -1,5 +1,5 @@
 from src.config.ranks_roles import RT_ROLES, DH_ROLES, E1_ROLES, E2_ROLES, E3_ROLES, VT_ROLES, E4_ROLES, E6_ROLES, \
-    E8_ROLES, E7_ROLES, O1_ROLES, O3_ROLES, O4_ROLES, O5_ROLES, O6_ROLES, O8_ROLES, O7_ROLES, AOTN_ROLES
+    E8_ROLES, E7_ROLES, O1_ROLES, O3_ROLES, O4_ROLES, O5_ROLES, O6_ROLES, O8_ROLES, O7_ROLES, VADM_ROLES, AOTN_ROLES
 from src.data.structs import NavyRank, RankPrerequisites, Context
 
 SAILORS_HANDBOOK_THREAD_ID = 1292510574114242631
@@ -40,7 +40,8 @@ RECRUIT = NavyRank(
         short_description="Recruit (Rct) is the first rank a Sailor is given upon enlistment into the USN.",
         channel_id=SAILORS_HANDBOOK_THREAD_ID,
         message_id=1292522413812092928
-    )
+    ),
+    emoji='<:e1:1245860744184987739>'
 )
 SEAMAN = NavyRank(
     index=2,
@@ -52,7 +53,8 @@ SEAMAN = NavyRank(
         short_description="Seaman (SMAN) is the first official rank of the USN. A sailor will be promoted to Seaman after completing the Recruit Orientation.",
         channel_id=SAILORS_HANDBOOK_THREAD_ID,
         message_id=1292522413812092928
-    )
+    ),
+    emoji='<:E2:1245860781887590472>'
 )
 ABLE_SEAMAN = NavyRank(
     index=3,
@@ -70,7 +72,8 @@ ABLE_SEAMAN = NavyRank(
         [
             "Decent activity in their squad chat."
         ]
-    )
+    ),
+    emoji='<:E3:1245860807980617848>'
 )
 JUNIOR_PETTY_OFFICER = NavyRank(
     index=4,
@@ -92,7 +95,8 @@ JUNIOR_PETTY_OFFICER = NavyRank(
             "No Warnings following E-3 Promotion",
             "Recommended by candidate's Squad Leader or above"
         ]
-    )
+    ),
+    emoji='<:E4:1245860835138605066>'
 )
 PETTY_OFFICER = NavyRank(
     index=5,
@@ -110,7 +114,8 @@ PETTY_OFFICER = NavyRank(
         [
             "Applying for a position of XO to a squad or becoming a squad leader (when available)"
         ]
-    )
+    ),
+    emoji='<:E6:1245860878142799923>'
 )
 CHIEF_PETTY_OFFICER = NavyRank(
     index=6,
@@ -130,7 +135,8 @@ CHIEF_PETTY_OFFICER = NavyRank(
             "SNCO Board Passed",
             "Meets SNLA requirements"
         ]
-    )
+    ),
+    emoji='<:E7:1245860900162769016>'
 )
 SENIOR_CHIEF_PETTY_OFFICER = NavyRank(
     index=8,
@@ -148,7 +154,8 @@ SENIOR_CHIEF_PETTY_OFFICER = NavyRank(
         [
             "Interviewed for a CoS position"
         ]
-    )
+    ),
+    emoji='<:E8:1245860921470091367>'
 )
 MIDSHIPMAN = NavyRank(
     index=9,
@@ -166,7 +173,8 @@ MIDSHIPMAN = NavyRank(
         [
             "Officer Board"
         ]
-    )
+    ),
+    emoji='<:O1:1245860986640928789>'
 )
 LIEUTENANT = NavyRank(
     index=10,
@@ -185,7 +193,8 @@ LIEUTENANT = NavyRank(
             "Mentorship under an SO",
             "Meets OCS requirements"
         ]
-    )
+    ),
+    emoji='<:O3:1245861011265814620>'
 )
 LIEUTENANT_COMMANDER = NavyRank(
     index=11,
@@ -204,7 +213,8 @@ LIEUTENANT_COMMANDER = NavyRank(
             "Voted on by the BOA",
             "Meets SOCS requirements"
         ]
-    )
+    ),
+    emoji='<:O4:1245861035542315149>'
 )
 COMMANDER = NavyRank(
     index=12,
@@ -223,7 +233,8 @@ COMMANDER = NavyRank(
             "Recruit and maintain 4 members from outside the server on your ship, not including CO/XO/COS",
             "Functional CoC on their ship (Can fulfill all of it's ship duties despite being incomplete)"
         ]
-    )
+    ),
+    emoji='<:O5:1245861052554678365>'
 )
 CAPTAIN = NavyRank(
     index=13,
@@ -242,7 +253,8 @@ CAPTAIN = NavyRank(
             "Very Active ship",
             "Full CoC on their ship (CoS is optional)"
         ]
-    )
+    ),
+    emoji='<:O6:1245861070950633574>'
 )
 COMMODORE = NavyRank(
     index=14,
@@ -260,7 +272,8 @@ COMMODORE = NavyRank(
         [
             "Hand selected by the AOTN"
         ]
-    )
+    ),
+    emoji='<:O7:1245861091029024840>'
 )
 REAR_ADMIRAL = NavyRank(
     index=15,
@@ -279,10 +292,24 @@ REAR_ADMIRAL = NavyRank(
             "Hand selected by the AOTN",
             "Has to give flag ship command to another SO"
         ]
-    )
+    ),
+    emoji='<:O8:1245861113330008065>'
+)
+VICE_ADMIRAL_OF_THE_NAVY = NavyRank(
+    index=16,
+    identifier="VADM",
+    role_ids=VADM_ROLES,
+    promotion_index={17},
+    rank_context=Context(
+        short_description="The Vice Admiral of the Navy (VADM) is the Second in Command of all U.S.",
+        channel_id=SAILORS_HANDBOOK_THREAD_ID,
+        message_id=1292524279203631239
+    ),
+    emoji='<:o9:1245861138458083380>',
+    name="Admiral Of The Navy"
 )
 ADMIRAL_OF_THE_NAVY = NavyRank(
-    index=16,
+    index=17,
     identifier="AOTN",
     role_ids=AOTN_ROLES,
     promotion_index={101},
@@ -291,6 +318,7 @@ ADMIRAL_OF_THE_NAVY = NavyRank(
         channel_id=SAILORS_HANDBOOK_THREAD_ID,
         message_id=1292524279203631239
     ),
+    emoji='<:o10:1245861167868674140>',
     name="Admiral Of The Navy"
 )
 DUNGEON_MASTER = NavyRank(
@@ -317,6 +345,7 @@ RANKS = (
     CAPTAIN,
     COMMODORE,
     REAR_ADMIRAL,
+    VICE_ADMIRAL_OF_THE_NAVY,
     ADMIRAL_OF_THE_NAVY,
     DUNGEON_MASTER
 )
