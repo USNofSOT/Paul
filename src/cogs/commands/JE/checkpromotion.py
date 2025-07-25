@@ -1,5 +1,7 @@
 from dis import disco
 from enum import member
+from typing import Union
+import asyncio
 
 import discord
 from discord import app_commands
@@ -13,34 +15,49 @@ from src.config.netc_server import JLA_GRADUATE_ROLE, NETC_GRADUATE_ROLES, SNLA_
     SOCS_GRADUATE_ROLE, NETC_GUILD_ID
 from src.config.ranks_roles import JE_AND_UP, E3_ROLES, E2_ROLES, SPD_ROLES, O1_ROLES, O4_ROLES, O5_ROLES, MARINE_ROLE, \
     E7_ROLES
+from src.config.ranks_roles import FLEET_CO_ROLE, SHIP_CO_ROLE, SHIP_FO_ROLE, SHIP_COS_ROLE, SHIP_SL_ROLE, BOA_NSC
 from src.data import Sailor, RoleChangeType
 from src.data.repository.auditlog_repository import AuditLogRepository
 from src.data.repository.sailor_repository import SailorRepository, ensure_sailor_exists
 from src.data.repository.voyage_repository import VoyageRepository
 from src.data.structs import NavyRank
-from src.utils.embeds import default_embed
+from src.utils.embeds import default_embed, error_embed
 from src.utils.rank_and_promotion_utils import get_current_rank, get_rank_by_index, has_award_or_higher
 from src.utils.time_utils import get_time_difference_in_days, utc_time_now, format_time, get_time_difference
+
+
+class ConfirmationView(discord.ui.View):
+    def __init__(self, *, timeout=180):
+        super().__init__(timeout=timeout)
+        self.value = None
+
+    @discord.ui.button(label="Confirm", style=discord.ButtonStyle.green, emoji="✅")
+    async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.value = True
+        await interaction.response.defer()
+        self.stop()
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.red, emoji="❌")
+    async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.value = False
+        await interaction.response.send_message("Command cancelled.", ephemeral=True)
+        self.stop()
 
 
 class CheckPromotion(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
-    @app_commands.command(name="checkpromotion", description="Check promotion eligibility")
-    @app_commands.checks.has_any_role(*JE_AND_UP)
-    async def view_moderation(self, interaction: discord.interactions, target: discord.Member = None):
-        if target is None:
-            target = interaction.user
-
-        ensure_sailor_exists(target.id)
+    async def check_member_promotion(self, member, interaction):
+        """Check promotion eligibility for a single member and return the embed"""
+        ensure_sailor_exists(member.id)
         audit_log_repository = AuditLogRepository()
         voyage_repository = VoyageRepository()
 
         # Get information from member from guild
-        guild_member = self.bot.get_guild(GUILD_ID).get_member(target.id)
+        guild_member = self.bot.get_guild(GUILD_ID).get_member(member.id)
         guild_member_role_ids = [role.id for role in guild_member.roles]
-        netc_guild_member = self.bot.get_guild(NETC_GUILD_ID).get_member(target.id)
+        netc_guild_member = self.bot.get_guild(NETC_GUILD_ID).get_member(member.id)
         if netc_guild_member:
             netc_guild_member_role_ids = [role.id for role in netc_guild_member.roles]
         else:
@@ -51,7 +68,7 @@ class CheckPromotion(commands.Cog):
 
         # Get user information as sailor from database
         sailor_repository = SailorRepository()
-        sailor: Sailor = sailor_repository.get_sailor(target.id)
+        sailor: Sailor = sailor_repository.get_sailor(member.id)
         sailor_repository.close_session()
 
         # Get voyage/hosted count
@@ -59,8 +76,8 @@ class CheckPromotion(commands.Cog):
         hosted_count: int = sailor.hosted_count + sailor.force_hosted_count or 0
 
         embed = default_embed(
-            title=f"{target.display_name or target.name}",
-            description=f"{target.mention}",
+            title=f"{member.display_name or member.name}",
+            description=f"{member.mention}",
             author=False
         )
         try:
@@ -75,8 +92,10 @@ class CheckPromotion(commands.Cog):
                 name="Current Rank",
                 value="No rank found",
             )
-            await interaction.response.send_message(embed=embed, ephemeral=False)
-            return
+            audit_log_repository.close_session()
+            voyage_repository.close_session()
+            return embed
+            
         current_rank_name = current_rank.name if not is_marine else current_rank.marine_name
         if E2_ROLES[1] in guild_member_role_ids:
             current_rank_name = "Seaman Apprentice"
@@ -97,7 +116,7 @@ class CheckPromotion(commands.Cog):
 
                     # if user is seaman apprentice
                     if E2_ROLES[1] in guild_member_role_ids:
-                        latest_apprentice_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id, E2_ROLES[1])
+                        latest_apprentice_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(member.id, E2_ROLES[1])
                         if not latest_apprentice_role_log:
                             days_with_apprentice = 0
                             requirements += f"\u200b \n **:warning: Please verify role age by hand whilst bot is new**  \n \n"
@@ -108,9 +127,9 @@ class CheckPromotion(commands.Cog):
                         else:
                             requirements += f":information_source: Has been Seaman Apprentice for {days_with_apprentice} days (max 14 days) \n"
 
-                        latest_voyage = voyage_repository.get_last_voyage_by_target_ids([target.id])
+                        latest_voyage = voyage_repository.get_last_voyage_by_target_ids([member.id])
                         if latest_voyage:
-                            voyage_time = latest_voyage[target.id]
+                            voyage_time = latest_voyage[member.id]
                             days_since_voyage = get_time_difference_in_days(utc_time_now(), voyage_time)
                             if days_since_voyage <= 14:
                                 requirements += f":white_check_mark: Had a voyage in the last 14 days ({format_time(get_time_difference(utc_time_now(), voyage_time))} ago) \n"
@@ -130,11 +149,12 @@ class CheckPromotion(commands.Cog):
                             requirements += f":white_check_mark: Awarded <@&{CITATION_OF_CONDUCT.role_id}> or <@&{CITATION_OF_COMBAT.role_id}> \n"
                         else:
                             requirements += f":x: Awarded <@&{CITATION_OF_CONDUCT.role_id}> or <@&{CITATION_OF_COMBAT.role_id}> \n"
+                
                 case 4: # Junior Petty Officer
 
                     ### Prerequisites ###
                     ## Complete 15 total voyages and wait 2 week as an E-3 or Complete 20 total voyages and wait 1 week as an E-3 ##
-                    latest_e3_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id, E3_ROLES[0])
+                    latest_e3_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(member.id, E3_ROLES[0])
                     if not latest_e3_role_log:
                         requirements += f"\u200b \n **:warning: Please verify role age by hand whilst bot is new**  \n \n"
 
@@ -162,7 +182,7 @@ class CheckPromotion(commands.Cog):
                         requirements += f"**AND**\n"\
 
                     ## Completed JLA ##
-                    latest_jla_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id, JLA_GRADUATE_ROLE)
+                    latest_jla_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(member.id, JLA_GRADUATE_ROLE)
                     if not latest_jla_role_log:
                         if JLA_GRADUATE_ROLE in netc_guild_member_role_ids:
                             requirements += f":white_check_mark: is a JLA Graduate \n"
@@ -207,7 +227,7 @@ class CheckPromotion(commands.Cog):
                     else:
                         requirements += f":x: Hosted twenty voyages ({hosted_count}/20) \n"
 
-                    latest_snla_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id, SNLA_GRADUATE_ROLE)
+                    latest_snla_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(member.id, SNLA_GRADUATE_ROLE)
                     if not latest_snla_role_log:
                         # Given that the bot is new, we can't get the role age
                         if SNLA_GRADUATE_ROLE in netc_guild_member_role_ids:
@@ -257,7 +277,7 @@ class CheckPromotion(commands.Cog):
                     ## 4 month Service Stripe ##
                     if has_award_or_higher(
                         guild_member,
-                       FOUR_MONTHS_SERVICE_STRIPES,
+                    FOUR_MONTHS_SERVICE_STRIPES,
                         SERVICE_STRIPES
                     ):
                         requirements += f":white_check_mark: Awarded <@&{FOUR_MONTHS_SERVICE_STRIPES.role_id}> \n"
@@ -270,13 +290,13 @@ class CheckPromotion(commands.Cog):
 
                     ### Prerequisites ###
                     ## 2 weeks as an O1 ##
-                    latest_o1_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id,
-                                                                                                      O1_ROLES[0])
+                    latest_o1_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(member.id,
+                                                                                                    O1_ROLES[0])
                     if not latest_o1_role_log:
                         requirements += f"\u200b \n **:warning: Please verify role age by hand whilst bot is new**  \n \n"
 
                     days_with_o1 = get_time_difference_in_days(utc_time_now(),
-                                                               latest_o1_role_log.log_time) if latest_o1_role_log else None
+                                                                latest_o1_role_log.log_time) if latest_o1_role_log else None
                     if days_with_o1 is None or latest_o1_role_log.change_type != RoleChangeType.ADDED:
                         days_with_o1 = 0
 
@@ -286,7 +306,7 @@ class CheckPromotion(commands.Cog):
                         requirements += f":x: Waited two weeks as an O1 ({days_with_o1}/14) \n"
 
                     ## Completed OCS ##
-                    latest_ocs_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id, OCS_GRADUATE_ROLE)
+                    latest_ocs_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(member.id, OCS_GRADUATE_ROLE)
                     if not latest_ocs_role_log:
                         if OCS_GRADUATE_ROLE in netc_guild_member_role_ids:
                             requirements += f":white_check_mark: is an OCS Graduate \n"
@@ -301,7 +321,7 @@ class CheckPromotion(commands.Cog):
                     ### Prerequisites ###
                     ## Completed SOCS ##
 
-                    latest_socs_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id, SOCS_GRADUATE_ROLE)
+                    latest_socs_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(member.id, SOCS_GRADUATE_ROLE)
                     if not latest_socs_role_log:
                         if SOCS_GRADUATE_ROLE in netc_guild_member_role_ids:
                             requirements += f":white_check_mark: is an SOCS Graduate \n"
@@ -316,7 +336,7 @@ class CheckPromotion(commands.Cog):
 
                     ### Prerequisites ###
                     ## 3 to 4 weeks as an O4 ##
-                    latest_o4_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id, O4_ROLES[0])
+                    latest_o4_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(member.id, O4_ROLES[0])
 
                     if not latest_o4_role_log:
                         requirements += f"\u200b \n **:warning: Please verify role age by hand whilst bot is new**  \n \n"
@@ -334,7 +354,7 @@ class CheckPromotion(commands.Cog):
 
                     ## Prequisites ##
                     ## 2 months as an O5 ##
-                    latest_o5_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(target.id, O5_ROLES[0])
+                    latest_o5_role_log = audit_log_repository.get_latest_role_log_for_target_and_role(member.id, O5_ROLES[0])
 
                     if not latest_o5_role_log:
                         requirements += f"\u200b \n **:warning: Please verify role age by hand whilst bot is new**  \n \n"
@@ -402,9 +422,208 @@ class CheckPromotion(commands.Cog):
                     value="**OR** \n \u200b"
                 )
 
-        await interaction.response.send_message(embed=embed, ephemeral=False)
+        # Close sessions
         audit_log_repository.close_session()
         voyage_repository.close_session()
+        
+        return embed
+
+    @app_commands.command(name="checkpromotion", description="Check promotion eligibility")
+    @app_commands.checks.has_any_role(*JE_AND_UP,)
+    async def view_moderation(self, interaction: discord.interactions, target: Union[discord.Member, discord.Role] = None):
+        await interaction.response.defer()
+        if target is None:
+            target = interaction.user
+        else:
+            if not isinstance(target, discord.Member) and not isinstance(target, discord.Role):
+                embed = error_embed(
+                    title="Invalid Mention",
+                    description="Please provide a valid mention.",
+                    footer=False
+                )
+                await interaction.followup.send(embed=embed, ephemeral=True)
+                return
+
+		# Returns if just a member because all of the logic I will be adding that is
+        # Just not changing is for role mentions
+        # Taran [05/09/2025]
+        
+        if isinstance(target, discord.Member):
+            embed = await self.check_member_promotion(target, interaction)
+            await interaction.followup.send(embed=embed, ephemeral=False)
+            return
+
+        if isinstance(target, discord.Role):
+            role = target
+            members = role.members
+            interaction_user_roles = [role.id for role in interaction.user.roles]
+            
+            has_boa_nsc_bypass = any(bypass_role in interaction_user_roles for bypass_role in BOA_NSC)
+
+            is_not_ship_or_squad = not (role.name.startswith("USS") or role.name.endswith("Squad"))
+            
+            if is_not_ship_or_squad and has_boa_nsc_bypass:
+                view = ConfirmationView()
+                await interaction.followup.send(
+                    embed=discord.Embed(
+						title="⚠️ Warning: Large Member Processing",
+						description=f"You are about to check **{len(members)} members**. \n\nDo you want to continue?",
+						color=discord.Color.yellow()
+					),
+                    view=view,
+                    ephemeral=True
+                )
+            
+                await view.wait()
+                if not view.value:
+                    return
+                
+                await interaction.channel.send(
+                    embed=discord.Embed(
+                        title=f"Retrieving all members with the role {role.name}",
+                        description=f"Processing {len(members)} members, this may take a while.",
+                        color=discord.Color.green()
+                    ),
+                )
+                
+                for member in members:
+                    embed = await self.check_member_promotion(member, interaction)
+                    await interaction.channel.send(embed=embed)
+                    await asyncio.sleep(0.5)
+                
+                return
+            elif is_not_ship_or_squad:
+                embed = error_embed(
+                    title="Invalid Role",
+                    description="You must mention a ship (role starting with 'USS') or a squad (role ending with 'Squad').",
+                    footer=False
+                )
+                await interaction.followup.send(embed=embed, ephemeral=True)
+                return
+
+            user_uss_roles = [r for r in interaction.user.roles if r.name == role.name and r.name.startswith("USS")]
+            if user_uss_roles or has_boa_nsc_bypass:
+                if has_boa_nsc_bypass and not user_uss_roles:
+                    await interaction.followup.send(
+                        embed=default_embed(
+                            title="Permission Bypass",
+                            description="You don't have the required permissions to run this command, but you get a bypass as BOA/NSC member! Yay!"
+                        ),
+                        ephemeral=True
+                    )
+                
+                if not has_boa_nsc_bypass and not (
+                    SHIP_COS_ROLE in interaction_user_roles
+                    or SHIP_FO_ROLE in interaction_user_roles
+                    or SHIP_CO_ROLE in interaction_user_roles
+                    or FLEET_CO_ROLE in interaction_user_roles
+                ):
+                    embed = error_embed(
+                        title="Permission Denied",
+                        description="You must be a Ship CO, FO, or CoS to check promotion eligibility for your ship.",
+                        footer=False
+                    )
+                    await interaction.followup.send(embed=embed, ephemeral=True)
+                    return
+                
+                if len(members) >= 30:
+                    view = ConfirmationView()
+                    await interaction.followup.send(
+                        embed=discord.Embed(
+                            title="⚠️ Warning: Large Member Processing",
+                            description=f"You are about to check **{len(members)} members** in this ship. Processing this many members at once could cause Discord rate limiting or slowdowns.\n\nDo you want to continue?",
+                            color=discord.Color.yellow()
+                        ),
+                        view=view,
+                        ephemeral=True
+                    )
+                
+                    await view.wait()
+                    if not view.value:
+                        return
+            else:
+                embed = error_embed(
+                    title="Permission Denied",
+                    description="You can only check promotion eligibility for your own ship.",
+                    footer=False
+                )
+                await interaction.followup.send(embed=embed, ephemeral=True)
+                return
+            
+        
+            user_squad_roles = [r for r in interaction.user.roles if r.name == role.name and r.name.endswith("Squad")]
+            if user_squad_roles or has_boa_nsc_bypass:
+                if has_boa_nsc_bypass and not user_squad_roles:
+                    await interaction.followup.send(
+                        embed=default_embed(
+                            title="Permission Bypass",
+                            description="You don't have the required permissions to run this command"
+                        ),
+                        ephemeral=True
+                    )
+                
+                if not has_boa_nsc_bypass and not (
+                    SHIP_SL_ROLE in interaction_user_roles
+                    or SHIP_COS_ROLE in interaction_user_roles
+                    or SHIP_FO_ROLE in interaction_user_roles
+                    or SHIP_CO_ROLE in interaction_user_roles
+                    or FLEET_CO_ROLE in interaction_user_roles
+                ):
+                    embed = error_embed(
+                        title="Permission Denied",
+                        description="You must be a Ship CO, FO, CoS or a SQL to check promotion eligibility for this squad.",
+                        footer=False
+                    )
+                    await interaction.followup.send(embed=embed, ephemeral=True)
+                    return
+                
+
+                if len(members) >= 30:
+                    view = ConfirmationView()
+					
+                    await interaction.followup.send(
+                        embed=discord.Embed(
+                            title="⚠️ Warning: Large Member Processing",
+                            description=f"You are about to check **{len(members)} members** in this squad. Processing this many members at once could cause Discord rate limiting or slowdowns.\n\nDo you want to continue?",
+                            color=discord.Color.yellow()
+                        ),
+                        view=view,
+                        ephemeral=True
+                    )
+                
+                    await view.wait()
+                    if not view.value:
+                        return
+            else:
+                embed = error_embed(
+                    title="Permission Denied",
+                    description="You can only check promotion eligibility for your Squad, or one under your CoC.",
+                    footer=False
+                )
+                await interaction.followup.send(embed=embed, ephemeral=True)
+                return
+                
+            await interaction.followup.send(
+                embed=discord.Embed(
+                    title=f"Retrieving all members with the role {role.name}",
+                    description=f"Processing {len(members)} members, this may take a while.",
+                    color=discord.Color.green()
+                ),
+            )
+            
+            for member in members:
+                embed = await self.check_member_promotion(member, interaction)
+                await interaction.channel.send(embed=embed)
+                await asyncio.sleep(0.5)
+                
+            return
+
+
+            
+                
+            
+                
+
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(CheckPromotion(bot))

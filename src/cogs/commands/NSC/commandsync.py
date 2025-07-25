@@ -1,7 +1,6 @@
 from discord.ext import commands
-
 from src.config import NSC_ROLES
-
+from src.data.repository.sailor_repository import ensure_sailor_exists
 
 class CommandSync(commands.Cog):
     def __init__(self, bot):
