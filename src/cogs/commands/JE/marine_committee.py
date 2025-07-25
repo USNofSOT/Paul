@@ -18,7 +18,7 @@ class MarineCommittee(commands.Cog):
     )
     @app_commands.checks.has_any_role(*JE_AND_UP)
     async def marineCommittee(self, interaction: discord.Interaction):
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.defer(ephemeral=False)
 
         marine_committee_role = interaction.guild.get_role(USMC_ROLE)
         marines = [
