@@ -1,88 +1,29 @@
 import discord
-from config.ranks_roles import DH_ROLES, VT_ROLES, RT_ROLES
+
+from config.awards import MEDALS_AND_RIBBONS
+
 
 async def tiered_medals(member: discord.Member) -> tuple[str, list[discord.Role]]:
-    found_titles = []
-
-    conduct_titles = [
-        "Admirable Conduct Medal",
-        "Meritorious Conduct Medal",
-        "Honorable Conduct Medal",
-        "Legion of Conduct",
-        "Citation of Conduct",
-    ]
-
-    hosting_titles = [
-        "Admirable Service Medal",
-        "Legendary Service Medal",
-        "Maritime Service Medal",
-        "Sea Service Ribbon",
-    ]
-
-    voyaging_titles = [
-        "Admirable Voyager Medal",
-        "Meritorious Voyager Medal",
-        "Honorable Voyager Medal",
-        "Legion of Voyages",
-        "Citation of Voyages",
-    ]
-
-    combat_titles = [
-        "Admirable Combat Action",
-        "Meritorious Combat Action",
-        "Honorable Combat Action",
-        "Legion of Combat",
-        "Citation of Combat",
-    ]
-
-    training_titles = [
-        "Admirable Training Ribbon",
-        "Meritorious Training Ribbon",
-        "Honorable Training Ribbon",
-    ]
-
-    time_titles = [
-        "4 Months Service Stripes",
-        "6 Months Service Stripes",
-        "8 Months Service Stripes",
-        "12 Months Service Stripes",
-        "18 Months Service Stripes",
-        "24 Months Service Stripes",
-    ]
-
-    attendance_titles = [
-        "Citation of Attendance",
-        "Legion of Attendance",
-        "Meritorious Attendee Medal",
-        "Admirable Attendee Medal",
-    ]
-
-    categories = [
-        ("Hosting Titles", hosting_titles),
-        ("Voyaging Titles", voyaging_titles),
-        ("Combat Titles", combat_titles),
-        ("Conduct Titles", conduct_titles),
-        ("Time Titles", time_titles),
-        ("Training Titles", training_titles),
-        ("Attendance Titles", attendance_titles)
-    ]
-
-    result = ""
-    result_roles = []
-
-    for category_name, titles in categories:
-        for role in member.roles:
-            if role.name in titles:
-                result += f"<@&{role.id}>\n"
-                result_roles.append(role)
+    # Get tiered roles
+    tiered_roles = []
+    roles_dict = {r.id: r for r in member.roles}
+    for category in MEDALS_AND_RIBBONS.tiered_awards:
+        category_awards = getattr(MEDALS_AND_RIBBONS, category)
+        for award in reversed(category_awards):
+            if award.role_id in roles_dict:
+                tiered_roles.append(roles_dict[award.role_id])
                 break
+
+    # Sort roles by position (order of precedence)
+    result_roles = sorted(tiered_roles, key=lambda x: x.position, reverse=True)
+
+    # Create string
+    result = "".join([f"<@&{role.id}>\n" for role in result_roles])
 
     return result, result_roles
 
-async def other_medals(member: discord.Member) -> tuple[list[str], list[discord.Role]]:
-    found_titles = []
-    found_roles = []
 
+async def other_medals(member: discord.Member) -> tuple[list[str], list[discord.Role]]:
     titles = [
         # High Ranking Medals
         "Medal of Honor",
@@ -95,22 +36,22 @@ async def other_medals(member: discord.Member) -> tuple[list[str], list[discord.
         "Officer Improvement Ribbon",
         "NCO Improvement Ribbon",
         "Leadership Accolade",
-        "Recruitment Ribbon",
         "Career Intelligence Medal",
         "Unit Commendation Medal",
         "Legends of the Fleets",
+        "Chart Your Destiny In The Light Of Sunrise",
     ]
-    count = 0
 
-    member_roles = [role.name for role in member.roles]
+    member_roles = {role.name: role for role in member.roles}
+    found_roles = []
 
     for title in titles:
         if title in member_roles:
-            found_titles.append((count, title))
-            found_roles.append(discord.utils.get(member.guild.roles, name=title))
-            count += 1
+            found_roles.append(member_roles[title])
 
-    found_titles.sort(key=lambda x: x[0])
-    found_titles = [title[1] for title in found_titles]
+    found_roles.sort(
+        key=lambda x: x.position, reverse=True
+    )  # sort by discord position / order of precedence
+    found_titles = [role.name for role in found_roles]
 
     return found_titles, found_roles
