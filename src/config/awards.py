@@ -218,41 +218,42 @@ RECRUIT_MEDALS = (RECRUITMENT_RIBBON,)
 
 
 ###############################################################################
-## Medals And Ribbons - Attendance
+## Medals And Ribbons - Representation
 ###############################################################################
-_ATTENDANCE_EMBED_ID=1375472904933871646
-CITATION_OF_ATTENDANCE = Award(
+_REPR_EMBED_ID=1375472904933871646
+_REPR_RANKS_RESP="Scheduling or Media Department Command"
+REPR_3RD_CLASS = Award(
     threshold=1,
-    ranks_responsible="Head or XO of Scheduling Department",
+    ranks_responsible=_REPR_RANKS_RESP,
     role_id=1286548679561445387,
-    embed_id=_ATTENDANCE_EMBED_ID,
+    embed_id=_REPR_EMBED_ID,
     channelthread_id=_AWARDS_THREAD_ID
 )
-LEGION_OF_ATTENDANCE = Award(
+REPR_2ND_CLASS = Award(
     threshold=2,
-    ranks_responsible="Head or XO of Scheduling Department",
+    ranks_responsible=_REPR_RANKS_RESP,
     role_id=1286548851028656178,
-    embed_id=_ATTENDANCE_EMBED_ID,
+    embed_id=_REPR_EMBED_ID,
     channelthread_id=_AWARDS_THREAD_ID
 )
-MERITORIOUS_ATTENDANCE_MEDAL = Award(
+REPR_1ST_CLASS = Award(
     threshold=4,
-    ranks_responsible="Head or XO of Scheduling Department",
+    ranks_responsible=_REPR_RANKS_RESP,
     role_id=1286548979235950602,
-    embed_id=_ATTENDANCE_EMBED_ID,
+    embed_id=_REPR_EMBED_ID,
     channelthread_id=_AWARDS_THREAD_ID
 )
-ADMIRABLE_ATTENDANCE_MEDAL = Award(
+DISTINGUISHED_REPR = Award(
     threshold=6,
-    ranks_responsible="Head or XO of Scheduling Department",
+    ranks_responsible=_REPR_RANKS_RESP,
     role_id=1286549059288436757,
-    embed_id=_ATTENDANCE_EMBED_ID,
+    embed_id=_REPR_EMBED_ID,
     channelthread_id=_AWARDS_THREAD_ID
 )
 
 # Medals must be ordered lowest to highest attendance count
-ATTENDANCE_MEDALS = (CITATION_OF_ATTENDANCE, LEGION_OF_ATTENDANCE,
-                     MERITORIOUS_ATTENDANCE_MEDAL, ADMIRABLE_ATTENDANCE_MEDAL)
+REPRESENT_MEDALS = (REPR_3RD_CLASS, REPR_2ND_CLASS,
+                     REPR_1ST_CLASS, DISTINGUISHED_REPR)
 
 
 ###############################################################################
@@ -294,17 +295,32 @@ EIGHTEEN_MONTHS_SERVICE_STRIPES = Award(
     embed_id=_SERVICE_EMBED_ID,
     channelthread_id=_AWARDS_THREAD_ID
 )
-TWNETYFOUR_MONTHS_SERVICE_STRIPES = Award(
+TWENTY_FOUR_MONTHS_SERVICE_STRIPES = Award(
     threshold=24,
     ranks_responsible="CO+",
     role_id=1204423843062485053,
     embed_id=_SERVICE_EMBED_ID,
     channelthread_id=_AWARDS_THREAD_ID
 )
+THIRTY_MONTHS_SERVICE_STRIPES = Award(
+    threshold=39,
+    ranks_responsible="CO+",
+    role_id=1312983886266892318,
+    embed_id=_SERVICE_EMBED_ID,
+    channelthread_id=_AWARDS_THREAD_ID
+)
+THIRTY_SIX_MONTHS_SERVICE_STRIPES = Award(
+    threshold=39,
+    ranks_responsible="CO+",
+    role_id=1381600767991091271,
+    embed_id=_SERVICE_EMBED_ID,
+    channelthread_id=_AWARDS_THREAD_ID
+)
 
 # Stripes must be ordered lowest to highest month count
 SERVICE_STRIPES = (FOUR_MONTHS_SERVICE_STRIPES, SIX_MONTHS_SERVICE_STRIPES, EIGHT_MONTHS_SERVICE_STRIPES,
-                   TWELVE_MONTHS_SERVICE_STRIPES, EIGHTEEN_MONTHS_SERVICE_STRIPES, TWNETYFOUR_MONTHS_SERVICE_STRIPES)
+                   TWELVE_MONTHS_SERVICE_STRIPES, EIGHTEEN_MONTHS_SERVICE_STRIPES, TWENTY_FOUR_MONTHS_SERVICE_STRIPES,
+                   THIRTY_MONTHS_SERVICE_STRIPES, THIRTY_SIX_MONTHS_SERVICE_STRIPES,)
 
 ###############################################################################
 ## Medals And Ribbons - MISC
@@ -327,10 +343,11 @@ COIN_IDS = (CMDR_CHALLENGE_COIN_ID, CHALLENGE_COIN_ID)
 MEDALS_AND_RIBBONS = AwardsCollector(
     voyages=VOYAGE_MEDALS,
     hosted=HOSTED_MEDALS,
+    conduct=CONDUCT_MEDALS,
     combat=COMBAT_MEDALS,
     training=TRAINING_MEDALS,
     recruit=RECRUIT_MEDALS,
-    attendance=ATTENDANCE_MEDALS,
+    representation=REPRESENT_MEDALS,
     service=SERVICE_STRIPES
 )
 
@@ -338,7 +355,7 @@ MEDALS_AND_RIBBONS = AwardsCollector(
 ## Ribbon Boards
 ###############################################################################
 RIBBON_BOARD_VERSION = 1  # increment this to ignore old caches
-RIBBON_BOARD_CACHE_PATH = 'cache/ribbon_board'
+RIBBON_BOARD_CACHE_PATH = '.cache/ribbon_board'
 RIBBON_BOARD_BASENAME = 'ribbons.png'
 RIBBON_BOARD_COLUMNS = 3
 RIBBON_BOARD_IMG_HEIGHT = 64 # pixels
