@@ -18,6 +18,7 @@ class Ship:
     role_id: int = None # Role ID of the ship
     boat_command_channel_id: int = None # Channel ID of the ship's boat command channel (e.g. BC_VENOM)
     emoji: str = None # Emoji of the ship
+    size: int = 24
 
 @dataclass
 class Abbreviation:
