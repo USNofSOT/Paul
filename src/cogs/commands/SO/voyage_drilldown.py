@@ -143,13 +143,12 @@ class VoyageDrilldown(commands.Cog):
             rank = get_current_rank(member)
             if rank:
                 rank_key = (
-                    rank.index
+                    rank.identifier
                 )  # Convert rank to a string to ensure it's hashable
                 if rank_key not in rank_count:
                     rank_count[rank_key] = 0
                 rank_count[rank_key] += result[2]
                 rank.count = rank_count[rank_key]  # Append the count to the rank object
-
         rank_embed = default_embed()
         if rank_count:
             rank_embed.title = (
@@ -159,16 +158,16 @@ class VoyageDrilldown(commands.Cog):
 
             # Sort ranks by count (descending)
             sorted_ranks = sorted(
-                [rank for rank in RANKS if rank.index in rank_count],
-                key=lambda r: -rank_count[r.index],
+                [rank for rank in RANKS if rank.identifier in rank_count],
+                key=lambda r: -rank_count[r.identifier],
             )
             rank_text = ""
             for rank in sorted_ranks:
-                percentage = (rank_count[rank.index] / total_voyages) * 100
+                percentage = (rank_count[rank.identifier] / total_voyages) * 100
                 emoji = rank.emoji if rank.emoji else ""
                 rank_text += (
                     f"{emoji} **{rank.name}** - "
-                    f"{rank_count[rank.index]} voyages ({percentage:.2f}%)\n"
+                    f"{rank_count[rank.identifier]} voyages ({percentage:.2f}%)\n"
                 )
             rank_embed.add_field(
                 name=":military_medal: Voyages by Rank", value=rank_text, inline=False
@@ -184,7 +183,6 @@ class VoyageDrilldown(commands.Cog):
                 if ship_role_id not in ship_count:
                     ship_count[ship_role_id] = 0
                 ship_count[ship_role_id] += result[2]
-
         ship_embed = default_embed()
         if ship_count:
             ship_embed.title = (
