@@ -333,6 +333,17 @@ NCO_IMPROVEMENT_RIBBON = Award(
     channelthread_id=_AWARDS_THREAD_ID
 )
 
+UNIT_DISTINCTION_MEDAL = Award(
+    threshold=1,
+    ranks_responsible="CO+",
+    role_id=1412974093531349045,
+    embed_id=_AWARDS_THREAD_ID,  # Need to be updated with embed ID
+    channelthread_id=_AWARDS_THREAD_ID
+)
+
+# Miscellaneous awards collection
+MISC_MEDALS = (NCO_IMPROVEMENT_RIBBON, UNIT_DISTINCTION_MEDAL)
+
 CHALLENGE_COIN_ID = 1140636392674828321
 CMDR_CHALLENGE_COIN_ID = 972552406837653564
 COIN_IDS = (CMDR_CHALLENGE_COIN_ID, CHALLENGE_COIN_ID)
@@ -348,7 +359,8 @@ MEDALS_AND_RIBBONS = AwardsCollector(
     training=TRAINING_MEDALS,
     recruit=RECRUIT_MEDALS,
     representation=REPRESENT_MEDALS,
-    service=SERVICE_STRIPES
+    service=SERVICE_STRIPES,
+    misc=MISC_MEDALS
 )
 
 ###############################################################################

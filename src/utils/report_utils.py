@@ -38,6 +38,7 @@ async def other_medals(member: discord.Member) -> tuple[list[str], list[discord.
         "Leadership Accolade",
         "Career Intelligence Medal",
         "Unit Commendation Medal",
+        "Unit Distinction Medal",
         "Legends of the Fleets",
         "Chart Your Destiny In The Light Of Sunrise",
     ]
