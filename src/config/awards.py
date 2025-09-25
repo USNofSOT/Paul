@@ -337,7 +337,7 @@ UNIT_DISTINCTION_MEDAL = Award(
     threshold=1,
     ranks_responsible="CO+",
     role_id=1412974093531349045,
-    embed_id=_AWARDS_THREAD_ID,  # Need to be updated with embed ID
+    embed_id=1375472463525183630
     channelthread_id=_AWARDS_THREAD_ID
 )
 
