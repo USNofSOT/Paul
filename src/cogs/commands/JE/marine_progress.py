@@ -1,12 +1,13 @@
 from logging import getLogger
 
 import discord
-from discord import app_commands
-from discord.ext import commands
-
 from config import MARINE_ROLE, USMC_ROLE
 from data import RoleChangeType
 from data.repository.auditlog_repository import AuditLogRepository
+from discord import app_commands
+from discord.ext import commands
+from utils.time_utils import format_time, get_time_difference_past
+
 from src.config.awards import COMBAT_MEDALS, MERITORIOUS_COMBAT_ACTION
 from src.config.ranks_roles import JE_AND_UP
 from src.config.subclasses import (
@@ -17,7 +18,6 @@ from src.config.subclasses import (
 )
 from src.utils.embeds import error_embed, member_embed
 from src.utils.rank_and_promotion_utils import get_current_award, has_award_or_higher
-from utils.time_utils import format_time, get_time_difference_past
 
 log = getLogger(__name__)
 
@@ -199,7 +199,8 @@ class MarineProgress(commands.Cog):
             "so they can determine the candidate's skill "
             "\n \t - A minimum of 2 separate Skirmish voyages is required "
             "\n \t - Each evaluation must be done by a different "
-            "Marine Committee member",
+                  "Marine Committee member \n \n"
+                  "Read more in https://discord.com/channels/933907909954371654/1425169985709281501",
         )
 
         await interaction.followup.send(embed=embed)
