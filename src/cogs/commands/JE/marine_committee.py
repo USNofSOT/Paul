@@ -46,11 +46,7 @@ class MarineCommittee(commands.Cog):
         embed.add_field(
             name="__**Marine Committee**__",
             value=(
-                "\n".join(
-                    f"{member.mention}"
-                    for member in marines
-                    if member.id != MARINE_COMMANDANT_DISCORD_ID
-                )
+                    "\n".join(f"{member.mention}" for member in marines)
                 or "No members found."
             ),
             inline=False,
