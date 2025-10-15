@@ -6,6 +6,7 @@ from src.config.ranks_roles import JE_AND_UP, USMC_ROLE
 from src.utils.embeds import marine_embed
 
 MARINE_COMMANDANT_DISCORD_ID = 280045686798417921
+ASSISTANT_MARINE_COMMANDANT_DISCORD_ID = 281119159012556800
 
 
 class MarineCommittee(commands.Cog):
@@ -33,6 +34,12 @@ class MarineCommittee(commands.Cog):
         embed.add_field(
             name="__**Marine Commandant**__ ",
             value=(f"<@{MARINE_COMMANDANT_DISCORD_ID}>"),
+            inline=False,
+        )
+
+        embed.add_field(
+            name="__**Assistant Marine Commandant**__ ",
+            value=(f"<@{ASSISTANT_MARINE_COMMANDANT_DISCORD_ID}>"),
             inline=False,
         )
 
