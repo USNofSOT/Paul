@@ -57,10 +57,10 @@ class Member(commands.Cog):
             if not any(role in interaction_user_roles for role in JE_AND_UP):
                 raise app_commands.errors.MissingAnyRole(JE_AND_UP)
 
-            if len(members) > 30:
+            if len(members) > 50:
                 embed = error_embed(
                     title="Too many members",
-                    description="Please provide a role with less than 30 members.",
+                    description="Please provide a role with less than 50 members.",
                     footer=False
                 )
                 await interaction.followup.send(embed=embed, ephemeral=True)
