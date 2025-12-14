@@ -265,7 +265,7 @@ MISC_ABBREVIATIONS = [
     ),
     Abbreviation(
         abbreviation="PVE",
-        meaning="Player vs Enemy"
+        meaning="Player vs Environment"
     ),
     Abbreviation(
         abbreviation="PVP",
