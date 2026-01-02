@@ -38,10 +38,10 @@ SHIPS = [
         emoji="<:Lusty:1079841997021524018>",
     ),
     Ship(
-        name="USS Berserker",
+        name="USS Gullinbursti",
         boat_command_channel_id=BC_BERSERKER,
         role_id=ROLE_ID_BERSERKER,
-        emoji="<:Berserker:1390427238922719275>",
+        emoji="<:Gullinbursti:1455717828324884615>",
     ),
     Ship(
         name="USS Serenity",
