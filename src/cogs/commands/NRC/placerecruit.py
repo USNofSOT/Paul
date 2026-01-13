@@ -1,12 +1,12 @@
 from logging import getLogger
-from typing import Optional
 
 import discord
+from config import GUILD_ID, NRC_ROLE, SHIP_COS_ROLE
+from config.ships import FLEETS_OF_THE_NAVY, SHIP_MAX_SIZE, SHIPS
 from discord import app_commands
 from discord.ext import commands
 
-from config import GUILD_ID, NRC_ROLE, SHIP_COS_ROLE
-from config.ships import SHIP_MAX_SIZE, SHIPS, FLEETS_OF_THE_NAVY
+from src.config.ranks_roles import JO_AND_UP
 
 log = getLogger(__name__)
 
@@ -18,8 +18,8 @@ class PlaceRecruit(commands.Cog):
 
     @app_commands.command(name="placerecruit", description="Determine ship placement for a recruit")
     @app_commands.describe(target="Select the user who recruited them")
-    @app_commands.checks.has_any_role(NRC_ROLE)
-    async def placerecruit(self, interaction: discord.Interaction, target: Optional[discord.Member] = None): 
+    @app_commands.checks.has_any_role(NRC_ROLE, *JO_AND_UP)
+    async def placerecruit(self, interaction: discord.Interaction, target: discord.Member | None = None):
         guild = self.bot.get_guild(GUILD_ID)
         ship_roles = {ship.role_id : guild.get_role(ship.role_id) for ship in SHIPS}
 
@@ -125,7 +125,7 @@ class PlaceRecruit(commands.Cog):
                 fleet_found = True
                 break
         if not fleet_found:
-            msg += f"Fleet: Not Found\n"
+            msg += "Fleet: Not Found\n"
 
         # chief of ship
         cos_found = False
