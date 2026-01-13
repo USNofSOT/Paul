@@ -3,10 +3,10 @@ import os
 from logging import getLogger
 
 import discord
-from discord.ext.commands import Bot
 from PIL import Image
-
 from config.ranks import DECKHAND
+from discord.ext.commands import Bot
+
 from src.config import (
     COIN_IDS,
     NCO_AND_UP,
@@ -25,6 +25,7 @@ from src.config.requirements import (
 from src.data import MemberReport, RoleChangeType, member_report
 from src.data.repository.auditlog_repository import AuditLogRepository
 from src.data.repository.coin_repository import CoinRepository
+from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.sailor_repository import ensure_sailor_exists
 from src.data.structs import NavyRank, SailorCO
 from src.utils.embeds import default_embed, error_embed
@@ -177,7 +178,19 @@ async def get_member_embed(
             value=database_report.average_weekly_hosted,
             inline=True,
         )
-        embed.add_field(name="Total Hosted", value=total_hosted_display, inline=True)
+
+        hosted_repository = HostedRepository()
+        vp_count = hosted_repository.get_count_hosted_in_vp_by_member_id(member.id)
+        hosted_repository.close_session()
+
+        if vp_count == 0:
+            embed.add_field(name="Total Hosted", value=total_hosted_display, inline=True)
+        else:
+            embed.add_field(
+                name="Total Hosted",
+                value=f"{total_hosted_display} \n (VP: {vp_count})",
+                inline=True,
+            )
 
     carpenter_emoji = "<:Planks:1256589596473692272>"
     carpenter_points = modify_points(

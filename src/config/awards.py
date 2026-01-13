@@ -1,4 +1,4 @@
-from data.structs import Award, CombatAward, AwardsCollector
+from data.structs import Award, AwardsCollector, CombatAward
 
 _AWARDS_THREAD_ID=1374118521927241779 
 
@@ -321,6 +321,12 @@ THIRTY_SIX_MONTHS_SERVICE_STRIPES = Award(
 SERVICE_STRIPES = (FOUR_MONTHS_SERVICE_STRIPES, SIX_MONTHS_SERVICE_STRIPES, EIGHT_MONTHS_SERVICE_STRIPES,
                    TWELVE_MONTHS_SERVICE_STRIPES, EIGHTEEN_MONTHS_SERVICE_STRIPES, TWENTY_FOUR_MONTHS_SERVICE_STRIPES,
                    THIRTY_MONTHS_SERVICE_STRIPES, THIRTY_SIX_MONTHS_SERVICE_STRIPES,)
+
+###############################################################################
+## Medals And Ribbons - VP Awards
+###############################################################################
+
+# TODO: Add VP Awards here
 
 ###############################################################################
 ## Medals And Ribbons - MISC
