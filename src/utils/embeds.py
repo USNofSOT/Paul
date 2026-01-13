@@ -1,24 +1,44 @@
 """
 Generic embeds for the bot.
 """
+
 import discord
+
+
+def marine_embed() -> discord.Embed:
+    embed = discord.Embed(
+        title="United States Marine Corps (USMC)",
+        color=discord.Color.from_rgb(192, 3, 44),
+    )
+    embed.set_author(
+        name="Office of the Marine Commandant",
+        icon_url="https://cdn.discordapp.com/emojis/1083000667527970867.png",
+    )
+
+    return embed
+
 
 def member_embed(member: discord.Member) -> discord.Embed:
     embed = default_embed(
         title=f"{member.display_name or member.name}",
         description=f"{member.mention}",
-        author=False
+        author=False,
     )
 
     try:
-        avatar_url = member.guild_avatar.url if member.guild_avatar else member.avatar.url
+        avatar_url = (
+            member.guild_avatar.url if member.guild_avatar else member.avatar.url
+        )
         embed.set_thumbnail(url=avatar_url)
     except AttributeError:
         pass
 
     return embed
 
-def default_embed(title: str = None, description: str = None, author: bool  = True) -> discord.Embed:
+
+def default_embed(
+    title: str = None, description: str = None, author: bool = True
+) -> discord.Embed:
     """
     Create a default embed.
 
@@ -35,12 +55,16 @@ def default_embed(title: str = None, description: str = None, author: bool  = Tr
         color=discord.Color.blue(),
     )
     if author:
-        embed.set_author(
-            name="The United States Navy SoT"
-        )
+        embed.set_author(name="The United States Navy SoT")
     return embed
 
-def error_embed(title: str = "Error occurred", description: str = "Something went wrong...", exception: Exception = None, footer: bool = True):
+
+def error_embed(
+    title: str = "Error occurred",
+    description: str = "Something went wrong...",
+    exception: Exception = None,
+    footer: bool = True,
+):
     """
     Create a generic error embed.
 
@@ -59,7 +83,9 @@ def error_embed(title: str = "Error occurred", description: str = "Something wen
     )
 
     if footer:
-        embed.set_footer(text="If this issue persists, please contact the NSC Department.")
+        embed.set_footer(
+            text="If this issue persists, please contact the NSC Department."
+        )
 
     if exception:
         embed.add_field(name="Error Type", value=exception.__class__.__name__)

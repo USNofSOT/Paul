@@ -16,5 +16,3 @@ repos:
       # Run the ruff linter.
       - id: ruff
         args: [ --fix ]
-      # Run the ruff formatter.
-      - id: ruff-format
