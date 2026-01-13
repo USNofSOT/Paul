@@ -4,6 +4,7 @@ from collections import OrderedDict
 from dataclasses import dataclass
 from logging import getLogger
 from warnings import warn
+from typing import Optional
 
 from discord import Guild, Member, Role
 
@@ -15,6 +16,60 @@ log = getLogger(__name__)
 
 @dataclass
 class Ship:
+    name: str = None # Ship name e.g. "USS Venom"
+    role_id: int = None # Role ID of the ship
+    boat_command_channel_id: int = None # Channel ID of the ship's boat command channel (e.g. BC_VENOM)
+    emoji: str = None # Emoji of the ship
+    legendary: bool = False # Flag for legendary ships
+
+
+
+@dataclass
+class Fleet:
+    name : str
+    ships : tuple[Ship, ...]
+    role_id : int
+    flagship : Optional[Ship] = None
+    emoji: str = None
+
+
+@dataclass
+class NavyFleetCollector:
+    ancient_isles           : Optional[Fleet] = None
+    devils_roar             : Optional[Fleet] = None
+    shores_of_plenty        : Optional[Fleet] = None
+    wilds                   : Optional[Fleet] = None
+    first_navy_strike_group : Optional[Fleet] = None
+
+    @property
+    def ships(self) -> list[Ship]:
+        ships = []
+        if self.ancient_isles:
+            ships += self.ancient_isles.ships
+        if self.devils_roar:
+            ships += self.devils_roar.ships
+        if self.first_navy_strike_group:
+            ships += self.first_navy_strike_group.ships
+        if self.shores_of_plenty:
+            ships += self.shores_of_plenty.ships
+        if self.wilds:
+            ships += self.wilds.ships
+        return ships
+    
+    @property
+    def fleets(self) -> list[Fleet]:
+        fleet_list = []
+        if self.ancient_isles:
+            fleet_list.append(self.ancient_isles)
+        if self.devils_roar:
+            fleet_list.append(self.devils_roar)
+        if self.first_navy_strike_group:
+            fleet_list.append(self.first_navy_strike_group)
+        if self.shores_of_plenty:
+            fleet_list.append(self.shores_of_plenty)
+        if self.wilds:
+            fleet_list.append(self.wilds)
+        return fleet_list
     name: str = None  # Ship name e.g. "USS Venom"
     role_id: int = None  # Role ID of the ship
     boat_command_channel_id: int = (
