@@ -1,6 +1,5 @@
 import enum
 import logging
-from typing import List
 
 from sqlalchemy import BIGINT, VARCHAR, Column, ForeignKey, Integer
 from sqlalchemy.dialects.mysql import TINYTEXT
@@ -8,7 +7,6 @@ from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
 from sqlalchemy.sql.sqltypes import BOOLEAN, DATETIME, TEXT, Enum
 
 from src.utils.time_utils import get_time_difference
-
 from .engine import engine
 
 log = logging.getLogger(__name__)
@@ -109,13 +107,15 @@ class Hosted(Base):
     )  # e.g. "USS Auxiliary" which would be the auxiliary ship for the USS Venom
 
     # One-To-Many relationship with Voyages
-    voyages: Mapped[List["Voyages"]] = relationship("Voyages", back_populates="hosted")
+    voyages: Mapped[list["Voyages"]] = relationship("Voyages", back_populates="hosted")
     # One-To-Many relationship with Subclasses
-    subclasses: Mapped[List["Subclasses"]] = relationship(
+    subclasses: Mapped[list["Subclasses"]] = relationship(
         "Subclasses", back_populates="hosted"
     )
     # Many-to-One relationship with Sailor
     target: Mapped["Sailor"] = relationship("Sailor", foreign_keys=[target_id])
+
+    voyage_planning_message_id = Column(BIGINT, nullable=True)  # The message ID of the voyage planning message (if any)
 
 
 class ModNotes(Base):
@@ -193,15 +193,15 @@ class Sailor(Base):
     force_hosted_count = Column(Integer, server_default="0")
 
     # One-to-Many relationship with Hosted
-    hosted: Mapped[List["Hosted"]] = relationship(
+    hosted: Mapped[list["Hosted"]] = relationship(
         "Hosted", back_populates="target", foreign_keys=[Hosted.target_id]
     )
     # One-to-Many relationship with Subclasses
-    subclasses: Mapped[List["Subclasses"]] = relationship(
+    subclasses: Mapped[list["Subclasses"]] = relationship(
         "Subclasses", back_populates="target", foreign_keys=[Subclasses.target_id]
     )
     # One-to-Many relationship with Voyages
-    voyages: Mapped[List["Voyages"]] = relationship(
+    voyages: Mapped[list["Voyages"]] = relationship(
         "Voyages", back_populates="target", foreign_keys=[Voyages.target_id]
     )
 

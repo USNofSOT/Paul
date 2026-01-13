@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Type
+from typing import Any
 
 from data import VoyageType
 from sqlalchemy import Row, delete, update
@@ -55,7 +55,7 @@ class HostedRepository:
 
     def get_hosted_by_target_ids_and_between_dates(
         self, target_ids: list, start_date: datetime, end_date: datetime
-    ) -> list[Type[Hosted]]:
+    ) -> list[type[Hosted]]:
         try:
             return (
                 self.session.query(Hosted)
@@ -72,7 +72,7 @@ class HostedRepository:
 
     def get_hosted_by_role_ids_and_between_dates(
         self, role_id: list[int], start_date: datetime, end_date: datetime
-    ) -> list[Type[Hosted]]:
+    ) -> list[type[Hosted]]:
         try:
             return (
                 self.session.query(Hosted)
@@ -93,7 +93,7 @@ class HostedRepository:
         target_ids: list[int],
         start_date: datetime,
         end_date: datetime,
-    ) -> list[Type[Hosted]]:
+    ) -> list[type[Hosted]]:
         try:
             return (
                 self.session.query(Hosted)
@@ -126,6 +126,7 @@ class HostedRepository:
         ancient_coin_count: int = 0,
         fish_count: int = 0,
         voyage_type: VoyageType = None,
+            voyage_planning_message_id: int = None
     ) -> bool:
         """
         Adds a hosted data entry to the Hosted table.
@@ -144,6 +145,7 @@ class HostedRepository:
             ancient_coin_count (int): The number of ancient coins confiscated. Defaults to 0.
             fish_count (int): The number of fish confiscated. Defaults to 0.
             voyage_type (VoyageType): The type of voyage. Defaults to VoyageType.UNKNOWN.
+            voyage_planning_message_id (int): The ID of the voyage planning message. Defaults to None.
         Returns:
             bool: True if the operation was successful, False otherwise.
         """
@@ -170,6 +172,7 @@ class HostedRepository:
                             if voyage_type
                             else VoyageType.UNKNOWN.value
                         ),
+                        voyage_planning_message_id=voyage_planning_message_id
                     )
                 )
 
@@ -186,6 +189,20 @@ class HostedRepository:
             log.error("Error saving hosted data.")
             self.session.rollback()
             return False
+
+    def get_count_hosted_in_vp_by_member_id(self, member_id: int) -> int:
+        try:
+            return (
+                self.session.query(Hosted)
+                .filter(
+                    Hosted.voyage_planning_message_id.isnot(None),
+                    Hosted.target_id == member_id
+                )
+                .count()
+            )
+        except Exception as e:
+            log.error("Error getting hosted data in voyage planning by member ID.")
+            raise e
 
     def get_host_by_log_id(self, log_id: int) -> Hosted | None:
         try:
@@ -294,7 +311,7 @@ class HostedRepository:
             log.error("Error getting last hosted log entries.")
             raise e
 
-    def retrieve_ship_history(self, ship_name: str) -> list[Type[Hosted]]:
+    def retrieve_ship_history(self, ship_name: str) -> list[type[Hosted]]:
         """
         Retrieves the ship history for the given ship name.
 

@@ -23,6 +23,7 @@ from src.config import (
     SURGEON_SYNONYMS,
     VOYAGE_LOGS,
 )
+from src.config.main_server import VOYAGE_PLANNING
 from src.data import SubclassType
 from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.sailor_repository import ensure_sailor_exists
@@ -89,7 +90,7 @@ def current_entries_embed(bot: commands.Bot, log_id: int, description: str = Non
                 str(entry.subclass_count),
             )
             for entry in current_entries
-        ]
+        ], strict=False
     )
 
     result_embed.add_field(name="Sailor", value="\n".join(names), inline=True)
@@ -513,6 +514,20 @@ class AddSubclass(commands.Cog):
             hosted_repository.close_session()
 
             warnings = []
+            print(hosted_entry)
+            if hosted_entry.voyage_planning_message_id:
+                embed_misc_voyage_info.add_field(
+                    name="Voyage Planning",
+                    value=f"https://discord.com/channels/{GUILD_ID}/{VOYAGE_PLANNING}/"
+                          f"{hosted_entry.voyage_planning_message_id}",
+                    inline=False,
+                )
+            else:
+                embed_misc_voyage_info.add_field(
+                    name="Voyage Planning",
+                    value=":information_source: `Unknown`",
+                    inline=False,
+                )
 
             if hosted_entry.ship_name:
                 embed_misc_voyage_info.add_field(
@@ -522,7 +537,7 @@ class AddSubclass(commands.Cog):
             else:
                 embed_misc_voyage_info.add_field(
                     name="Main Ship",
-                    value=":warning: `Unknown`",
+                    value=":warning: Unknown",
                 )
                 warnings.append("No main ship found")
 
