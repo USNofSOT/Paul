@@ -7,9 +7,20 @@ from discord import app_commands
 from discord.ext import commands
 
 from src.config.ranks_roles import JO_AND_UP
+from src.data.structs import Ship
 
 log = getLogger(__name__)
 
+
+def get_ship_by_role_id(role_id: int) -> Ship | None:
+    for ship in SHIPS:
+        if ship.role_id == role_id:
+            return ship
+    return None
+
+
+def get_ship_max_size_by_role_id(role_id: int) -> int | None:
+    return get_ship_by_role_id(role_id).max_size
 
 class PlaceRecruit(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -26,7 +37,7 @@ class PlaceRecruit(commands.Cog):
         # If no target, return the ship with the lowest headcount
         if target is None:
             min_ship = await self._min_ship(guild)
-            msg = f"The {min_ship.mention} has the lowest headcount, at {len(min_ship.members)}/{SHIP_MAX_SIZE} members."
+            msg = f"The {min_ship.mention} has the lowest headcount, at {len(min_ship.members)}/{get_ship_max_size_by_role_id(min_ship.id)} members."
             msg += await self.formatted_msg(min_ship, guild)
             await interaction.response.send_message(msg, ephemeral=True)
             return
@@ -35,7 +46,7 @@ class PlaceRecruit(commands.Cog):
         target_ship_roles = [ship_roles[role.id] for role in target.roles if role.id in ship_roles]
         if not target_ship_roles:
             min_ship = await self._min_ship(guild)
-            msg = f"{target.mention} is not assigned to a ship. The {min_ship.mention} has the lowest headcount, at {len(min_ship.members)}/{SHIP_MAX_SIZE} members."
+            msg = f"{target.mention} is not assigned to a ship. The {min_ship.mention} has the lowest headcount, at {len(min_ship.members)}/{get_ship_max_size_by_role_id(min_ship.id)} members."
             msg += await self.formatted_msg(min_ship, guild)
             await interaction.response.send_message(msg, ephemeral=True)
             return
@@ -44,8 +55,8 @@ class PlaceRecruit(commands.Cog):
         msg_strs = []
         for ship_role in target_ship_roles:
             count = len(ship_role.members)
-            if count < SHIP_MAX_SIZE:
-                msg = f"{target.mention} is on the {ship_role.mention}, which has {count}/{SHIP_MAX_SIZE} members."
+            if count < get_ship_max_size_by_role_id(ship_role.id):
+                msg = f"{target.mention} is on the {ship_role.mention}, which has {count}/{get_ship_max_size_by_role_id(ship_role.id)} members."
                 msg_strs.append(msg)
         if msg_strs:
             msg = ' Additionally, '.join(msg_strs)
@@ -72,11 +83,11 @@ class PlaceRecruit(commands.Cog):
                         msg += "full ships. "
                     msg += f"{target.mention} is in {fleet_role.mention}, "
                     msg += f"where the {ship_role.mention} has the lowest head count, "
-                    msg += f"at {len(ship_role.members)}/{SHIP_MAX_SIZE} members."
+                    msg += f"at {len(ship_role.members)}/{get_ship_max_size_by_role_id(ship_role.id)} members."
                     if count == min_count:
                         msg_strs.append(msg)
                         fmtd_strs.append(await self.formatted_msg(ship_role, guild))
-                    elif count < min_count and count < SHIP_MAX_SIZE:
+                    elif count < min_count and count < get_ship_max_size_by_role_id(ship_role.id):
                         min_count = count
                         msg_strs = [msg]
                         fmtd_strs = [await self.formatted_msg(ship_role, guild)]
@@ -93,21 +104,39 @@ class PlaceRecruit(commands.Cog):
             msg += "a full fleet. "
         else:
             msg += "full fleets. "
-        msg += f"The {min_ship.mention} has the lowest headcount, at {len(min_ship.members)}/{SHIP_MAX_SIZE} members."
+        msg += f"The {min_ship.mention} has the lowest headcount, at {len(min_ship.members)}/{get_ship_max_size_by_role_id(min_ship.id)} members."
         msg += await self.formatted_msg(min_ship, guild)
         await interaction.response.send_message(msg, ephemeral=True)
         return
 
     async def _min_ship(self, guild : discord.Guild) -> discord.Role:
-        ship_roles = [guild.get_role(ship.role_id) for ship in SHIPS]
+        ship_roles = [(ship, guild.get_role(ship.role_id)) for ship in SHIPS]
 
-        min_count = 0
+        # Prefer the non-full ship with the smallest headcount; if none, pick the absolute smallest.
         min_role = None
-        for idx, role in enumerate(ship_roles):
-            n_members = len(role.members)
-            if idx == 0 or n_members < min_count:
-                min_count = n_members
-                min_role = role
+        min_count = None
+
+        # First pass: non-full ships
+        for ship, role in ship_roles:
+            if role is None:
+                continue
+            count = len(role.members)
+            max_size = getattr(ship, "max_size", None) or getattr(ship, "max", None) or SHIP_MAX_SIZE
+            if count < max_size:
+                if min_count is None or count < min_count:
+                    min_count = count
+                    min_role = role
+
+        # Fallback: any ship if no non-full ships found
+        if min_role is None:
+            for ship, role in ship_roles:
+                if role is None:
+                    continue
+                count = len(role.members)
+                if min_count is None or count < min_count:
+                    min_count = count
+                    min_role = role
+
         return min_role
     
     async def formatted_msg(self, ship : discord.Role, guild : discord.Guild) -> str:
