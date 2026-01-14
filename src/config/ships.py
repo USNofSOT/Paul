@@ -1,20 +1,21 @@
 from src.config.main_server import (
-    BC_GLETSJER,
     BC_ADUN,
+    BC_BERSERKER,
+    BC_BOA,
     BC_DEFIANT,
+    BC_GLETSJER,
     BC_HYPERION,
     BC_LUSTY,
-    BC_SERENITY,
-    BC_PHANTOM,
     BC_NIGHTINGALE,
+    BC_PHANTOM,
+    BC_SERENITY,
     BC_SILVERCLAW,
     BC_TITAN,
-    BC_BERSERKER,
     BC_VENOM,
-    BC_BOA,
 )
-from src.data.structs import Ship, Fleet, NavyFleetCollector
+from src.data.structs import Fleet, NavyFleetCollector, Ship
 
+# Default maximum ship size
 SHIP_MAX_SIZE = 30
 
 ROLE_ID_ANCIENT_ISLES = 1023268709009207328
@@ -48,6 +49,7 @@ USS_ILLUSTRIOUS = Ship(
     boat_command_channel_id=BC_LUSTY,
     role_id=ROLE_ID_LUSTY,
     emoji="<:Lusty:1079841997021524018>",
+    max_size=27
 )
 
 USS_BERSERKER = Ship(
@@ -55,6 +57,7 @@ USS_BERSERKER = Ship(
     boat_command_channel_id=BC_BERSERKER,
     role_id=ROLE_ID_BERSERKER,
     emoji="<:Gullinbursti:1455717828324884615>",
+    max_size=33
 )
 
 USS_SERENITY = Ship(
@@ -62,6 +65,7 @@ USS_SERENITY = Ship(
     boat_command_channel_id=BC_SERENITY,
     role_id=ROLE_ID_SERENITY,
     emoji="<:Serenity:1356016930032713879>",
+    max_size=30
 )
 
 ANCIENT_ISLES_FLEET = Fleet(
@@ -79,6 +83,7 @@ USS_DEFIANT = Ship(
     boat_command_channel_id=BC_DEFIANT,
     role_id=ROLE_ID_DEFIANT,
     emoji="<:Defiant:1354503521747075072>",
+    max_size=30
 )
 
 USS_SILVERCLAW = Ship(
@@ -86,6 +91,7 @@ USS_SILVERCLAW = Ship(
     boat_command_channel_id=BC_SILVERCLAW,
     role_id=ROLE_ID_SILVERCLAW,
     emoji="<:Silverclaw_emoji:1345475394169475104>",
+    max_size=30
 )
 
 USS_VENOM = Ship(
@@ -93,6 +99,7 @@ USS_VENOM = Ship(
     boat_command_channel_id=BC_VENOM,
     role_id=ROLE_ID_VENOM,
     emoji="<:Venom:1239895956489633852>",
+    max_size=33
 )
 
 DEVILS_ROAR_FLEET = Fleet(
@@ -110,6 +117,7 @@ USS_TITAN = Ship(
     boat_command_channel_id=BC_TITAN,
     role_id=ROLE_ID_TITAN,
     emoji="<:Titan:1352591957804978277>",
+    max_size=28
 )
 
 USS_GLETSJER = Ship(
@@ -117,6 +125,7 @@ USS_GLETSJER = Ship(
     boat_command_channel_id=BC_GLETSJER,
     role_id=ROLE_ID_GLETSJER,
     emoji="<:Gletsjer:1356717285171265818>",
+    max_size=30
 )
 
 USS_PHANTOM = Ship(
@@ -124,6 +133,7 @@ USS_PHANTOM = Ship(
     boat_command_channel_id=BC_PHANTOM,
     role_id=ROLE_ID_PHANTOM,
     emoji="<:Phantom:1375148736472158228>",
+    max_size=24
 )
 
 SHORES_OF_PLENTY_FLEET = Fleet(
@@ -142,21 +152,24 @@ USS_ADUN = Ship(
     boat_command_channel_id=BC_ADUN,
     role_id=ROLE_ID_ADUN,
     emoji="<:Adun:1251266293601013871>",
+    max_size=33
 )
 
 USS_HYPERION = Ship(
-        name="USS Hyperion",
-        boat_command_channel_id=BC_HYPERION,
-        role_id=ROLE_ID_HYPERION,
-        emoji="<:hyperion1:1162043891185369199>",
-    )
+    name="USS Hyperion",
+    boat_command_channel_id=BC_HYPERION,
+    role_id=ROLE_ID_HYPERION,
+    emoji="<:hyperion1:1162043891185369199>",
+    max_size=33
+)
 
 USS_NIGHTINGALE = Ship(
-        name="USS Nightingale",
-        boat_command_channel_id=BC_NIGHTINGALE,
-        role_id=ROLE_ID_NIGHTINGALE,
-        emoji="<:nightingale:1382145592934924370>",
-    )
+    name="USS Nightingale",
+    boat_command_channel_id=BC_NIGHTINGALE,
+    role_id=ROLE_ID_NIGHTINGALE,
+    emoji="<:nightingale:1382145592934924370>",
+    max_size=33
+)
 
 WILDS_FLEET = Fleet(
     name="The Wilds Fleet",

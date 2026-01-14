@@ -4,12 +4,10 @@ from collections import OrderedDict
 from dataclasses import dataclass
 from logging import getLogger
 from warnings import warn
-from typing import Optional
-
-from discord import Guild, Member, Role
 
 import config.ranks_roles
 from config.main_server import GUILD_ID
+from discord import Guild, Member, Role
 
 log = getLogger(__name__)
 
@@ -21,7 +19,7 @@ class Ship:
     boat_command_channel_id: int = None # Channel ID of the ship's boat command channel (e.g. BC_VENOM)
     emoji: str = None # Emoji of the ship
     legendary: bool = False # Flag for legendary ships
-
+    max_size: int = 30  # Maximum number of members allowed on the ship
 
 
 @dataclass
@@ -29,17 +27,17 @@ class Fleet:
     name : str
     ships : tuple[Ship, ...]
     role_id : int
-    flagship : Optional[Ship] = None
+    flagship: Ship | None = None
     emoji: str = None
 
 
 @dataclass
 class NavyFleetCollector:
-    ancient_isles           : Optional[Fleet] = None
-    devils_roar             : Optional[Fleet] = None
-    shores_of_plenty        : Optional[Fleet] = None
-    wilds                   : Optional[Fleet] = None
-    first_navy_strike_group : Optional[Fleet] = None
+    ancient_isles: Fleet | None = None
+    devils_roar: Fleet | None = None
+    shores_of_plenty: Fleet | None = None
+    wilds: Fleet | None = None
+    first_navy_strike_group: Fleet | None = None
 
     @property
     def ships(self) -> list[Ship]:
