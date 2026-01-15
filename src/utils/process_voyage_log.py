@@ -114,7 +114,7 @@ class Process_Voyage_Log:
             return  # Skip if the log has already been processed
 
         vp_id = None
-        if message.created_at >= datetime(2026, 1, 2, tzinfo=UTC):
+        if message.created_at >= datetime(2026, 1, 15, tzinfo=UTC):
             vp_id = get_voyage_planning_message_id_from_content(message.content)
 
         # 2. If not, process the log. But first, ensure the host is in the Sailor table

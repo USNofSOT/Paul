@@ -4,10 +4,10 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.config import NSC_ROLES
-from src.config.awards import VOYAGE_MEDALS, HOSTED_MEDALS, TRAINING_MEDALS
+from src.config.awards import VOYAGE_MEDALS, HOSTED_MEDALS, TRAINING_MEDALS, PUBLIC_SERVICE_MEDALS
 from src.config.ranks_roles import NCO_AND_UP_PURE, NETC_ROLE, NRC_ROLE, JE_AND_UP
 from src.config.subclasses import HELM_SUBCLASSES, CANNONEER_SUBCLASSES, CARPENTER_SUBCLASSES, FLEX_SUBCLASSES
+from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.sailor_repository import SailorRepository
 from src.data.repository.training_records_repository import TrainingRecordsRepository
 from src.data.structs import Award
@@ -79,6 +79,10 @@ class Progress(commands.Cog):
         handle_award_progress(target, VOYAGE_MEDALS, embed, "Voyage", sailor.voyage_count+sailor.force_voyage_count)
         if any(role_id in target_role_ids for role_id in NCO_AND_UP_PURE):
             handle_award_progress(target, HOSTED_MEDALS, embed, "Hosted", sailor.hosted_count+sailor.force_hosted_count)
+            hosted_repository = HostedRepository()
+            handle_award_progress(target, PUBLIC_SERVICE_MEDALS, embed, "Public Service",
+                                  hosted_repository.get_count_hosted_in_vp_by_member_id(target.id))
+            hosted_repository.close_session()
         #handle_award_progress(target, SERVICE_STRIPES, embed, "Service Stripes", (discord.utils.utcnow() - target.joined_at).days // 30)
 
         handle_award_progress(target, CARPENTER_SUBCLASSES, embed, "Carpenter", sailor.carpenter_points+sailor.force_carpenter_points)

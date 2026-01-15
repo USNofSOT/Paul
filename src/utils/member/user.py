@@ -188,7 +188,7 @@ async def get_member_embed(
         else:
             embed.add_field(
                 name="Total Hosted",
-                value=f"{total_hosted_display} \n (VP: {vp_count})",
+                value=f"{total_hosted_display} \n (Public Service: {vp_count})",
                 inline=True,
             )
 

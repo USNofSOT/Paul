@@ -155,6 +155,7 @@ class AwardsCollector:
     recruit: tuple[Award]
     representation: tuple[Award]
     service: tuple[Award]
+    public_service: tuple[Award]
 
     @property
     def tiered_awards(self) -> tuple[str, ...]:
@@ -167,6 +168,7 @@ class AwardsCollector:
             "representation",
             "recruit",
             "service",
+            "public_service",
         )
 
 
