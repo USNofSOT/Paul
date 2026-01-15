@@ -537,7 +537,7 @@ class AddSubclass(commands.Cog):
             else:
                 embed_misc_voyage_info.add_field(
                     name="Main Ship",
-                    value=":warning: Unknown",
+                    value=":warning: `Unknown`",
                 )
                 warnings.append("No main ship found")
 
