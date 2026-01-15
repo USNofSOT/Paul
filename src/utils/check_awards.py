@@ -4,6 +4,7 @@ from data import TrainingRecord
 from src.config.awards import MEDALS_AND_RIBBONS
 from src.config.subclasses import SUBCLASS_AWARDS
 from src.data import Sailor
+from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.sailor_repository import SailorRepository
 from src.data.structs import Award, SailorCO
 from src.utils.ranks import rank_to_roles
@@ -21,6 +22,7 @@ def check_sailor(guild: discord.Guild, interaction: discord.Interaction, sailor:
         #FIXME: Add check for recruiting medals
         #FIXME: Add check for attendance medals
         #FIXME: Add check for service stripes
+        check_public_service(guild, interaction, sailor, member),
 
         # Check subclasses
         check_cannoneer(guild, interaction, sailor, member),
@@ -36,6 +38,15 @@ def check_sailor(guild: discord.Guild, interaction: discord.Interaction, sailor:
 def check_voyages(guild: discord.Guild, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
     count = sailor.voyage_count + sailor.force_voyage_count
     medals = MEDALS_AND_RIBBONS.voyages
+    return _check_awards_by_type(guild, count, medals, interaction, member)
+
+
+def check_public_service(guild: discord.Guild, interaction: discord.Interaction, sailor: Sailor,
+                         member: discord.Member) -> str:
+    hosted_repository = HostedRepository()
+    count = hosted_repository.get_count_hosted_in_vp_by_member_id(sailor.discord_id)
+    hosted_repository.close_session()
+    medals = MEDALS_AND_RIBBONS.public_service
     return _check_awards_by_type(guild, count, medals, interaction, member)
 
 def check_hosted(guild: discord.Guild, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> str:
