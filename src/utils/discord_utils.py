@@ -29,6 +29,16 @@ async def alert_engineers(bot: commands.Bot, message: str, exception: Exception 
             except discord.HTTPException:
                 log.error(f"Error sending alert to engineer {engineer_id}")
 
+    # Message in bot-test-command
+
+    test_channel = guild.get_channel(1291589569602650154)
+    if test_channel:
+        try:
+            await test_channel.send(embed=embed)
+        except discord.HTTPException:
+            log.error("Error sending alert to bot-test-command channel")
+
+
 
 def get_best_display_name(bot: commands.Bot, discord_id: int):
     """
