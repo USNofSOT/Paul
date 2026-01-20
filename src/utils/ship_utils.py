@@ -16,12 +16,20 @@ def get_ship_role_id_by_member(member: discord.Member) -> int:
     Returns:
         int: The role ID of the ship, or -1 if the member has no ship roles. -2 if member is None.
     """
-    if not member:
+    try:
+        if not member:
+            return -2
+    
+        for ship in SHIPS:
+            if ship.role_id in [role.id for role in member.roles]:
+                return ship.role_id
+    
+        return -1
+    
+    except (AttributeError, TypeError):
         return -2
-    for ship in SHIPS:
-        if ship.role_id in [role.id for role in member.roles]:
-            return ship.role_id
-    return -1
+    except Exception:
+        return -3
 
 
 def get_ship_by_role_id(role_id: int) -> dict or None:
