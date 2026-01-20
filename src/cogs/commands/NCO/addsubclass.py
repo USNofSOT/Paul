@@ -514,7 +514,6 @@ class AddSubclass(commands.Cog):
             hosted_repository.close_session()
 
             warnings = []
-            print(hosted_entry)
             if hosted_entry.voyage_planning_message_id:
                 embed_misc_voyage_info.add_field(
                     name="Voyage Planning",

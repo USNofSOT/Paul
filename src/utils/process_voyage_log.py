@@ -79,11 +79,13 @@ def get_ancient_coin_count_from_content(content: str) -> int:
 
 
 def get_voyage_planning_message_id_from_content(content) -> int | None:
-    pattern = rf"discord\.com/channels/{GUILD_ID}/{VOYAGE_PLANNING}/(\d+)$"
-
-    matches = re.findall(pattern, content)
-    if matches:
-        return matches[0]
+    try:
+        pattern = rf"discord\.com/channels/{GUILD_ID}/{VOYAGE_PLANNING}/(\d+)$"
+        matches = re.findall(pattern, content)
+        if matches:
+            return int(matches[0])
+    except (re.error, ValueError) as e:
+        log.debug(f"Failed to parse voyage planning message id from content: {e}")
     return None
 
 class Process_Voyage_Log:
@@ -114,8 +116,13 @@ class Process_Voyage_Log:
             return  # Skip if the log has already been processed
 
         vp_id = None
-        if message.created_at >= datetime(2026, 1, 15, tzinfo=UTC):
-            vp_id = get_voyage_planning_message_id_from_content(message.content)
+        # Date of implementation of voyage planning message id parsing
+        if message.created_at >= datetime(2026, 1, 22, tzinfo=UTC):
+            try:
+                vp_id = get_voyage_planning_message_id_from_content(message.content)
+            except Exception as e:
+                log.debug(f"[{log_id}] Failed to parse voyage planning message id: {e}")
+                vp_id = None
 
         # 2. If not, process the log. But first, ensure the host is in the Sailor table
         sailor_repository.update_or_create_sailor_by_discord_id(host_id)
