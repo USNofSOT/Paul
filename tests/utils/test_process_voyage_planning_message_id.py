@@ -31,3 +31,17 @@ def test_link_not_at_end_returns_none():
     process_voyage_log.VOYAGE_PLANNING = 2
     content = f"https://discord.com/channels/{process_voyage_log.GUILD_ID}/{process_voyage_log.VOYAGE_PLANNING}/123 extra"
     assert process_voyage_log.get_voyage_planning_message_id_from_content(content) is None
+
+
+def test_wrong_guild_id_returns_none():
+    process_voyage_log.GUILD_ID = 1
+    process_voyage_log.VOYAGE_PLANNING = 2
+    content = "https://discord.com/channels/999/2/123"
+    assert process_voyage_log.get_voyage_planning_message_id_from_content(content) is None
+
+
+def test_wrong_voyage_planning_id_returns_none():
+    process_voyage_log.GUILD_ID = 1
+    process_voyage_log.VOYAGE_PLANNING = 2
+    content = "https://discord.com/channels/1/999/123"
+    assert process_voyage_log.get_voyage_planning_message_id_from_content(content) is None
