@@ -1,4 +1,4 @@
-from data.structs import Award, CombatAward, AwardsCollector
+from data.structs import Award, AwardsCollector, CombatAward
 
 _AWARDS_THREAD_ID=1374118521927241779 
 
@@ -323,6 +323,43 @@ SERVICE_STRIPES = (FOUR_MONTHS_SERVICE_STRIPES, SIX_MONTHS_SERVICE_STRIPES, EIGH
                    THIRTY_MONTHS_SERVICE_STRIPES, THIRTY_SIX_MONTHS_SERVICE_STRIPES,)
 
 ###############################################################################
+## Medals And Ribbons - Public Service
+###############################################################################
+_PUBLIC_SERVICE_EMBED_ID = 1375472706237239317
+PUBLIC_SERVICE_RIBBON = Award(
+    threshold=10,
+    ranks_responsible="E-7+",
+    role_id=1461331364241735814,
+    embed_id=_PUBLIC_SERVICE_EMBED_ID,
+    channelthread_id=_AWARDS_THREAD_ID
+)
+MARTIME_PUBLIC_SERVICE_MEDAL = Award(
+    threshold=25,
+    ranks_responsible="O-1+",
+    role_id=1461331927197024412,
+    embed_id=_PUBLIC_SERVICE_EMBED_ID,
+    channelthread_id=_AWARDS_THREAD_ID
+)
+LEGENDARY_PUBLIC_SERVICE_MEDAL = Award(
+    threshold=50,
+    ranks_responsible="O-4+",
+    role_id=1461332545563132098,
+    embed_id=_PUBLIC_SERVICE_EMBED_ID,
+    channelthread_id=_AWARDS_THREAD_ID
+)
+ADMIRABLE_PUBLIC_SERVICE_MEDAL = Award(
+    threshold=100,
+    ranks_responsible="O-7+",
+    role_id=1461333021658447893,
+    embed_id=_PUBLIC_SERVICE_EMBED_ID,
+    channelthread_id=_AWARDS_THREAD_ID
+)
+
+# Medals must be ordered lowest to highest public service count
+PUBLIC_SERVICE_MEDALS = (PUBLIC_SERVICE_RIBBON, MARTIME_PUBLIC_SERVICE_MEDAL,
+                         LEGENDARY_PUBLIC_SERVICE_MEDAL, ADMIRABLE_PUBLIC_SERVICE_MEDAL)
+
+###############################################################################
 ## Medals And Ribbons - MISC
 ###############################################################################
 NCO_IMPROVEMENT_RIBBON = Award(
@@ -348,7 +385,8 @@ MEDALS_AND_RIBBONS = AwardsCollector(
     training=TRAINING_MEDALS,
     recruit=RECRUIT_MEDALS,
     representation=REPRESENT_MEDALS,
-    service=SERVICE_STRIPES
+    service=SERVICE_STRIPES,
+    public_service=PUBLIC_SERVICE_MEDALS
 )
 
 ###############################################################################
