@@ -11,6 +11,7 @@ from src.utils import process_voyage_log
         (999999, 88888, "VP: https://discord.com/channels/999999/88888/55555", 55555),
         (123456, 65432, "https://discord.com/channels/123456/65432/0", 0),
         (777777, 66666, "https://discord.com/channels/777777/66666/44444 VP", None),
+        (3, 4, "https://discordapp.com/channels/3/4/321", 321),
     ],
 )
 def test_get_voyage_planning_message_id_matches(guild_id, voyage_planning, content, expected):
