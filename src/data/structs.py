@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-from logging import getLogger
 from collections import OrderedDict
 from dataclasses import dataclass
+from logging import getLogger
 from warnings import warn
 
 import config.ranks_roles
 from config.main_server import GUILD_ID
 from discord import Guild, Member, Role
 
-
 log = getLogger(__name__)
+
 
 @dataclass
 class Ship:
@@ -18,22 +18,83 @@ class Ship:
     role_id: int = None # Role ID of the ship
     boat_command_channel_id: int = None # Channel ID of the ship's boat command channel (e.g. BC_VENOM)
     emoji: str = None # Emoji of the ship
+    legendary: bool = False # Flag for legendary ships
+    max_size: int = 30  # Maximum number of members allowed on the ship
+
+
+@dataclass
+class Fleet:
+    name : str
+    ships : tuple[Ship, ...]
+    role_id : int
+    flagship: Ship | None = None
+    emoji: str = None
+
+
+@dataclass
+class NavyFleetCollector:
+    ancient_isles: Fleet | None = None
+    devils_roar: Fleet | None = None
+    shores_of_plenty: Fleet | None = None
+    wilds: Fleet | None = None
+    first_navy_strike_group: Fleet | None = None
+
+    @property
+    def ships(self) -> list[Ship]:
+        ships = []
+        if self.ancient_isles:
+            ships += self.ancient_isles.ships
+        if self.devils_roar:
+            ships += self.devils_roar.ships
+        if self.first_navy_strike_group:
+            ships += self.first_navy_strike_group.ships
+        if self.shores_of_plenty:
+            ships += self.shores_of_plenty.ships
+        if self.wilds:
+            ships += self.wilds.ships
+        return ships
+    
+    @property
+    def fleets(self) -> list[Fleet]:
+        fleet_list = []
+        if self.ancient_isles:
+            fleet_list.append(self.ancient_isles)
+        if self.devils_roar:
+            fleet_list.append(self.devils_roar)
+        if self.first_navy_strike_group:
+            fleet_list.append(self.first_navy_strike_group)
+        if self.shores_of_plenty:
+            fleet_list.append(self.shores_of_plenty)
+        if self.wilds:
+            fleet_list.append(self.wilds)
+        return fleet_list
+    name: str = None  # Ship name e.g. "USS Venom"
+    role_id: int = None  # Role ID of the ship
+    boat_command_channel_id: int = (
+        None  # Channel ID of the ship's boat command channel (e.g. BC_VENOM)
+    )
+    emoji: str = None  # Emoji of the ship
+
 
 @dataclass
 class Abbreviation:
-    abbreviation: str = None # The abbreviation
-    meaning: str = None # The meaning of the abbreviation
+    abbreviation: str = None  # The abbreviation
+    meaning: str = None  # The meaning of the abbreviation
+
 
 @dataclass
 class RankAbbreviation(Abbreviation):
-    associated_rank: NavyRank = None # The rank that the abbreviation is associated with
+    associated_rank: NavyRank = (
+        None  # The rank that the abbreviation is associated with
+    )
+
 
 @dataclass
 class Context:
-    short_description: str = None # Short definition of the abbreviation
+    short_description: str = None  # Short definition of the abbreviation
 
-    channel_id: int = None # Could be either a channel or channel_thread id
-    message_id: int = None # ID of the message/embed within the channel
+    channel_id: int = None  # Could be either a channel or channel_thread id
+    message_id: int = None  # ID of the message/embed within the channel
 
     @property
     def embed_url(self) -> str:
@@ -41,20 +102,30 @@ class Context:
             return None
         return f"https://discord.com/channels/{GUILD_ID}/{self.channel_id}/{self.message_id}"
 
+
 @dataclass
 class RankPrerequisites:
     additional_requirements: list[str] = list
 
+
 @dataclass
 class NavyRank:
-    index: int = 0 # The index of the rank in the hierarchy (0 is the highest rank)
-    identifier: str = "" # The identifier of the rank (e.g. "E1", "O1", "DH")
-    role_ids: tuple[int] = () # The role IDs associated with the rank (e.g. [933913081099214848] for Recruit)
-    name: str = "" # The name of the rank (e.g. "Recruit", "Midshipman")
-    marine_name: str = name # The name of the rank in case they are a Marine
-    promotion_index: set[int] = () # The index of the rank that the member would be promoted to
-    rank_prerequisites: RankPrerequisites = None # The requirements needed for a rank
-    rank_context: Context = None # The context of the rank (e.g. the channel_thread_id and message_id of the rank's embed)
+    index: int = 0  # The index of the rank in the hierarchy (0 is the highest rank)
+    identifier: str = ""  # The identifier of the rank (e.g. "E1", "O1", "DH")
+    role_ids: tuple[
+        int
+    ] = ()  # The role IDs associated with the rank (e.g. [933913081099214848] for Recruit)
+    name: str = ""  # The name of the rank (e.g. "Recruit", "Midshipman")
+    marine_name: str = name  # The name of the rank in case they are a Marine
+    promotion_index: set[
+        int
+    ] = ()  # The index of the rank that the member would be promoted to
+    rank_prerequisites: RankPrerequisites = None  # The requirements needed for a rank
+    rank_context: Context = None  # The context of the rank (e.g. the channel_thread_id and message_id of the rank's embed)
+    emoji: str = (
+        ""  # The emoji associated with the rank (e.g. "<:E3:1245860807980617848>")
+    )
+
 
 @dataclass
 class Award:
@@ -73,6 +144,7 @@ class Award:
 class CombatAward(Award):
     streak: bool = True
 
+
 @dataclass
 class AwardsCollector:
     voyages: tuple[Award]
@@ -83,19 +155,22 @@ class AwardsCollector:
     recruit: tuple[Award]
     representation: tuple[Award]
     service: tuple[Award]
+    public_service: tuple[Award]
 
     @property
     def tiered_awards(self) -> tuple[str, ...]:
         return (
-            'conduct',
-            'hosted',
-            'voyages',
-            'combat',
-            'training',
-            'representation',
-            'recruit',
-            'service',
+            "conduct",
+            "hosted",
+            "voyages",
+            "combat",
+            "training",
+            "representation",
+            "recruit",
+            "service",
+            "public_service",
         )
+
 
 @dataclass
 class SubclassCollector:
@@ -107,6 +182,7 @@ class SubclassCollector:
     surgeon: tuple[Award]
 
     masters: tuple[Award]
+
 
 @dataclass
 class SailorCO:
@@ -164,7 +240,10 @@ class SailorCO:
             return f"<@{self.acting.id}>"
         return f"Current: <@{self.acting.id}>\nImmediate: <@{self.immediate.id}>"
 
-def _get_co_from_link(role_id: int, sailor: Member, CoC: OrderedDict, CoC_keys: list[int], guild: Guild) -> Member | None:
+
+def _get_co_from_link(
+    role_id: int, sailor: Member, CoC: OrderedDict, CoC_keys: list[int], guild: Guild
+) -> Member | None:
     co_role_id, common_group = CoC[role_id]
     if co_role_id is None:
         return None
@@ -191,6 +270,7 @@ def _get_co_from_link(role_id: int, sailor: Member, CoC: OrderedDict, CoC_keys: 
     warn("Found more than one member with role. Using first in list")
     return co_role_members[0]
 
+
 def _get_by_role(role_key: Role, members: list[Member]):
     member_with_role = None
     for member in members:
@@ -199,26 +279,29 @@ def _get_by_role(role_key: Role, members: list[Member]):
             break
     return member_with_role
 
+
 def _get_fleet(sailor: Member):
     fleet_role = None
     for role in sailor.roles:
-        if role.name.endswith('Fleet'):
+        if role.name.endswith("Fleet"):
             fleet_role = role
             break
     return fleet_role
 
+
 def _get_ship(sailor: Member):
     ship_role = None
     for role in sailor.roles:
-        if role.name.startswith('USS'):
+        if role.name.startswith("USS"):
             ship_role = role
             break
     return ship_role
 
+
 def _get_squad(sailor: Member):
     squad_role = None
     for role in sailor.roles:
-        if ('Squad' in role.name) and (role.id != config.ranks_roles.SHIP_SL_ROLE):
+        if ("Squad" in role.name) and (role.id != config.ranks_roles.SHIP_SL_ROLE):
             squad_role = role
             break
     return squad_role

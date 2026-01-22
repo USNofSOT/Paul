@@ -1,9 +1,11 @@
 import re
+from datetime import UTC, datetime
 from logging import getLogger
 
 import discord
 from utils.ship_utils import get_voyage_type_from_content
 
+from src.config.main_server import GUILD_ID, VOYAGE_PLANNING
 from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.sailor_repository import SailorRepository
 from src.data.repository.voyage_repository import VoyageRepository
@@ -75,6 +77,17 @@ def get_fish_count_from_content(content: str) -> int:
 def get_ancient_coin_count_from_content(content: str) -> int:
     return get_count_from_content_by_keyword(content, "ancient coins")
 
+
+def get_voyage_planning_message_id_from_content(content) -> int | None:
+    try:
+        pattern = rf"discord\.com/channels/{GUILD_ID}/{VOYAGE_PLANNING}/(\d+)$"
+        matches = re.findall(pattern, content)
+        if matches:
+            return int(matches[0])
+    except (re.error, ValueError) as e:
+        log.debug(f"Failed to parse voyage planning message id from content: {e}")
+    return None
+
 class Process_Voyage_Log:
     #subroutine to check if a voyage log already exists, and processes it if it does not.
     async def process_voyage_log(
@@ -102,6 +115,15 @@ class Process_Voyage_Log:
             log.debug(f"[{log_id}] Voyage log has already been processed. Skipping.")
             return  # Skip if the log has already been processed
 
+        vp_id = None
+        # Date of implementation of voyage planning message id parsing
+        if message.created_at >= datetime(2026, 1, 22, tzinfo=UTC):
+            try:
+                vp_id = get_voyage_planning_message_id_from_content(message.content)
+            except Exception as e:
+                log.debug(f"[{log_id}] Failed to parse voyage planning message id: {e}")
+                vp_id = None
+
         # 2. If not, process the log. But first, ensure the host is in the Sailor table
         sailor_repository.update_or_create_sailor_by_discord_id(host_id)
         hosted_repository.save_hosted_data(
@@ -116,7 +138,8 @@ class Process_Voyage_Log:
             doubloon_count=get_doubloon_count_from_content(message.content),
             fish_count=get_fish_count_from_content(message.content),
             ancient_coin_count=get_ancient_coin_count_from_content(message.content),
-            voyage_type=get_voyage_type_from_content(message.content)
+            voyage_type=get_voyage_type_from_content(message.content),
+            voyage_planning_message_id=vp_id
         )
         # 3.Log Voyage Count
 
