@@ -63,7 +63,7 @@ class TestVoyageSpecification(TestCase):
         # Arrange
         content = (
             "@Petty Officer Marsh's Official Adventure Log of the 35th Official "
-            "Voyage of the USS Thor, Auxiliary to the USS Berserker. 📜 🪶 "
+            "Voyage of the USS Thor, Auxiliary to the USS Gullinbursti. 📜 🪶 "
         )
         # Act
         main_ship = get_main_ship_from_content(content)
@@ -71,7 +71,7 @@ class TestVoyageSpecification(TestCase):
         voyage_count = get_count_from_content(content)
         voyage_type = get_voyage_type_from_content(content)
         # Assert
-        self.assertEqual(main_ship, "USS Berserker")
+        self.assertEqual(main_ship, "USS Gullinbursti")
         self.assertEqual(auxiliary_ship, "USS Thor")
         self.assertEqual(voyage_count, 35)
         self.assertEqual(voyage_type.value, VoyageType.ADVENTURE.value)
