@@ -4,11 +4,14 @@ from logging import getLogger
 from cogs.tasks.task_check_awards import fake_context
 from config import (
     CO_OF_NETC_ROLE,
+    CO_OF_NRC_ROLE,
     GUILD_ID,
     NETC_BOT_CHANNEL,
     NETC_GUILD_ID,
     NETC_ROLE,
+    NRC_CMD_CHANNEL,
     NRC_ROLE,
+    SPD_GUILD_ID,
 )
 from config.ranks import DECKHAND, RETIRED, VETERAN
 from data import TrainingRecord
@@ -37,7 +40,7 @@ class AutoCheckAwardsTraining(commands.Cog):
         training_repository = TrainingRecordsRepository()
 
         try:
-            nrc_channel = self.bot.get_guild(GUILD_ID).get_channel(1291589569602650154)
+            nrc_channel = self.bot.get_guild(SPD_GUILD_ID).get_channel(NRC_CMD_CHANNEL)
             netc_channel = self.bot.get_guild(NETC_GUILD_ID).get_channel(NETC_BOT_CHANNEL)
 
             # Get all training records
@@ -87,7 +90,7 @@ class AutoCheckAwardsTraining(commands.Cog):
 
             if nrc_str:
                 log.info(f"Send NRC Training Awards to channel #{nrc_channel.name} in {nrc_channel.guild.name}")
-                await nrc_channel.send(f"**Pending Training Awards for NRC Department**\n{nrc_str}")
+                await nrc_channel.send(f"**Pending Training Awards for NRC Department (<@&{CO_OF_NRC_ROLE}>)**\n{nrc_str}")
             if netc_str:
                 log.info(f"Send NETC Training Awards to channel #{netc_channel.name} in {netc_channel.guild.name}")
                 await netc_channel.send(f"**Pending Training Awards for NETC Department (<@&{CO_OF_NETC_ROLE}>)**\n{netc_str}")
