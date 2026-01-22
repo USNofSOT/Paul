@@ -80,7 +80,7 @@ def get_ancient_coin_count_from_content(content: str) -> int:
 
 def get_voyage_planning_message_id_from_content(content) -> int | None:
     try:
-        pattern = rf"discord\.com/channels/{GUILD_ID}/{VOYAGE_PLANNING}/(\d+)$"
+        pattern = rf"discord(?:app)?\.com/channels/{GUILD_ID}/{VOYAGE_PLANNING}/(\d+)$"
         matches = re.findall(pattern, content)
         if matches:
             return int(matches[0])
