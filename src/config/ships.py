@@ -49,7 +49,7 @@ USS_ILLUSTRIOUS = Ship(
     boat_command_channel_id=BC_LUSTY,
     role_id=ROLE_ID_LUSTY,
     emoji="<:Lusty:1079841997021524018>",
-    max_size=27
+    max_size=33
 )
 
 USS_BERSERKER = Ship(
