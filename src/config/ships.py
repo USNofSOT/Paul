@@ -160,7 +160,7 @@ USS_HYPERION = Ship(
     boat_command_channel_id=BC_HYPERION,
     role_id=ROLE_ID_HYPERION,
     emoji="<:hyperion1:1162043891185369199>",
-    max_size=33
+    max_size=24
 )
 
 USS_NIGHTINGALE = Ship(
