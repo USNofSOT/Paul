@@ -79,10 +79,10 @@ ANCIENT_ISLES_FLEET = Fleet(
 # Devil's Roar Fleet
 #######################################
 USS_DEFIANT = Ship(
-    name="USS Defiant",
+    name="USS Eos",
     boat_command_channel_id=BC_DEFIANT,
     role_id=ROLE_ID_DEFIANT,
-    emoji="<:Defiant:1354503521747075072>",
+    emoji="<:Eos:1477072696301981811>",
     max_size=30
 )
 
