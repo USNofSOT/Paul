@@ -3,7 +3,7 @@ import re
 import discord
 from data import VoyageType
 
-from src.config.ships import SHIPS
+from src.config.ships import SHIPS, VOYAGE_MAIN_SHIPS
 from src.data.structs import Ship
 
 
@@ -46,7 +46,9 @@ SHIP_NAME_PATTERN = r"\b(USS[\s][^\s,\.]+)\b"
 FIND_WITHIN = 25
 
 
-def get_main_ship_from_content(content: str, ships: [Ship] = SHIPS) -> str or None:
+def get_main_ship_from_content(
+        content: str, ships: [Ship] = VOYAGE_MAIN_SHIPS
+) -> str or None:
     """
     Get the main ship name from the content.
     1. If sailing on an auxiliary ship, the main ship name is the second ship name found.

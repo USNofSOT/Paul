@@ -96,6 +96,22 @@ class TestVoyageSpecification(TestCase):
 
 
 class TestGetMainShipName(TestCase):
+    def test_virtual_legendary_main_ship_is_supported(self):
+        content = (
+            "@Lt. Commander Terin Official Patrol Log of the 7th Voyage of the "
+            "USS Constitution, auxiliary to the USS Legendary."
+        )
+        self.assertEqual(get_main_ship_from_content(content), "USS Legendary")
+        self.assertEqual(get_auxiliary_ship_from_content(content), "USS Constitution")
+
+    def test_virtual_ceremonial_main_ship_is_supported(self):
+        content = (
+            "@Lt. Commander Terin Official Patrol Log of the 7th Voyage of the "
+            "USS Constitution, auxiliary to the USS Ceremonial."
+        )
+        self.assertEqual(get_main_ship_from_content(content), "USS Ceremonial")
+        self.assertEqual(get_auxiliary_ship_from_content(content), "USS Constitution")
+
     def test_main_ship_included(self):
         content = (
             "<@5848673888963>__**'s official log of the 134th voyage of the USS "
