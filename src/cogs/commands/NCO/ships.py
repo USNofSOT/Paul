@@ -60,7 +60,6 @@ class Ships(commands.Cog):
     )
     @app_commands.describe(specific="Optionally provide a specific report to get")
     @app_commands.checks.has_any_role(*NCO_AND_UP, *NSC_ROLES)
-    @app_commands.checks.cooldown(1, 30)
     async def ships(self, interaction: discord.Interaction, ship: discord.Role = None, hidden: bool = True, specific: str = None):
         self.top_voyagers = {}
         self.top_hosts = {}
@@ -532,12 +531,7 @@ class Ships(commands.Cog):
 
     @ships.error
     async def ships_error(self, interaction: discord.Interaction, error):
-        if isinstance(error, app_commands.errors.CommandOnCooldown):
-            await interaction.response.send_message(embed=error_embed(
-                title="Command on cooldown",
-                description=f"Please wait {round(error.retry_after)} seconds before using this command again."
-            ), ephemeral=True)
-        elif isinstance(error, discord.app_commands.errors.MissingAnyRole):
+        if isinstance(error, discord.app_commands.errors.MissingAnyRole):
             await interaction.response.send_message(embed=error_embed(
                 title="Missing Permissions",
                 description="You do not have the required permissions to use this command.",
