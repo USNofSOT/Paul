@@ -1,4 +1,7 @@
 import unittest
+from datetime import UTC, datetime
+from types import SimpleNamespace
+from unittest.mock import MagicMock
 
 from src.config.emojis import (
     ANCIENT_COINS_EMOJI,
@@ -7,7 +10,9 @@ from src.config.emojis import (
     GOLD_ANIMATED_EMOJI,
     GOLD_EMOJI,
 )
+from src.utils import process_voyage_log as process_voyage_log_module
 from src.utils.process_voyage_log import (
+    Process_Voyage_Log,
     get_count_from_content_by_keyword,
     get_doubloon_count_from_content,
     get_gold_count_from_content,
@@ -374,3 +379,102 @@ class TestGetDoubloonCountFromContent(unittest.TestCase):
         content = "Gold __**1,055**__"
         self.assertEqual(get_gold_count_from_content(content), 1055)
 
+
+class TestProcessVoyageLog(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        self.original_guild_id = process_voyage_log_module.GUILD_ID
+        self.original_voyage_planning = process_voyage_log_module.VOYAGE_PLANNING
+        self.original_voyage_announcements = (
+            process_voyage_log_module.VOYAGE_ANNOUNCEMENTS
+        )
+
+        process_voyage_log_module.GUILD_ID = 1
+        process_voyage_log_module.VOYAGE_PLANNING = 2
+        process_voyage_log_module.VOYAGE_ANNOUNCEMENTS = 3
+
+    def tearDown(self):
+        process_voyage_log_module.GUILD_ID = self.original_guild_id
+        process_voyage_log_module.VOYAGE_PLANNING = self.original_voyage_planning
+        process_voyage_log_module.VOYAGE_ANNOUNCEMENTS = (
+            self.original_voyage_announcements
+        )
+
+    def make_message(self, content: str, created_at: datetime):
+        author = SimpleNamespace(id=100)
+        mentions = [SimpleNamespace(id=200), SimpleNamespace(id=300)]
+        guild = MagicMock()
+        guild.get_member.side_effect = lambda discord_id: SimpleNamespace(id=discord_id)
+
+        return SimpleNamespace(
+            id=999,
+            author=author,
+            created_at=created_at,
+            mentions=mentions,
+            content=content,
+            guild=guild,
+        )
+
+    def make_repositories(self):
+        voyage_repository = MagicMock()
+        voyage_repository.check_voyage_log_id_with_target_id_exists.return_value = False
+
+        hosted_repository = MagicMock()
+        hosted_repository.check_hosted_log_id_exists.return_value = False
+
+        sailor_repository = MagicMock()
+
+        return voyage_repository, hosted_repository, sailor_repository
+
+    async def test_process_voyage_log_saves_voyage_planning_reference(self):
+        message = self.make_message(
+            "https://discord.com/channels/1/2/4444",
+            datetime(2026, 2, 1, tzinfo=UTC),
+        )
+        voyage_repository, hosted_repository, sailor_repository = self.make_repositories()
+
+        await Process_Voyage_Log.process_voyage_log(
+            message,
+            voyage_repository=voyage_repository,
+            hosted_repository=hosted_repository,
+            sailor_repository=sailor_repository,
+        )
+
+        _, kwargs = hosted_repository.save_hosted_data.call_args
+        self.assertEqual(kwargs["voyage_planning_channel_id"], 2)
+        self.assertEqual(kwargs["voyage_planning_message_id"], 4444)
+
+    async def test_process_voyage_log_saves_voyage_announcement_reference(self):
+        message = self.make_message(
+            "https://discord.com/channels/1/3/5555",
+            datetime(2026, 2, 1, tzinfo=UTC),
+        )
+        voyage_repository, hosted_repository, sailor_repository = self.make_repositories()
+
+        await Process_Voyage_Log.process_voyage_log(
+            message,
+            voyage_repository=voyage_repository,
+            hosted_repository=hosted_repository,
+            sailor_repository=sailor_repository,
+        )
+
+        _, kwargs = hosted_repository.save_hosted_data.call_args
+        self.assertEqual(kwargs["voyage_planning_channel_id"], 3)
+        self.assertEqual(kwargs["voyage_planning_message_id"], 5555)
+
+    async def test_process_voyage_log_skips_reference_for_logs_before_rollout(self):
+        message = self.make_message(
+            "https://discord.com/channels/1/3/5555",
+            datetime(2026, 1, 21, 23, 59, tzinfo=UTC),
+        )
+        voyage_repository, hosted_repository, sailor_repository = self.make_repositories()
+
+        await Process_Voyage_Log.process_voyage_log(
+            message,
+            voyage_repository=voyage_repository,
+            hosted_repository=hosted_repository,
+            sailor_repository=sailor_repository,
+        )
+
+        _, kwargs = hosted_repository.save_hosted_data.call_args
+        self.assertIsNone(kwargs["voyage_planning_channel_id"])
+        self.assertIsNone(kwargs["voyage_planning_message_id"])
