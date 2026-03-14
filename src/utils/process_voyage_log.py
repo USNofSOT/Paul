@@ -5,7 +5,7 @@ from logging import getLogger
 import discord
 from utils.ship_utils import get_voyage_type_from_content
 
-from src.config.main_server import GUILD_ID, VOYAGE_PLANNING
+from src.config.main_server import GUILD_ID, VOYAGE_ANNOUNCEMENTS, VOYAGE_PLANNING
 from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.sailor_repository import SailorRepository
 from src.data.repository.voyage_repository import VoyageRepository
@@ -78,14 +78,32 @@ def get_ancient_coin_count_from_content(content: str) -> int:
     return get_count_from_content_by_keyword(content, "ancient coins")
 
 
-def get_voyage_planning_message_id_from_content(content) -> int | None:
+def get_voyage_planning_message_reference_from_content(content: str) -> tuple[int, int] | None:
     try:
-        pattern = rf"discord(?:app)?\.com/channels/{GUILD_ID}/{VOYAGE_PLANNING}/(\d+)$"
+        allowed_channel_pattern = "|".join(
+            [
+                re.escape(str(VOYAGE_PLANNING)),
+                re.escape(str(VOYAGE_ANNOUNCEMENTS)),
+            ]
+        )
+        pattern = (
+            rf"discord(?:app)?\.com/channels/{GUILD_ID}/"
+            rf"({allowed_channel_pattern})/(\d+)$"
+        )
         matches = re.findall(pattern, content)
         if matches:
-            return int(matches[0])
+            channel_id, message_id = matches[0]
+            return int(channel_id), int(message_id)
     except (re.error, ValueError) as e:
-        log.debug(f"Failed to parse voyage planning message id from content: {e}")
+        log.debug(f"Failed to parse voyage planning message reference from content: {e}")
+    return None
+
+
+def get_voyage_planning_message_id_from_content(content) -> int | None:
+    reference = get_voyage_planning_message_reference_from_content(content)
+    if reference:
+        _, message_id = reference
+        return message_id
     return None
 
 class Process_Voyage_Log:
@@ -115,13 +133,19 @@ class Process_Voyage_Log:
             log.debug(f"[{log_id}] Voyage log has already been processed. Skipping.")
             return  # Skip if the log has already been processed
 
+        vp_channel_id = None
         vp_id = None
         # Date of implementation of voyage planning message id parsing
         if message.created_at >= datetime(2026, 1, 22, tzinfo=UTC):
             try:
-                vp_id = get_voyage_planning_message_id_from_content(message.content)
+                vp_reference = get_voyage_planning_message_reference_from_content(
+                    message.content
+                )
+                if vp_reference:
+                    vp_channel_id, vp_id = vp_reference
             except Exception as e:
                 log.debug(f"[{log_id}] Failed to parse voyage planning message id: {e}")
+                vp_channel_id = None
                 vp_id = None
 
         # 2. If not, process the log. But first, ensure the host is in the Sailor table
@@ -139,7 +163,8 @@ class Process_Voyage_Log:
             fish_count=get_fish_count_from_content(message.content),
             ancient_coin_count=get_ancient_coin_count_from_content(message.content),
             voyage_type=get_voyage_type_from_content(message.content),
-            voyage_planning_message_id=vp_id
+            voyage_planning_channel_id=vp_channel_id,
+            voyage_planning_message_id=vp_id,
         )
         # 3.Log Voyage Count
 
