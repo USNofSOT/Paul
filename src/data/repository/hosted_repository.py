@@ -126,7 +126,8 @@ class HostedRepository:
         ancient_coin_count: int = 0,
         fish_count: int = 0,
         voyage_type: VoyageType = None,
-            voyage_planning_message_id: int = None
+            voyage_planning_channel_id: int = None,
+            voyage_planning_message_id: int = None,
     ) -> bool:
         """
         Adds a hosted data entry to the Hosted table.
@@ -145,6 +146,7 @@ class HostedRepository:
             ancient_coin_count (int): The number of ancient coins confiscated. Defaults to 0.
             fish_count (int): The number of fish confiscated. Defaults to 0.
             voyage_type (VoyageType): The type of voyage. Defaults to VoyageType.UNKNOWN.
+            voyage_planning_channel_id (int): The channel ID of the voyage planning or announcement message. Defaults to None.
             voyage_planning_message_id (int): The ID of the voyage planning message. Defaults to None.
         Returns:
             bool: True if the operation was successful, False otherwise.
@@ -172,7 +174,8 @@ class HostedRepository:
                             if voyage_type
                             else VoyageType.UNKNOWN.value
                         ),
-                        voyage_planning_message_id=voyage_planning_message_id
+                        voyage_planning_channel_id=voyage_planning_channel_id,
+                        voyage_planning_message_id=voyage_planning_message_id,
                     )
                 )
 
