@@ -1,4 +1,3 @@
-import os
 from datetime import datetime, timedelta
 from logging import getLogger
 
@@ -7,7 +6,7 @@ import matplotlib.pyplot as plt
 from discord import app_commands
 from discord.ext import commands
 
-from src.config import NCO_AND_UP, NCO_AND_UP_PURE, NSC_ROLES
+from src.config import IMAGE_CACHES, NCO_AND_UP, NCO_AND_UP_PURE, NSC_ROLES
 from src.config.ranks_roles import BOA_ROLE
 from src.config.requirements import (
     HOSTING_REQUIREMENT_IN_DAYS,
@@ -16,9 +15,24 @@ from src.config.requirements import (
 from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.voyage_repository import VoyageRepository
 from src.utils.discord_utils import get_best_display_name
+from src.utils.image_cache import BinaryImageCache, render_matplotlib_plot_to_png
 from src.utils.time_utils import get_time_difference_past
 
 log = getLogger(__name__)
+
+CREWREPORT_VOYAGE_CACHE = BinaryImageCache(IMAGE_CACHES["crewreport_voyage_chart"])
+CREWREPORT_HOSTED_CACHE = BinaryImageCache(IMAGE_CACHES["crewreport_hosted_chart"])
+
+
+def render_empty_bar_chart(message: str, title: str) -> bytes:
+    def plotter():
+        plt.figure(figsize=(15, 12))
+        plt.title(title)
+        plt.text(0.5, 0.5, message, ha="center", va="center", fontsize=16)
+        plt.axis("off")
+        plt.tight_layout()
+
+    return render_matplotlib_plot_to_png(plotter)
 
 
 class CrewReport(commands.Cog):
@@ -83,77 +97,111 @@ class CrewReport(commands.Cog):
         finally:
             self.voyage_repo.close_session()
             self.hosted_repo.close_session()
-        try:
-            os.remove("./voyage_pie_chart.png")
-            os.remove("./hosted_pie_chart.png")
-        except Exception as e:
-            log.error(f"Error removing file: {e}")
 
     def send_voyage_graph(self, names: list, member_voyages: list, total_voyage_count: int):
         embed = discord.Embed(title="", color=discord.Color.green())
+        now = datetime.now()
+        start_date = (now - timedelta(days=30)).date().isoformat()
+        end_date = now.date().isoformat()
+        cache_payload = {
+            "names": names,
+            "member_voyages": member_voyages,
+            "total_voyage_count": total_voyage_count,
+            "start_date": start_date,
+            "end_date": end_date,
+        }
 
-        colors = plt.cm.tab20(range(len(names)))
+        if not names or not member_voyages:
+            image_data = CREWREPORT_VOYAGE_CACHE.get_or_create_bytes(
+                {**cache_payload, "empty": True},
+                lambda: render_empty_bar_chart(
+                    "No voyage activity found for this period.",
+                    f"Attended voyages from: {start_date} to: {end_date}",
+                ),
+            )
+            discord_file = CREWREPORT_VOYAGE_CACHE.to_discord_file(image_data)
+            embed.set_image(
+                url=f"attachment://{CREWREPORT_VOYAGE_CACHE.config.default_filename}"
+            )
+            return embed, discord_file
 
-        # Create a bar graph
-        plt.figure(figsize=(15, 12))
-        max_value = max(member_voyages)
-        plt.ylim(0, max_value + 2)
-        plt.bar(names, member_voyages, color=colors)
-        plt.xticks(rotation=45, ha='right')
-        for i, v in enumerate(member_voyages):
-            plt.text(i, v + 0.5, str(v), color='black', ha='center')
+        def plotter():
+            colors = plt.cm.tab20(range(len(names)))
+            plt.figure(figsize=(15, 12))
+            max_value = max(member_voyages)
+            plt.ylim(0, max_value + 2)
+            plt.bar(names, member_voyages, color=colors)
+            plt.xticks(rotation=45, ha='right')
+            for index, value in enumerate(member_voyages):
+                plt.text(index, value + 0.5, str(value), color='black', ha='center')
 
+            plt.title(
+                f"Attended voyages from: {start_date} to: {end_date} - Total: {total_voyage_count}"
+            )
+            plt.margins(0.05)
+            plt.tight_layout()
 
-        # Add a title
-        plt.title(
-            f'Attended voyages from: {(datetime.now() - timedelta(days=30)).date()} to: {datetime.now().date()} - Total: {total_voyage_count}')
-
-        plt.margins(0.05)
-        plt.tight_layout()
-
-        # Save the pie chart to a file
-        file_path = "./voyage_pie_chart.png"
-        plt.savefig(file_path)
-        plt.close()
-
-        # Send the plot image back to the user
-        with open(file_path, 'rb') as file:
-            discord_file = discord.File(file)
-            embed.set_image(url="attachment://voyage_pie_chart.png")
-
+        image_data = CREWREPORT_VOYAGE_CACHE.get_or_create_bytes(
+            cache_payload,
+            lambda: render_matplotlib_plot_to_png(plotter),
+        )
+        discord_file = CREWREPORT_VOYAGE_CACHE.to_discord_file(image_data)
+        embed.set_image(
+            url=f"attachment://{CREWREPORT_VOYAGE_CACHE.config.default_filename}"
+        )
         return embed, discord_file
 
     def send_hosted_graph(self, names: list, member_hosted: list, total_hosted_count: int):
         embed = discord.Embed(title="", color=discord.Color.green())
+        now = datetime.now()
+        start_date = (now - timedelta(days=30)).date().isoformat()
+        end_date = now.date().isoformat()
+        cache_payload = {
+            "names": names,
+            "member_hosted": member_hosted,
+            "total_hosted_count": total_hosted_count,
+            "start_date": start_date,
+            "end_date": end_date,
+        }
 
-        colors = plt.cm.tab20(range(len(names)))
+        if not names or not member_hosted:
+            image_data = CREWREPORT_HOSTED_CACHE.get_or_create_bytes(
+                {**cache_payload, "empty": True},
+                lambda: render_empty_bar_chart(
+                    "No hosted activity found for this period.",
+                    f"Hosted voyages from: {start_date} to: {end_date}",
+                ),
+            )
+            discord_file = CREWREPORT_HOSTED_CACHE.to_discord_file(image_data)
+            embed.set_image(
+                url=f"attachment://{CREWREPORT_HOSTED_CACHE.config.default_filename}"
+            )
+            return embed, discord_file
 
-        # Create a bar graph
-        plt.figure(figsize=(15, 12))
-        max_value = max(member_hosted)
-        plt.ylim(0, max_value + 2)
-        plt.bar(names, member_hosted, color=colors)
-        plt.xticks(rotation=45, ha='right')
-        for i, v in enumerate(member_hosted):
-            plt.text(i, v + 0.1, str(v), color='black', ha='center')
+        def plotter():
+            colors = plt.cm.tab20(range(len(names)))
+            plt.figure(figsize=(15, 12))
+            max_value = max(member_hosted)
+            plt.ylim(0, max_value + 2)
+            plt.bar(names, member_hosted, color=colors)
+            plt.xticks(rotation=45, ha='right')
+            for index, value in enumerate(member_hosted):
+                plt.text(index, value + 0.1, str(value), color='black', ha='center')
 
-        # Add a title
-        plt.title(
-            f'Hosted voyages from: {(datetime.now() - timedelta(days=30)).date()} to: {datetime.now().date()} - Total: {total_hosted_count}')
+            plt.title(
+                f"Hosted voyages from: {start_date} to: {end_date} - Total: {total_hosted_count}"
+            )
+            plt.margins(0.05)
+            plt.tight_layout()
 
-        plt.margins(0.05)
-        plt.tight_layout()
-
-        # Save the pie chart to a file
-        file_path = "./hosted_pie_chart.png"
-        plt.savefig(file_path)
-        plt.close()
-
-        # Send the plot image back to the user
-        with open(file_path, 'rb') as file:
-            discord_file = discord.File(file)
-            embed.set_image(url="attachment://hosted_pie_chart.png")
-
+        image_data = CREWREPORT_HOSTED_CACHE.get_or_create_bytes(
+            cache_payload,
+            lambda: render_matplotlib_plot_to_png(plotter),
+        )
+        discord_file = CREWREPORT_HOSTED_CACHE.to_discord_file(image_data)
+        embed.set_image(
+            url=f"attachment://{CREWREPORT_HOSTED_CACHE.config.default_filename}"
+        )
         return embed, discord_file
 
     async def report(self, crew_name: str, total_voyage_count: int, total_hosted_count: int, members: list, names_hosted: list, interaction: discord.Interaction):

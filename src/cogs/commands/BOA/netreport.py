@@ -7,14 +7,16 @@ from discord import app_commands
 from discord.ext import commands
 from matplotlib import pyplot as plt
 
-from src.config import NSC_ROLES
-from src.config.ranks import DECKHAND
-from src.config.ranks_roles import JE_AND_UP, E2_ROLES, DH_ROLES, BOA_ROLE
+from src.config import IMAGE_CACHES, NSC_ROLES
+from src.config.ranks_roles import E2_ROLES, DH_ROLES, BOA_ROLE
 from src.data import RoleChangeType, LeaveChangeLog
 from src.data.repository.auditlog_repository import AuditLogRepository
 from src.utils.embeds import error_embed, default_embed
+from src.utils.image_cache import BinaryImageCache, render_matplotlib_plot_to_png
 
 log = logging.getLogger(__name__)
+
+NETREPORT_GROWTH_CACHE = BinaryImageCache(IMAGE_CACHES["netreport_growth_chart"])
 
 class NetReport(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -86,8 +88,6 @@ class NetReport(commands.Cog):
         embed = default_embed(title="Net report", description="Showing growth report for the past 6 months.")
 
         months = 6
-        plt.figure(figsize=(15, 12))
-
         dates = []
         net_growth = []
 
@@ -99,20 +99,26 @@ class NetReport(commands.Cog):
             dates.append(start_of_the_month)
             net_growth.append(data["gain"] - data["loss"])
 
-        plt.bar(dates, net_growth, label="Growth", width=20)
+        cache_payload = {
+            "dates": [date.isoformat() for date in dates],
+            "net_growth": net_growth,
+        }
 
-        plt.xlabel("Date")
-        plt.ylabel("Net Growth")
+        def plotter():
+            plt.figure(figsize=(15, 12))
+            plt.bar(dates, net_growth, label="Growth", width=20)
+            plt.xlabel("Date")
+            plt.ylabel("Net Growth")
+            plt.legend()
 
-        plt.legend()
-        file_path = "./growth_bar_chart.png"
-        plt.savefig(file_path)
-        plt.close()
-
-        with open(file_path, 'rb') as file:
-            discord_file = discord.File(file)
-            embed.set_image(url="attachment://growth_bar_chart.png")
-
+        image_data = NETREPORT_GROWTH_CACHE.get_or_create_bytes(
+            cache_payload,
+            lambda: render_matplotlib_plot_to_png(plotter),
+        )
+        discord_file = NETREPORT_GROWTH_CACHE.to_discord_file(image_data)
+        embed.set_image(
+            url=f"attachment://{NETREPORT_GROWTH_CACHE.config.default_filename}"
+        )
         return embed, discord_file
 
     @app_commands.command(name="netreport", description="Get the growth report of a sailor.")
