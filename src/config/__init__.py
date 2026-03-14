@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from config.awards import *
 from config.cache import *
+from config.cooldowns import *
 from config.main_server import *
 from config.netc_server import *
 from config.ranks_roles import *

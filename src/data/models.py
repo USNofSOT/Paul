@@ -422,6 +422,20 @@ class CacheStat(Base):
     janitor_last_run_at = Column(DATETIME, nullable=True)
 
 
+class CommandCooldownStat(Base):
+    __tablename__ = "command_cooldown_stats"
+
+    command_name = Column(VARCHAR(64), primary_key=True)
+    cooldown_seconds = Column(Integer, nullable=False, server_default="0")
+    trigger_count = Column(Integer, nullable=False, server_default="0")
+    last_triggered_at = Column(DATETIME, nullable=True)
+    last_retry_after_seconds = Column(
+        Integer,
+        nullable=False,
+        server_default="0",
+    )
+
+
 # Nifty function to create all tables
 def create_tables():
     try:
