@@ -1,7 +1,7 @@
 import enum
 import logging
 
-from sqlalchemy import BIGINT, VARCHAR, Column, ForeignKey, Integer
+from sqlalchemy import BIGINT, FLOAT, VARCHAR, Column, ForeignKey, Integer
 from sqlalchemy.dialects.mysql import TINYTEXT
 from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
 from sqlalchemy.sql.sqltypes import BOOLEAN, DATETIME, TEXT, Enum
@@ -380,6 +380,46 @@ class BotInteractionLog(AuditLogBare):
         if self.timeout_removed:
             return 0
         return get_time_difference(self.timed_out_until, self.log_time)
+
+
+class CacheStat(Base):
+    __tablename__ = "cache_stats"
+
+    cache_name = Column(VARCHAR(64), primary_key=True)
+    request_count = Column(Integer, nullable=False, server_default="0")
+    cache_hit_count = Column(Integer, nullable=False, server_default="0")
+    cache_miss_count = Column(Integer, nullable=False, server_default="0")
+    cached_percent = Column(FLOAT, nullable=False, server_default="0")
+    last_requested_at = Column(DATETIME, nullable=True)
+    last_cache_hit_at = Column(DATETIME, nullable=True)
+    last_cache_miss_at = Column(DATETIME, nullable=True)
+    janitor_run_count = Column(Integer, nullable=False, server_default="0")
+    janitor_removed_expired_count = Column(
+        Integer,
+        nullable=False,
+        server_default="0",
+    )
+    janitor_removed_overflow_count = Column(
+        Integer,
+        nullable=False,
+        server_default="0",
+    )
+    janitor_last_removed_expired = Column(
+        Integer,
+        nullable=False,
+        server_default="0",
+    )
+    janitor_last_removed_overflow = Column(
+        Integer,
+        nullable=False,
+        server_default="0",
+    )
+    janitor_last_remaining_items = Column(
+        Integer,
+        nullable=False,
+        server_default="0",
+    )
+    janitor_last_run_at = Column(DATETIME, nullable=True)
 
 
 # Nifty function to create all tables

@@ -1,5 +1,4 @@
 import io
-import os
 from logging import getLogger
 
 import discord
@@ -9,13 +8,11 @@ from discord.ext.commands import Bot
 
 from src.config import (
     COIN_IDS,
+    IMAGE_CACHES,
     NCO_AND_UP,
-    RIBBON_BOARD_BASENAME,
-    RIBBON_BOARD_CACHE_PATH,
     RIBBON_BOARD_COLUMNS,
     RIBBON_BOARD_IMG_HEIGHT,
     RIBBON_BOARD_IMG_SPACING,
-    RIBBON_BOARD_VERSION,
 )
 from src.config.main_server import GUILD_ID
 from src.config.requirements import (
@@ -29,6 +26,7 @@ from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.sailor_repository import ensure_sailor_exists
 from src.data.structs import NavyRank, SailorCO
 from src.utils.embeds import default_embed, error_embed
+from src.utils.image_cache import BinaryImageCache
 from src.utils.rank_and_promotion_utils import get_current_rank
 from src.utils.report_utils import (
     other_medals,
@@ -37,6 +35,10 @@ from src.utils.report_utils import (
 from src.utils.time_utils import format_time, get_time_difference_past
 
 log = getLogger(__name__)
+
+RIBBON_BOARD_CACHE = BinaryImageCache(IMAGE_CACHES["ribbon_board"])
+RIBBON_ICON_CACHE = BinaryImageCache(IMAGE_CACHES["ribbon_icon"])
+RIBBON_BOARD_ATTACHMENT_FILENAME = IMAGE_CACHES["ribbon_board"].default_filename
 
 
 def modify_points(base_points: int, force_points: int) -> int:
@@ -85,11 +87,12 @@ async def get_member_embed(
         and rank_audit_log.change_type == RoleChangeType.REMOVED
     ):
         ranked_at = ""
+    time_in_server = format_time(get_time_difference_past(member.joined_at))
+    time_in_rank = f" **Time in Rank** \n{ranked_at}" if ranked_at else ""
 
     embed.add_field(
         name="Time in Server",
-        value=f"{format_time(get_time_difference_past(member.joined_at))} \n"
-        f" {'**Time in Rank** \n' + ranked_at if ranked_at else ''}",
+        value=f"{time_in_server} \n{time_in_rank}",
     )
 
     audit_log_repository.close_session()
@@ -351,7 +354,7 @@ async def get_ribbon_board_embed(
         return embed, None
 
     file = await generate_ribbon_board_image(bot, member, award_roles)
-    embed.set_image(url=f"attachment://{RIBBON_BOARD_BASENAME}")
+    embed.set_image(url=f"attachment://{RIBBON_BOARD_ATTACHMENT_FILENAME}")
 
     awards_str = generate_ribbon_board_str(award_roles)
     embed.add_field(name="Awards", value=awards_str, inline=True)
@@ -397,34 +400,48 @@ def generate_ribbon_board_str(award_roles: list[discord.Role]) -> str:
 
 async def generate_ribbon_board_image(
     bot: Bot, member: discord.Member, award_roles: list[discord.Role]
-) -> discord.File:
-    # Load the cached image data if it exists
-    award_hash = hash(tuple(award_roles + [RIBBON_BOARD_VERSION]))
-    os.makedirs(".cache/ribbon_board", exist_ok=True)
-    filename = os.path.join(RIBBON_BOARD_CACHE_PATH, f"{award_hash}.png")
-    if os.path.exists(filename):
-        log.info(f"Found cache file: {filename}")
-        with open(filename, "rb") as image_file:
-            image_data = image_file.read()
-        image_bytes = io.BytesIO(image_data)
-        file = discord.File(image_bytes, filename=RIBBON_BOARD_BASENAME)
-        return file
+) -> discord.File | None:
+    cache_payload = _build_ribbon_board_cache_payload(award_roles)
+    image_data = await RIBBON_BOARD_CACHE.get_or_create_bytes_async(
+        cache_payload,
+        lambda: _render_ribbon_board_bytes(bot, member, award_roles),
+    )
+    if image_data is None:
+        return None
+    return RIBBON_BOARD_CACHE.to_discord_file(
+        image_data,
+        filename=RIBBON_BOARD_ATTACHMENT_FILENAME,
+    )
 
-    # Otherwise regenerate the image
-    log.info("No cache found, generating image")
+
+def _build_ribbon_board_cache_payload(award_roles: list[discord.Role]) -> dict:
+    return {
+        "award_roles": [
+            {
+                "role_id": role.id,
+                "icon_url": role.display_icon.url if role.display_icon else None,
+            }
+            for role in award_roles
+        ],
+        "columns": RIBBON_BOARD_COLUMNS,
+        "image_height": RIBBON_BOARD_IMG_HEIGHT,
+        "spacing": RIBBON_BOARD_IMG_SPACING,
+    }
+
+
+async def _render_ribbon_board_bytes(
+        bot: Bot, member: discord.Member, award_roles: list[discord.Role]
+) -> bytes | None:
+    log.info("No ribbon board cache found, generating image")
     award_images = []
-    session = bot.http._HTTPClient__session
     for role in award_roles:
-        log.info(f"Requesting image for {role.name}.")
-        if role.display_icon:
-            async with session.get(role.display_icon.url) as resp:
-                if resp.status == 200:
-                    img_data = await resp.read()
-                    award_images.append(Image.open(io.BytesIO(img_data)))
-                else:
-                    award_images.append(None)
-        else:
+        image_data = await _get_cached_award_image_bytes(bot, role)
+        if image_data is None:
             award_images.append(None)
+            continue
+        with Image.open(io.BytesIO(image_data)) as image:
+            award_images.append(image.convert("RGBA"))
+
     images = [img for img in award_images if img is not None]
 
     if not images:
@@ -487,12 +504,27 @@ async def generate_ribbon_board_image(
     image_bytes = io.BytesIO()
     canvas.save(image_bytes, format="PNG")
     image_bytes.seek(0)
+    return image_bytes.getvalue()
 
-    file = discord.File(image_bytes, filename=RIBBON_BOARD_BASENAME)
 
-    # Save images to cache
-    with open(filename, "wb") as image_file:
-        image_file.write(image_bytes.getvalue())
-    log.info(f"saved image to cache file: {filename}")
+async def _get_cached_award_image_bytes(bot: Bot, role: discord.Role) -> bytes | None:
+    if not role.display_icon:
+        return None
 
-    return file
+    cache_payload = {
+        "role_id": role.id,
+        "icon_url": role.display_icon.url,
+    }
+    return await RIBBON_ICON_CACHE.get_or_create_bytes_async(
+        cache_payload,
+        lambda: _download_role_icon_bytes(bot, role),
+    )
+
+
+async def _download_role_icon_bytes(bot: Bot, role: discord.Role) -> bytes | None:
+    log.info(f"Requesting image for {role.name}.")
+    session = bot.http._HTTPClient__session
+    async with session.get(role.display_icon.url) as resp:
+        if resp.status != 200:
+            return None
+        return await resp.read()

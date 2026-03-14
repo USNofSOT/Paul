@@ -8,7 +8,7 @@ from discord.app_commands import Choice
 from discord.ext import commands
 from matplotlib import pyplot as plt
 
-from src.config import NSC_ROLES
+from src.config import IMAGE_CACHES, NSC_ROLES
 from src.config.main_server import GUILD_ID
 from src.config.ranks_roles import NCO_AND_UP
 from src.config.ships import SHIPS
@@ -16,8 +16,21 @@ from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.ship_repository import ShipRepository
 from src.data.repository.voyage_repository import VoyageRepository
 from src.utils.embeds import error_embed
+from src.utils.image_cache import BinaryImageCache, render_matplotlib_plot_to_png
 
 log = getLogger(__name__)
+
+SHIP_VOYAGES_TREND_CACHE = BinaryImageCache(IMAGE_CACHES["ship_voyages_trend"])
+SHIP_HOSTED_TREND_CACHE = BinaryImageCache(IMAGE_CACHES["ship_hosted_trend"])
+SHIP_SIZE_TREND_CACHE = BinaryImageCache(IMAGE_CACHES["ship_size_trend"])
+
+
+def _month_anchor_now() -> datetime:
+    return datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+
+def _day_anchor_now() -> datetime:
+    return datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
 
 class Ships(commands.Cog):
@@ -296,18 +309,15 @@ class Ships(commands.Cog):
         )
 
         months = 6
-        plt.figure(figsize=(15, 12))
-        plt.title('Ship Voyages Trend')
-        plt.xlabel('Month')
-        plt.ylabel('Voyages')
+        series = []
+        reference_month = _month_anchor_now()
 
         for ship in self.ships:
             role = self.bot.get_guild(GUILD_ID).get_role(ship)
             x_dates, y_voyages = [], []
 
             for month in range(months):
-                first_day_of_month = datetime.now().replace(day=1)
-                date = first_day_of_month - relativedelta(months=month)
+                date = reference_month - relativedelta(months=month)
                 start_date = date.replace(hour=0, minute=0, second=0, microsecond=0)
                 end_date = (date + relativedelta(months=1)) - timedelta(seconds=1)
 
@@ -320,16 +330,49 @@ class Ships(commands.Cog):
                 x_dates.append(date)
                 y_voyages.append(voyages)
 
-            plt.plot(x_dates, y_voyages, marker='o', label=f"{role.name}", linewidth=2)
+            series.append(
+                {
+                    "role_name": role.name,
+                    "x_dates": x_dates,
+                    "x_dates_cache": [date.isoformat() for date in x_dates],
+                    "y_values": y_voyages,
+                }
+            )
 
-        plt.legend()
-        file_path = "./ship_voyages_trend.png"
-        plt.savefig(file_path)
-        plt.close()
+        def plotter():
+            plt.figure(figsize=(15, 12))
+            plt.title('Ship Voyages Trend')
+            plt.xlabel('Month')
+            plt.ylabel('Voyages')
+            for ship_series in series:
+                plt.plot(
+                    ship_series["x_dates"],
+                    ship_series["y_values"],
+                    marker='o',
+                    label=ship_series["role_name"],
+                    linewidth=2,
+                )
+            plt.legend()
 
-        with open(file_path, 'rb') as file:
-            discord_file = discord.File(file)
-            embed.set_image(url="attachment://ship_voyages_trend.png")
+        image_data = SHIP_VOYAGES_TREND_CACHE.get_or_create_bytes(
+            {
+                "months": months,
+                "reference_month": reference_month.isoformat(),
+                "series": [
+                    {
+                        "role_name": ship_series["role_name"],
+                        "x_dates": ship_series["x_dates_cache"],
+                        "y_values": ship_series["y_values"],
+                    }
+                    for ship_series in series
+                ],
+            },
+            lambda: render_matplotlib_plot_to_png(plotter),
+        )
+        discord_file = SHIP_VOYAGES_TREND_CACHE.to_discord_file(image_data)
+        embed.set_image(
+            url=f"attachment://{SHIP_VOYAGES_TREND_CACHE.config.default_filename}"
+        )
 
         return embed, discord_file
 
@@ -341,18 +384,15 @@ class Ships(commands.Cog):
         )
 
         months = 6
-        plt.figure(figsize=(15, 12))
-        plt.title('Ship Hosted Trend')
-        plt.xlabel('Month')
-        plt.ylabel('Hosted')
+        series = []
+        reference_month = _month_anchor_now()
 
         for ship in self.ships:
             role = self.bot.get_guild(GUILD_ID).get_role(ship)
             x_dates, y_hosted = [], []
 
             for month in range(months):
-                first_day_of_month = datetime.now().replace(day=1)
-                date = first_day_of_month - relativedelta(months=month)
+                date = reference_month - relativedelta(months=month)
                 start_date = date.replace(hour=0, minute=0, second=0, microsecond=0)
                 end_date = (date + relativedelta(months=1)) - timedelta(seconds=1)
 
@@ -365,16 +405,49 @@ class Ships(commands.Cog):
                 x_dates.append(date)
                 y_hosted.append(hosted)
 
-            plt.plot(x_dates, y_hosted, marker='o', label=f"{role.name}", linewidth=2)
+            series.append(
+                {
+                    "role_name": role.name,
+                    "x_dates": x_dates,
+                    "x_dates_cache": [date.isoformat() for date in x_dates],
+                    "y_values": y_hosted,
+                }
+            )
 
-        plt.legend()
-        file_path = "./ship_hosted_trend.png"
-        plt.savefig(file_path)
-        plt.close()
+        def plotter():
+            plt.figure(figsize=(15, 12))
+            plt.title('Ship Hosted Trend')
+            plt.xlabel('Month')
+            plt.ylabel('Hosted')
+            for ship_series in series:
+                plt.plot(
+                    ship_series["x_dates"],
+                    ship_series["y_values"],
+                    marker='o',
+                    label=ship_series["role_name"],
+                    linewidth=2,
+                )
+            plt.legend()
 
-        with open(file_path, 'rb') as file:
-            discord_file = discord.File(file)
-            embed.set_image(url="attachment://ship_hosted_trend.png")
+        image_data = SHIP_HOSTED_TREND_CACHE.get_or_create_bytes(
+            {
+                "months": months,
+                "reference_month": reference_month.isoformat(),
+                "series": [
+                    {
+                        "role_name": ship_series["role_name"],
+                        "x_dates": ship_series["x_dates_cache"],
+                        "y_values": ship_series["y_values"],
+                    }
+                    for ship_series in series
+                ],
+            },
+            lambda: render_matplotlib_plot_to_png(plotter),
+        )
+        discord_file = SHIP_HOSTED_TREND_CACHE.to_discord_file(image_data)
+        embed.set_image(
+            url=f"attachment://{SHIP_HOSTED_TREND_CACHE.config.default_filename}"
+        )
 
         return embed, discord_file
 
@@ -387,10 +460,8 @@ class Ships(commands.Cog):
         )
 
         days = 14
-        plt.figure(figsize=(15, 12))
-        plt.title('Ship Size Trend')
-        plt.xlabel('Day')
-        plt.ylabel('Members')
+        series = []
+        reference_day = _day_anchor_now()
 
         for ship in self.ships:
             role = self.bot.get_guild(GUILD_ID).get_role(ship)
@@ -398,7 +469,7 @@ class Ships(commands.Cog):
             ship_sizes = ship_repository.get_ship_sizes(role.id)
 
             for day in range(days):
-                date = datetime.now() - timedelta(days=day)
+                date = reference_day - timedelta(days=day)
                 start_date = date.replace(hour=0, minute=0, second=0, microsecond=0)
                 end_date = (date + timedelta(days=1)) - timedelta(seconds=1)
 
@@ -412,17 +483,49 @@ class Ships(commands.Cog):
                     x_dates.append(date)
                     y_members.append(last_ship_size_before_today[-1] if last_ship_size_before_today else 0)
 
+            series.append(
+                {
+                    "role_name": role.name,
+                    "x_dates": x_dates,
+                    "x_dates_cache": [date.isoformat() for date in x_dates],
+                    "y_values": y_members,
+                }
+            )
 
-            plt.plot(x_dates, y_members, marker='o', label=f"{role.name}", linewidth=2)
+        def plotter():
+            plt.figure(figsize=(15, 12))
+            plt.title('Ship Size Trend')
+            plt.xlabel('Day')
+            plt.ylabel('Members')
+            for ship_series in series:
+                plt.plot(
+                    ship_series["x_dates"],
+                    ship_series["y_values"],
+                    marker='o',
+                    label=ship_series["role_name"],
+                    linewidth=2,
+                )
+            plt.legend()
 
-        plt.legend()
-        file_path = "./ship_size_trend.png"
-        plt.savefig(file_path)
-        plt.close()
-
-        with open(file_path, 'rb') as file:
-            discord_file = discord.File(file)
-            embed.set_image(url="attachment://ship_size_trend.png")
+        image_data = SHIP_SIZE_TREND_CACHE.get_or_create_bytes(
+            {
+                "days": days,
+                "reference_day": reference_day.isoformat(),
+                "series": [
+                    {
+                        "role_name": ship_series["role_name"],
+                        "x_dates": ship_series["x_dates_cache"],
+                        "y_values": ship_series["y_values"],
+                    }
+                    for ship_series in series
+                ],
+            },
+            lambda: render_matplotlib_plot_to_png(plotter),
+        )
+        discord_file = SHIP_SIZE_TREND_CACHE.to_discord_file(image_data)
+        embed.set_image(
+            url=f"attachment://{SHIP_SIZE_TREND_CACHE.config.default_filename}"
+        )
 
         ship_repository.close_session()
         return embed, discord_file
