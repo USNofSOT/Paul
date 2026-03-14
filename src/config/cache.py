@@ -54,7 +54,7 @@ class ImageCacheConfig:
     extension: str = ".png"
 
 
-IMAGE_CACHE_JANITOR_INTERVAL_HOURS = 1
+IMAGE_CACHE_JANITOR_INTERVAL_HOURS = 12
 
 IMAGE_CACHES = {
     "ribbon_board": ImageCacheConfig(
