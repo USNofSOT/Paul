@@ -115,7 +115,10 @@ class Hosted(Base):
     # Many-to-One relationship with Sailor
     target: Mapped["Sailor"] = relationship("Sailor", foreign_keys=[target_id])
 
-    voyage_planning_message_id = Column(BIGINT, nullable=True)  # The message ID of the voyage planning message (if any)
+    voyage_planning_channel_id = Column(BIGINT,
+                                        nullable=True)  # The channel ID of the voyage planning or announcement message (if any)
+    voyage_planning_message_id = Column(BIGINT,
+                                        nullable=True)  # The message ID of the voyage planning or announcement message (if any)
 
 
 class ModNotes(Base):

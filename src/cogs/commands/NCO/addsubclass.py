@@ -23,7 +23,7 @@ from src.config import (
     SURGEON_SYNONYMS,
     VOYAGE_LOGS,
 )
-from src.config.main_server import VOYAGE_PLANNING
+from src.config.main_server import VOYAGE_ANNOUNCEMENTS, VOYAGE_PLANNING
 from src.data import SubclassType
 from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.sailor_repository import ensure_sailor_exists
@@ -515,10 +515,21 @@ class AddSubclass(commands.Cog):
 
             warnings = []
             if hosted_entry.voyage_planning_message_id:
+                voyage_reference_channel_id = (
+                        hosted_entry.voyage_planning_channel_id or VOYAGE_PLANNING
+                )
+                voyage_reference_label = (
+                    "Voyage Announcement"
+                    if voyage_reference_channel_id == VOYAGE_ANNOUNCEMENTS
+                    else "Voyage Planning"
+                )
                 embed_misc_voyage_info.add_field(
-                    name="Voyage Planning",
-                    value=f"https://discord.com/channels/{GUILD_ID}/{VOYAGE_PLANNING}/"
-                          f"{hosted_entry.voyage_planning_message_id}",
+                    name=voyage_reference_label,
+                    value=(
+                        f"https://discord.com/channels/{GUILD_ID}/"
+                        f"{voyage_reference_channel_id}/"
+                        f"{hosted_entry.voyage_planning_message_id}"
+                    ),
                     inline=False,
                 )
             else:
