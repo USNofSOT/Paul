@@ -49,7 +49,7 @@ USS_ILLUSTRIOUS = Ship(
     boat_command_channel_id=BC_LUSTY,
     role_id=ROLE_ID_LUSTY,
     emoji="<:Lusty:1079841997021524018>",
-    max_size=27
+    max_size=33
 )
 
 USS_BERSERKER = Ship(
@@ -79,10 +79,10 @@ ANCIENT_ISLES_FLEET = Fleet(
 # Devil's Roar Fleet
 #######################################
 USS_DEFIANT = Ship(
-    name="USS Defiant",
+    name="USS Eos",
     boat_command_channel_id=BC_DEFIANT,
     role_id=ROLE_ID_DEFIANT,
-    emoji="<:Defiant:1354503521747075072>",
+    emoji="<:Eos:1477072696301981811>",
     max_size=30
 )
 
@@ -160,7 +160,7 @@ USS_HYPERION = Ship(
     boat_command_channel_id=BC_HYPERION,
     role_id=ROLE_ID_HYPERION,
     emoji="<:hyperion1:1162043891185369199>",
-    max_size=33
+    max_size=24
 )
 
 USS_NIGHTINGALE = Ship(

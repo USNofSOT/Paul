@@ -2,9 +2,9 @@ name: "🔍 Continuous Integration"
 
 on:
   push:
-    branches: [ "master", "dev", "development" ]
+    branches: [ "master", "main", "dev", "development" ]
   pull_request:
-    branches: [ "master", "dev", "development" ]
+    branches: [ "master", "main", "dev", "development" ]
 
 jobs:
   test:
