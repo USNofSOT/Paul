@@ -5,10 +5,16 @@ import functools
 from logging import getLogger
 from typing import Optional
 
+from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands import CommandNotFound
 
 from src.cogs import EXTENSIONS
+from src.core.command_cooldowns import (
+    apply_configured_cooldowns,
+    handle_app_command_cooldown_error,
+    handle_text_command_cooldown_error,
+)
 from src.data import BotInteractionType
 from src.data.repository.auditlog_repository import AuditLogRepository
 
@@ -80,6 +86,31 @@ class Bot(discord.ext.commands.Bot):
         except CommandNotFound:
             pass
 
+    async def on_command_error(
+            self,
+            context: commands.Context,
+            error: commands.CommandError,
+    ) -> None:
+        if context.command is not None and context.command.has_error_handler():
+            return
+
+        if context.cog is not None and context.cog.has_error_handler():
+            return
+
+        if isinstance(error, CommandNotFound):
+            return
+
+        if await handle_text_command_cooldown_error(context, error):
+            return
+
+    async def on_app_command_error(
+            self,
+            interaction: discord.Interaction,
+            error: app_commands.AppCommandError,
+    ) -> None:
+        if await handle_app_command_cooldown_error(interaction, error):
+            return
+
     async def on_interaction(self, interaction: discord.Interaction):
         if interaction.type == discord.InteractionType.application_command:
             audit_log_repository = AuditLogRepository()
@@ -106,6 +137,8 @@ class Bot(discord.ext.commands.Bot):
         for extension in EXTENSIONS:
             log.info(f"Loading {extension}")
             await self.load_extension(extension)
+        apply_configured_cooldowns(self)
+        self.tree.on_error = self.on_app_command_error
         log.info("All extentions loaded")
         # await self.tree.sync()
         log.info("Tree Synced")
