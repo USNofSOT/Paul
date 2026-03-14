@@ -1,48 +1,69 @@
-import pytest
-
 from src.utils import process_voyage_log
 
 
-@pytest.mark.parametrize(
-    "guild_id,voyage_planning,content,expected",
-    [
-        (111111, 22222, "https://discord.com/channels/111111/22222/987654321", 987654321),
-        ("1", "2", "https://discordapp.com/channels/1/2/123", 123),
-        (999999, 88888, "VP: https://discord.com/channels/999999/88888/55555", 55555),
-        (123456, 65432, "https://discord.com/channels/123456/65432/0", 0),
-        (777777, 66666, "https://discord.com/channels/777777/66666/44444 VP", None),
-        (3, 4, "https://discordapp.com/channels/3/4/321", 321),
-    ],
-)
-def test_get_voyage_planning_message_id_matches(guild_id, voyage_planning, content, expected):
+def configure_parser(guild_id, voyage_planning, voyage_announcements):
     process_voyage_log.GUILD_ID = guild_id
     process_voyage_log.VOYAGE_PLANNING = voyage_planning
-    assert process_voyage_log.get_voyage_planning_message_id_from_content(content) == expected
+    process_voyage_log.VOYAGE_ANNOUNCEMENTS = voyage_announcements
 
 
-def test_no_match_returns_none():
-    process_voyage_log.GUILD_ID = 1
-    process_voyage_log.VOYAGE_PLANNING = 2
-    assert process_voyage_log.get_voyage_planning_message_id_from_content(
-        "this message contains no discord link") is None
+def assert_reference_matches(content, expected_reference, expected_message_id):
+    assert (
+            process_voyage_log.get_voyage_planning_message_reference_from_content(content)
+            == expected_reference
+    )
+    assert (
+            process_voyage_log.get_voyage_planning_message_id_from_content(content)
+            == expected_message_id
+    )
 
 
-def test_link_not_at_end_returns_none():
-    process_voyage_log.GUILD_ID = 1
-    process_voyage_log.VOYAGE_PLANNING = 2
-    content = f"https://discord.com/channels/{process_voyage_log.GUILD_ID}/{process_voyage_log.VOYAGE_PLANNING}/123 extra"
-    assert process_voyage_log.get_voyage_planning_message_id_from_content(content) is None
+def test_parses_discord_com_voyage_planning_link():
+    configure_parser(111111, 22222, 33333)
+    assert_reference_matches(
+        "https://discord.com/channels/111111/22222/987654321",
+        (22222, 987654321),
+        987654321,
+    )
 
 
-def test_wrong_guild_id_returns_none():
-    process_voyage_log.GUILD_ID = 1
-    process_voyage_log.VOYAGE_PLANNING = 2
-    content = "https://discord.com/channels/999/2/123"
-    assert process_voyage_log.get_voyage_planning_message_id_from_content(content) is None
+def test_parses_discordapp_com_voyage_planning_link():
+    configure_parser("1", "2", "3")
+    assert_reference_matches(
+        "https://discordapp.com/channels/1/2/123",
+        (2, 123),
+        123,
+    )
 
 
-def test_wrong_voyage_planning_id_returns_none():
-    process_voyage_log.GUILD_ID = 1
-    process_voyage_log.VOYAGE_PLANNING = 2
-    content = "https://discord.com/channels/1/999/123"
-    assert process_voyage_log.get_voyage_planning_message_id_from_content(content) is None
+def test_parses_prefixed_voyage_planning_link():
+    configure_parser(999999, 88888, 77777)
+    assert_reference_matches(
+        "VP: https://discord.com/channels/999999/88888/55555",
+        (88888, 55555),
+        55555,
+    )
+
+
+def test_parses_voyage_announcement_link():
+    configure_parser(123456, 65432, 76543)
+    assert_reference_matches(
+        "https://discord.com/channels/123456/76543/13579",
+        (76543, 13579),
+        13579,
+    )
+
+
+def test_parses_second_discordapp_com_voyage_planning_link():
+    configure_parser(3, 4, 5)
+    assert_reference_matches(
+        "https://discordapp.com/channels/3/4/321",
+        (4, 321),
+        321,
+    )
+
+
+def test_rejects_link_when_reference_is_not_at_end():
+    configure_parser(777777, 66666, 55555)
+    content = "https://discord.com/channels/777777/66666/44444 VP"
+    assert_reference_matches(content, None, None)
