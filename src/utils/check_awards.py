@@ -11,8 +11,8 @@ from src.utils.ranks import rank_to_roles
 
 
 def check_sailor(guild: discord.Guild, interaction: discord.Interaction, sailor: Sailor, member: discord.Member) -> list[str]:
-    # Assert these are the same person
-    assert sailor.discord_id == member.id, "Sailor does not have the same ID as discord member."
+    if sailor.discord_id != member.id:
+        raise ValueError("Sailor does not have the same ID as discord member.")
 
     msg_strs = (
         # Check awards
