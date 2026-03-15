@@ -1,5 +1,5 @@
 import logging
-import random
+import secrets
 
 import discord
 from discord import app_commands
@@ -174,7 +174,7 @@ class Voyages(commands.Cog):
 
         embed.add_field(
             name=":question: Fun Facts",
-            value=random.choice(fun_facts),
+            value=secrets.choice(fun_facts),
         )
 
 
