@@ -52,9 +52,10 @@ class ImageCacheConfig:
     ttl_seconds: int = ONE_DAY_IN_SECONDS
     version: int = 1
     extension: str = ".png"
+    auto_cleanup_trigger_ratio: float | None = 1.1
 
 
-IMAGE_CACHE_JANITOR_INTERVAL_HOURS = 12
+IMAGE_CACHE_JANITOR_INTERVAL_HOURS = 6
 
 IMAGE_CACHES = {
     "ribbon_board": ImageCacheConfig(
@@ -126,6 +127,15 @@ IMAGE_CACHES = {
         directory=".cache/ships/size_trend",
         default_filename="ship_size_trend.png",
         max_items=MEDIUM_IMAGE_CACHE_MAX_ITEMS,
+        ttl_seconds=TWO_HOURS_IN_SECONDS,
+        version=1,
+    ),
+    "pocket_watch_activity_chart": ImageCacheConfig(
+        name="pocket_watch_activity_chart",
+        category=REPORTS_CACHE_CATEGORY,
+        directory=".cache/pocket_watch/activity_chart",
+        default_filename="pocket_watch_activity.png",
+        max_items=256,
         ttl_seconds=TWO_HOURS_IN_SECONDS,
         version=1,
     ),

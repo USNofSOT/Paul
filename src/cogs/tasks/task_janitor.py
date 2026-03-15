@@ -16,6 +16,7 @@ JANITOR_TARGETS = {
     "crewreport_voyage_chart": IMAGE_CACHES["crewreport_voyage_chart"],
     "crewreport_hosted_chart": IMAGE_CACHES["crewreport_hosted_chart"],
     "netreport_growth_chart": IMAGE_CACHES["netreport_growth_chart"],
+    "pocket_watch_activity_chart": IMAGE_CACHES["pocket_watch_activity_chart"],
     "ship_voyages_trend": IMAGE_CACHES["ship_voyages_trend"],
     "ship_hosted_trend": IMAGE_CACHES["ship_hosted_trend"],
     "ship_size_trend": IMAGE_CACHES["ship_size_trend"],
