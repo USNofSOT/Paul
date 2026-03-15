@@ -1,11 +1,9 @@
-import datetime
 import logging
-from typing import Type
 
 from sqlalchemy.orm import sessionmaker
 
-from src.data.engine import engine
 from src.data import Sailor, ModNotes
+from src.data.engine import engine
 from src.utils.time_utils import utc_time_now
 
 log = logging.getLogger(__name__)
@@ -52,8 +50,12 @@ class ModNoteRepository:
         sailor = self.session.query(Sailor).filter(Sailor.discord_id == target_id).first()
         modnote = self.session.query(ModNotes).filter(ModNotes.id == id).first()
 
-        # Raise an error if the note is not about this sailor
-        assert modnote.target_id == sailor.discord_id, f"Note {id} is not linked to target {target_id}"
+        if sailor is None:
+            raise ValueError(f"Could not find sailor with target ID {target_id}")
+        if modnote is None:
+            raise ValueError(f"Could not find note with ID {id}")
+        if modnote.target_id != sailor.discord_id:
+            raise ValueError(f"Note {id} is not linked to target {target_id}")
 
         # Toggle hide status
         modnote.hidden = hidden
