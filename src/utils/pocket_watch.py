@@ -12,6 +12,7 @@ from matplotlib import pyplot as plt
 from src.config.pocket_watch import (
     POCKET_WATCH_DEFAULT_DAYS,
     POCKET_WATCH_MAX_DAYS,
+    POCKET_WATCH_MAX_WEEKLY_X_LABELS,
     POCKET_WATCH_MIN_ACTIVE_WEEKS,
     POCKET_WATCH_MIN_ATTENDED_VOYAGES,
     POCKET_WATCH_MIN_DAYS,
@@ -44,15 +45,24 @@ class PocketWatchAnalysis:
     total_voyages: int
     total_hosted: int
     active_weeks: int
+    active_hosted_weeks: int
     total_weeks: int
     average_voyages_per_week: float
     average_voyages_per_active_week: float
+    average_hosted_per_week: float
+    average_hosted_per_active_week: float
     first_voyage_at: datetime
     last_voyage_at: datetime
+    first_hosted_at: datetime | None
+    last_hosted_at: datetime | None
     most_active_hour: int
     most_active_hour_count: int
     most_active_weekday: int
     most_active_weekday_count: int
+    most_active_hosted_hour: int | None
+    most_active_hosted_hour_count: int
+    most_active_hosted_weekday: int | None
+    most_active_hosted_weekday_count: int
     weekly_labels: tuple[str, ...]
     weekly_attended_counts: tuple[int, ...]
     weekly_hosted_counts: tuple[int, ...]
@@ -67,6 +77,19 @@ class PocketWatchAnalysis:
     @property
     def most_active_weekday_label(self) -> str:
         return WEEKDAY_LABELS[self.most_active_weekday]
+
+    @property
+    def most_active_hosted_hour_label(self) -> str:
+        if self.most_active_hosted_hour is None:
+            return "No activity"
+        end_hour = (self.most_active_hosted_hour + 1) % 24
+        return f"{self.most_active_hosted_hour:02d}:00-{end_hour:02d}:00"
+
+    @property
+    def most_active_hosted_weekday_label(self) -> str:
+        if self.most_active_hosted_weekday is None:
+            return "No activity"
+        return WEEKDAY_LABELS[self.most_active_hosted_weekday]
 
     @property
     def hosted_activity_present(self) -> bool:
@@ -150,14 +173,18 @@ def _build_week_range(window_start: datetime, window_end: datetime) -> list[date
     return weeks
 
 
-def _build_weekly_tick_positions(total_labels: int) -> list[int]:
+def _build_weekly_tick_positions(
+        total_labels: int,
+        *,
+        max_labels: int | None = POCKET_WATCH_MAX_WEEKLY_X_LABELS,
+) -> list[int]:
     if total_labels <= 0:
         return []
 
-    if total_labels <= 12:
+    if max_labels is None or max_labels <= 0 or total_labels <= max_labels:
         return list(range(total_labels))
 
-    step = ceil(total_labels / 12)
+    step = ceil(total_labels / max_labels)
     tick_positions = list(range(0, total_labels, step))
     last_index = total_labels - 1
     if tick_positions[-1] != last_index:
@@ -233,6 +260,7 @@ def analyze_pocket_watch_activity(
     )
     weekly_hosted_counts = tuple(weekly_hosted_counter[week] for week in week_range)
     active_weeks = sum(1 for count in weekly_attended_counts if count > 0)
+    active_hosted_weeks = sum(1 for count in weekly_hosted_counts if count > 0)
 
     if (
             len(local_attended_times) < thresholds.min_attended_voyages
@@ -265,23 +293,69 @@ def analyze_pocket_watch_activity(
 
     total_weeks = max(len(week_range), 1)
     total_voyages = len(local_attended_times)
+    total_hosted = len(local_hosted_times)
+
+    if local_hosted_times:
+        hosted_weekday_counter = Counter(
+            local_time.weekday() for local_time in local_hosted_times
+        )
+        hosted_weekday_counts = tuple(
+            hosted_weekday_counter.get(index, 0) for index in range(7)
+        )
+        hosted_hourly_counter = Counter(
+            local_time.hour for local_time in local_hosted_times
+        )
+        hosted_hourly_counts = tuple(
+            hosted_hourly_counter.get(index, 0) for index in range(24)
+        )
+        most_active_hosted_hour, most_active_hosted_hour_count = max(
+            enumerate(hosted_hourly_counts),
+            key=lambda item: (item[1], -item[0]),
+        )
+        most_active_hosted_weekday, most_active_hosted_weekday_count = max(
+            enumerate(hosted_weekday_counts),
+            key=lambda item: (item[1], -item[0]),
+        )
+        first_hosted_at = min(local_hosted_times)
+        last_hosted_at = max(local_hosted_times)
+        average_hosted_per_active_week = round(
+            total_hosted / active_hosted_weeks,
+            2,
+        )
+    else:
+        most_active_hosted_hour = None
+        most_active_hosted_hour_count = 0
+        most_active_hosted_weekday = None
+        most_active_hosted_weekday_count = 0
+        first_hosted_at = None
+        last_hosted_at = None
+        average_hosted_per_active_week = 0.0
 
     return PocketWatchAnalysis(
         timezone_label=timezone_label,
         window_start=window_start,
         window_end=window_end,
         total_voyages=total_voyages,
-        total_hosted=len(local_hosted_times),
+        total_hosted=total_hosted,
         active_weeks=active_weeks,
+        active_hosted_weeks=active_hosted_weeks,
         total_weeks=total_weeks,
         average_voyages_per_week=round(total_voyages / total_weeks, 2),
         average_voyages_per_active_week=round(total_voyages / active_weeks, 2),
+        average_hosted_per_week=round(total_hosted / total_weeks, 2),
+        average_hosted_per_active_week=average_hosted_per_active_week,
         first_voyage_at=min(local_attended_times),
         last_voyage_at=max(local_attended_times),
+        first_hosted_at=first_hosted_at,
+        last_hosted_at=last_hosted_at,
         most_active_hour=most_active_hour,
         most_active_hour_count=most_active_hour_count,
         most_active_weekday=most_active_weekday,
         most_active_weekday_count=most_active_weekday_count,
+        most_active_hosted_hour=most_active_hosted_hour,
+        most_active_hosted_hour_count=most_active_hosted_hour_count,
+        most_active_hosted_weekday=most_active_hosted_weekday,
+        most_active_hosted_weekday_count=most_active_hosted_weekday_count,
         weekly_labels=tuple(week.strftime("%d %b") for week in week_range),
         weekly_attended_counts=weekly_attended_counts,
         weekly_hosted_counts=weekly_hosted_counts,
@@ -297,7 +371,8 @@ def render_pocket_watch_chart(
         days: int,
 ) -> bytes:
     def plotter() -> None:
-        figure = plt.figure(figsize=(15, 10))
+        figure_width = max(15, len(analysis.weekly_labels) * 0.42)
+        figure = plt.figure(figsize=(figure_width, 10))
         grid = figure.add_gridspec(2, 2, height_ratios=[1.35, 1])
 
         weekly_axis = figure.add_subplot(grid[0, :])
@@ -321,6 +396,7 @@ def render_pocket_watch_chart(
                 label="Hosted",
             )
         weekly_axis.set_title("Voyages per Week")
+        weekly_axis.set_xlabel("Week Starting")
         weekly_axis.set_ylabel("Voyages")
         tick_positions = _build_weekly_tick_positions(len(analysis.weekly_labels))
         weekly_axis.set_xticks(tick_positions)
@@ -328,6 +404,7 @@ def render_pocket_watch_chart(
             [analysis.weekly_labels[index] for index in tick_positions],
             rotation=45,
             ha="right",
+            fontsize=8,
         )
         weekly_axis.grid(axis="y", linestyle="--", alpha=0.25)
         weekly_axis.legend(loc="upper left")
