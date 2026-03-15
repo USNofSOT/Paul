@@ -30,6 +30,81 @@ log = logging.getLogger(__name__)
 POCKET_WATCH_ACTIVITY_CACHE = BinaryImageCache(
     IMAGE_CACHES["pocket_watch_activity_chart"]
 )
+EMBED_FIELD_SPACER = "\u200b"
+
+
+def _format_activity_timestamp(value: datetime | None) -> str:
+    if value is None:
+        return "No activity"
+    return discord.utils.format_dt(value, style="f")
+
+
+def _format_hour_block_timestamp(
+        reference_time: datetime | None,
+        hour: int | None,
+) -> str:
+    if reference_time is None or hour is None:
+        return "No activity"
+
+    start_time = reference_time.replace(
+        hour=hour,
+        minute=0,
+        second=0,
+        microsecond=0,
+    )
+    end_time = start_time + timedelta(hours=1)
+    return (
+        f"{discord.utils.format_dt(start_time, style='t')} - "
+        f"{discord.utils.format_dt(end_time, style='t')}"
+    )
+
+
+def _build_activity_volume_field(
+        *,
+        total_events: int,
+        weeks_label: str,
+        active_weeks: int,
+        total_weeks: int,
+        average_per_week: float,
+        average_per_active_week: float,
+) -> str:
+    return (
+        f"Total: **{total_events}**\n"
+        f"{weeks_label}: **{active_weeks}/{total_weeks}**\n"
+        f"Avg / week: **{average_per_week:.2f}**\n"
+        f"Avg / active: **{average_per_active_week:.2f}**"
+    )
+
+
+def _build_activity_patterns_field(
+        *,
+        busiest_day: str,
+        busiest_hour: str,
+        first_seen: datetime | None,
+        last_seen: datetime | None,
+        empty_label: str,
+) -> str:
+    if first_seen is None or last_seen is None:
+        return empty_label
+
+    return (
+        f"Peak day: **{busiest_day}**\n"
+        f"Peak hour: **{busiest_hour}**\n"
+        # f"First: **{_format_activity_timestamp(first_seen)}**\n"
+        # f"Last: **{_format_activity_timestamp(last_seen)}**"
+    )
+
+
+def _add_field_pair(
+        embed: discord.Embed,
+        *,
+        left_name: str,
+        left_value: str,
+        right_name: str,
+        right_value: str,
+) -> None:
+    embed.add_field(name=left_name, value=left_value, inline=True)
+    embed.add_field(name=right_name, value=right_value, inline=True)
 
 
 class PocketWatch(commands.Cog):
@@ -108,56 +183,84 @@ class PocketWatch(commands.Cog):
             )
 
             embed = default_embed(
-                title="Pocket Watch",
+                title="Pocket Watch Report",
                 description=(
-                    f"Voyage activity analysis for {target.mention} over the "
-                    f"last {days} days."
+                    f"Activity report for {target.mention} over the last "
+                    f"**{days}** days."
                 ),
                 author=False,
             )
             embed.set_thumbnail(url=target.display_avatar.url)
+            embed.timestamp = now
 
             embed.add_field(
-                name="Attendance",
+                name="🧭 Window",
                 value=(
-                    f"**{analysis.total_voyages}** attended voyages\n"
-                    f"**{analysis.active_weeks}/{analysis.total_weeks}** active weeks\n"
-                    f"**{analysis.average_voyages_per_week:.2f}** voyages per week\n"
-                    f"**{analysis.average_voyages_per_active_week:.2f}** per "
-                    "active week"
-                ),
-                inline=True,
-            )
-            embed.add_field(
-                name="Peak Activity",
-                value=(
-                    f"**{analysis.most_active_weekday_label}** is the busiest day\n"
-                    f"**{analysis.most_active_hour_label}** is the busiest hour block\n"
+                    f"Start: {_format_activity_timestamp(analysis.window_start)}\n"
+                    f"End: {_format_activity_timestamp(analysis.window_end)}\n"
                     f"Timezone: **{analysis.timezone_label}**"
-                ),
-                inline=True,
-            )
-            embed.add_field(
-                name="Window",
-                value=(
-                    "First voyage: "
-                    f"**{analysis.first_voyage_at.strftime('%Y-%m-%d %H:%M')}**\n"
-                    "Last voyage: "
-                    f"**{analysis.last_voyage_at.strftime('%Y-%m-%d %H:%M')}**"
                 ),
                 inline=False,
             )
 
+            embed.add_field(
+                name=EMBED_FIELD_SPACER,
+                value=EMBED_FIELD_SPACER,
+                inline=False,
+            )
+
+            _add_field_pair(
+                embed,
+                left_name="📘 Attended Voyages",
+                left_value=_build_activity_volume_field(
+                    total_events=analysis.total_voyages,
+                    weeks_label="Weeks active",
+                    active_weeks=analysis.active_weeks,
+                    total_weeks=analysis.total_weeks,
+                    average_per_week=analysis.average_voyages_per_week,
+                    average_per_active_week=analysis.average_voyages_per_active_week,
+                ),
+                right_name="📊 Attendance Patterns",
+                right_value=_build_activity_patterns_field(
+                    busiest_day=analysis.most_active_weekday_label,
+                    busiest_hour=_format_hour_block_timestamp(
+                        analysis.first_voyage_at,
+                        analysis.most_active_hour,
+                    ),
+                    first_seen=analysis.first_voyage_at,
+                    last_seen=analysis.last_voyage_at,
+                    empty_label="No attended voyages were logged in this period.",
+                ),
+            )
+
             if analysis.hosted_activity_present:
                 embed.add_field(
-                    name="Hosting",
-                    value=(
-                        f"Hosted **{analysis.total_hosted}** voyage"
-                        f"{'s' if analysis.total_hosted != 1 else ''} in the "
-                        "same period.\n"
-                        "Hosting is shown as the orange overlay on the weekly chart."
-                    ),
+                    name=EMBED_FIELD_SPACER,
+                    value=EMBED_FIELD_SPACER,
                     inline=False,
+                )
+                _add_field_pair(
+                    embed,
+                    left_name="🟧 Hosted Voyages",
+                    left_value=_build_activity_volume_field(
+                        total_events=analysis.total_hosted,
+                        weeks_label="Weeks active",
+                        active_weeks=analysis.active_hosted_weeks,
+                        total_weeks=analysis.total_weeks,
+                        average_per_week=analysis.average_hosted_per_week,
+                        average_per_active_week=analysis.average_hosted_per_active_week,
+                    ),
+                    right_name="🕒 Hosting Patterns",
+                    right_value=_build_activity_patterns_field(
+                        busiest_day=analysis.most_active_hosted_weekday_label,
+                        busiest_hour=_format_hour_block_timestamp(
+                            analysis.first_hosted_at,
+                            analysis.most_active_hosted_hour,
+                        ),
+                        first_seen=analysis.first_hosted_at,
+                        last_seen=analysis.last_hosted_at,
+                        empty_label="No hosted voyages were logged in this period.",
+                    ),
                 )
 
             if image_data is not None:
