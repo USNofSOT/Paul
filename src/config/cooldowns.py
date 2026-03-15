@@ -57,6 +57,7 @@ COMMAND_COOLDOWNS = {
     "netreport": command_cooldown(15),
     "ping": command_cooldown(3),
     "placerecruit": command_cooldown(5),
+    "pocketwatch": command_cooldown(20),
     "populate_training_records": command_cooldown(90),
     "populate_voyages": command_cooldown(120),
     "progress": command_cooldown(8),

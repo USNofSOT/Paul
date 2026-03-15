@@ -4,6 +4,7 @@ import hashlib
 import inspect
 import io
 import json
+import math
 import time
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
@@ -35,6 +36,39 @@ class CacheStatsSnapshot:
     cache_hit_count: int
     cache_miss_count: int
     cached_percent: float
+
+
+class CacheCleanupRecorder:
+    def record_cleanup(self, result: CacheCleanupResult) -> None:
+        repository = None
+        try:
+            from src.data.repository.cache_stats_repository import CacheStatsRepository
+
+            repository = CacheStatsRepository()
+        except Exception as e:
+            log.warning(
+                "Unable to prepare cache cleanup stats for %s: %s",
+                result.cache_name,
+                e,
+            )
+            return
+
+        try:
+            repository.record_janitor_run(
+                result.cache_name,
+                removed_expired=result.removed_expired,
+                removed_overflow=result.removed_overflow,
+                remaining_items=result.remaining_items,
+            )
+        except Exception as e:
+            log.warning(
+                "Unable to record cache cleanup stats for %s: %s",
+                result.cache_name,
+                e,
+            )
+        finally:
+            if repository is not None:
+                repository.close_session()
 
 
 class CacheStatsRecorder:
@@ -71,6 +105,7 @@ class CacheStatsRecorder:
 
 
 DEFAULT_CACHE_STATS_RECORDER = CacheStatsRecorder()
+DEFAULT_CACHE_CLEANUP_RECORDER = CacheCleanupRecorder()
 
 
 def _normalize_cache_value(value: Any) -> Any:
@@ -123,10 +158,12 @@ class BinaryImageCache:
             config: ImageCacheConfig,
             *,
             stats_recorder: CacheStatsRecorder | None = None,
+            cleanup_recorder: CacheCleanupRecorder | None = None,
     ):
         self.config = config
         self.directory = Path(config.directory)
         self.stats_recorder = stats_recorder or DEFAULT_CACHE_STATS_RECORDER
+        self.cleanup_recorder = cleanup_recorder or DEFAULT_CACHE_CLEANUP_RECORDER
 
     def key_for(self, payload: Any) -> str:
         return build_cache_key(payload, version=self.config.version)
@@ -143,6 +180,14 @@ class BinaryImageCache:
 
     def _load_bytes_from_path(self, path: Path) -> bytes | None:
         if not path.exists():
+            return None
+        if _is_cache_file_expired(path, self.config):
+            path.unlink(missing_ok=True)
+            log.info(
+                "Cache expired on read [%s] path=%s",
+                self.config.name,
+                path,
+            )
             return None
         data = path.read_bytes()
         path.touch()
@@ -190,6 +235,7 @@ class BinaryImageCache:
             path,
             len(data),
         )
+        self._cleanup_if_threshold_exceeded()
         return data
 
     async def get_or_create_bytes_async(
@@ -227,6 +273,7 @@ class BinaryImageCache:
             path,
             len(data),
         )
+        self._cleanup_if_threshold_exceeded()
         return data
 
     def to_discord_file(
@@ -241,6 +288,32 @@ class BinaryImageCache:
 
     def _record_request(self, *, was_hit: bool) -> CacheStatsSnapshot | None:
         return self.stats_recorder.record_request(self.config.name, was_hit)
+
+    def _cleanup_if_threshold_exceeded(self) -> CacheCleanupResult | None:
+        trigger_item_count = get_auto_cleanup_trigger_item_count(self.config)
+        if trigger_item_count is None:
+            return None
+
+        current_item_count = get_cached_item_count(
+            self.config,
+            stop_after=trigger_item_count,
+        )
+        if not should_trigger_auto_cleanup(self.config, current_item_count):
+            return None
+
+        cleanup_result = cleanup_cache(self.config)
+        self.cleanup_recorder.record_cleanup(cleanup_result)
+        log.info(
+            "Auto-janitor cleanup [%s] trigger_ratio=%s items_before_at_least=%s "
+            "expired=%s overflow=%s remaining=%s",
+            self.config.name,
+            self.config.auto_cleanup_trigger_ratio,
+            current_item_count,
+            cleanup_result.removed_expired,
+            cleanup_result.removed_overflow,
+            cleanup_result.remaining_items,
+        )
+        return cleanup_result
 
     def _log_cache_miss(
             self,
@@ -261,7 +334,8 @@ class BinaryImageCache:
             return
 
         log.info(
-            "Cache miss [%s] key=%s path=%s size_bytes=%s requests=%s hits=%s misses=%s cached_percent=%s",
+            "Cache miss [%s] key=%s path=%s size_bytes=%s "
+            "requests=%s hits=%s misses=%s cached_percent=%s",
             self.config.name,
             key,
             path,
@@ -293,7 +367,8 @@ class BinaryImageCache:
             return
 
         log.info(
-            "Cache %s [%s] key=%s path=%s size_bytes=%s requests=%s hits=%s misses=%s cached_percent=%s",
+            "Cache %s [%s] key=%s path=%s size_bytes=%s "
+            "requests=%s hits=%s misses=%s cached_percent=%s",
             "hit" if was_hit else "miss",
             self.config.name,
             key,
@@ -317,16 +392,69 @@ def render_matplotlib_plot_to_png(plotter: Callable[[], None]) -> bytes:
         plt.close()
 
 
-def get_cached_item_count(config: ImageCacheConfig) -> int:
+def get_cached_item_count(
+        config: ImageCacheConfig,
+        *,
+        stop_after: int | None = None,
+) -> int:
+    return _count_cached_items(config, stop_after=stop_after)
+
+
+def _count_cached_items(
+        config: ImageCacheConfig,
+        *,
+        stop_after: int | None = None,
+) -> int:
     directory = Path(config.directory)
     if not directory.exists():
         return 0
-    return len(
-        [
-            path for path in directory.glob(f"*{config.extension}")
-            if path.is_file()
-        ]
-    )
+
+    item_count = 0
+    for path in directory.glob(f"*{config.extension}"):
+        if not path.is_file():
+            continue
+
+        item_count += 1
+        if stop_after is not None and item_count >= stop_after:
+            return item_count
+
+    return item_count
+
+
+def get_auto_cleanup_trigger_item_count(
+        config: ImageCacheConfig,
+) -> int | None:
+    if config.max_items is None or config.max_items <= 0:
+        return None
+    if (
+            config.auto_cleanup_trigger_ratio is None
+            or config.auto_cleanup_trigger_ratio <= 1
+    ):
+        return None
+    return math.floor(config.max_items * config.auto_cleanup_trigger_ratio) + 1
+
+
+def should_trigger_auto_cleanup(
+        config: ImageCacheConfig,
+        item_count: int,
+) -> bool:
+    trigger_item_count = get_auto_cleanup_trigger_item_count(config)
+    if trigger_item_count is None:
+        return False
+    return item_count >= trigger_item_count
+
+
+def _is_cache_file_expired(
+        path: Path,
+        config: ImageCacheConfig,
+        *,
+        now: float | None = None,
+) -> bool:
+    if config.ttl_seconds is None:
+        return False
+    current_time = time.time() if now is None else now
+    age_seconds = current_time - path.stat().st_mtime
+    return age_seconds > config.ttl_seconds
 
 
 def clear_cached_items(config: ImageCacheConfig) -> int:
@@ -364,8 +492,7 @@ def cleanup_cache(
 
     removed_expired = 0
     for cache_file in list(cache_files):
-        age_seconds = now - cache_file.stat().st_mtime
-        if config.ttl_seconds is not None and age_seconds > config.ttl_seconds:
+        if _is_cache_file_expired(cache_file, config, now=now):
             cache_file.unlink(missing_ok=True)
             cache_files.remove(cache_file)
             removed_expired += 1
