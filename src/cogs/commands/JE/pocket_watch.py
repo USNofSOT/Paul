@@ -9,8 +9,7 @@ from discord.ext import commands
 
 from src.config import IMAGE_CACHES
 from src.config.pocket_watch import POCKET_WATCH_DEFAULT_DAYS
-from src.config.ranks_roles import JE_AND_UP
-from src.core.command_cooldowns import handle_app_command_cooldown_error
+from src.config.ranks_roles import JE_AND_UP, NCO_AND_UP
 from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.sailor_repository import SailorRepository
 from src.data.repository.voyage_repository import VoyageRepository
@@ -107,6 +106,14 @@ def _add_field_pair(
     embed.add_field(name=right_name, value=right_value, inline=True)
 
 
+def _can_view_other_target(member: discord.abc.User | discord.Member) -> bool:
+    if not isinstance(member, discord.Member):
+        return False
+
+    member_role_ids = {role.id for role in member.roles}
+    return any(role_id in member_role_ids for role_id in NCO_AND_UP)
+
+
 class PocketWatch(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
@@ -126,7 +133,7 @@ class PocketWatch(commands.Cog):
             target: discord.Member | None = None,
             days: int = POCKET_WATCH_DEFAULT_DAYS,
     ) -> None:
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.defer(ephemeral=False)
 
         target = target or interaction.user
         display_name = target.display_name or target.name
@@ -135,6 +142,22 @@ class PocketWatch(commands.Cog):
         hosted_repository: HostedRepository | None = None
 
         try:
+            if target.id != interaction.user.id and not _can_view_other_target(
+                    interaction.user
+            ):
+                await interaction.followup.send(
+                    embed=error_embed(
+                        title="Pocket Watch Access Denied",
+                        description=(
+                            "You can view your own pocket watch, but inspecting "
+                            "another sailor requires `NCO+`."
+                        ),
+                        footer=False,
+                    ),
+                    ephemeral=True,
+                )
+                return
+
             validate_days(days, DEFAULT_POCKET_WATCH_THRESHOLDS)
             sailor_repository = SailorRepository()
             voyage_repository = VoyageRepository()
@@ -324,9 +347,6 @@ class PocketWatch(commands.Cog):
             interaction: discord.Interaction,
             error: app_commands.AppCommandError,
     ) -> None:
-        if await handle_app_command_cooldown_error(interaction, error):
-            return
-
         if isinstance(error, app_commands.errors.MissingAnyRole):
             responder = (
                 interaction.followup.send
