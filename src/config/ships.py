@@ -179,7 +179,7 @@ WILDS_FLEET = Fleet(
     emoji="<:Wilds:1270890769292591134>",
 )
 
-# Legendary/Ceremonial Ships
+# Legendary/Ceremonial/Heritage Ships
 #######################################
 USS_LEGENDARY = Ship(
     name="USS Legendary",
@@ -191,9 +191,15 @@ USS_CEREMONIAL = Ship(
     boat_command_channel_id=BC_BOA,
 )
 
+USS_HERITAGE = Ship(
+    name="USS Heritage",
+    boat_command_channel_id=BC_BOA,
+)
+
 VIRTUAL_MAIN_SHIPS = (
     USS_LEGENDARY,
     USS_CEREMONIAL,
+    USS_HERITAGE,
 )
 
 
