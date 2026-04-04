@@ -280,8 +280,8 @@ MISC_ABBREVIATIONS = [
         meaning="Senior Non-Commissioned Officer"
     ),
     Abbreviation(
-        abbreviation="SNLA",
-        meaning="Senior Non-Commissioned Officer Leadership Academy"
+        abbreviation="SELA",
+        meaning="Senior Enlisted Leadership Academy"
     ),
     Abbreviation(
         abbreviation="STARBOARD",
