@@ -2,14 +2,14 @@ from src.config.main_server import (
     BC_ADUN,
     BC_BERSERKER,
     BC_BOA,
-    BC_DEFIANT,
+    BC_EOS,
     BC_GLETSJER,
     BC_HYPERION,
     BC_LUSTY,
     BC_NIGHTINGALE,
     BC_PHANTOM,
     BC_SERENITY,
-    BC_SILVERCLAW,
+    BC_GENESIS,
     BC_TITAN,
     BC_VENOM,
 )
@@ -24,8 +24,8 @@ ROLE_ID_BERSERKER = 1164671319338664007
 ROLE_ID_SERENITY = 1002303636522680391
 
 ROLE_ID_DEVILS_ROAR = 1074458114637713509
-ROLE_ID_DEFIANT = 1058840733248933908
-ROLE_ID_SILVERCLAW = 977935623774162954
+ROLE_ID_EOS = 1058840733248933908
+ROLE_ID_GENESIS = 977935623774162954
 ROLE_ID_VENOM = 1237838106711822457
 
 ROLE_ID_SHORES_OF_PLENTY = 1161861443004678315
@@ -78,19 +78,19 @@ ANCIENT_ISLES_FLEET = Fleet(
 
 # Devil's Roar Fleet
 #######################################
-USS_DEFIANT = Ship(
+USS_EOS = Ship(
     name="USS Eos",
-    boat_command_channel_id=BC_DEFIANT,
-    role_id=ROLE_ID_DEFIANT,
+    boat_command_channel_id=BC_EOS,
+    role_id=ROLE_ID_EOS,
     emoji="<:Eos:1477072696301981811>",
     max_size=30
 )
 
-USS_SILVERCLAW = Ship(
-    name="USS Silverclaw",
-    boat_command_channel_id=BC_SILVERCLAW,
-    role_id=ROLE_ID_SILVERCLAW,
-    emoji="<:Silverclaw_emoji:1345475394169475104>",
+USS_GENESIS = Ship(
+    name="USS Genesis",
+    boat_command_channel_id=BC_GENESIS,
+    role_id=ROLE_ID_GENESIS,
+    emoji="<:Genesis:1487992816368877618>",
     max_size=30
 )
 
@@ -104,9 +104,9 @@ USS_VENOM = Ship(
 
 DEVILS_ROAR_FLEET = Fleet(
     name="The Devil's Roar Fleet",
-    ships=(USS_DEFIANT, USS_SILVERCLAW, USS_VENOM),
+    ships=(USS_EOS, USS_GENESIS, USS_VENOM),
     role_id=ROLE_ID_DEVILS_ROAR,
-    flagship=USS_DEFIANT,
+    flagship=USS_EOS,
     emoji="<:DevilsRoar:1270890826574204988>",
 )
 
