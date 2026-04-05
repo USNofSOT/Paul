@@ -86,7 +86,9 @@ ABLE_SEAMAN = NavyRank(
         channel_id=SAILORS_HANDBOOK_THREAD_ID,
         message_id=1292522413812092928,
     ),
-    rank_prerequisites=RankPrerequisites(["Decent activity in their squad chat."]),
+    rank_prerequisites=RankPrerequisites(
+        additional_requirements=["Decent activity in their squad chat."]
+    ),
     emoji="<:E3:1245860807980617848>",
 )
 JUNIOR_PETTY_OFFICER = NavyRank(
@@ -102,7 +104,7 @@ JUNIOR_PETTY_OFFICER = NavyRank(
         message_id=1292522482049355900,
     ),
     rank_prerequisites=RankPrerequisites(
-        [
+        additional_requirements=[
             "Have 2FA enabled",
             "Write a minimum of 2 Logs on behalf of a Voyage Leader BEFORE beginning Day 1",
             "One of the logs will be a Patrol log",
@@ -125,9 +127,16 @@ PETTY_OFFICER = NavyRank(
         message_id=1292522482049355900,
     ),
     rank_prerequisites=RankPrerequisites(
-        [
-            "Applying for a position of XO to a squad or becoming a squad leader (when available)"
-        ]
+        required_requirements=[
+            "Legion of Conduct",
+            "NCO Improvement Ribbon",
+            "Graduate from SLA",
+            "10 hosted voyages",
+        ],
+        additional_requirements=[
+            "Join an SPD or become a Naval Specialist",
+            "Apply for a position of XO to a squad or become a squad leader (when available)",
+        ],
     ),
     emoji="<:E6:1245860878142799923>",
 )
@@ -144,11 +153,15 @@ CHIEF_PETTY_OFFICER = NavyRank(
         message_id=1292522552509464577,
     ),
     rank_prerequisites=RankPrerequisites(
-        [
-            "Interviewed for a SL position",
-            "SNCO Board Passed",
-            "Meets SNLA requirements",
-        ]
+        required_requirements=[
+            "1 month as E-6",
+            "20 hosted voyages",
+        ],
+        additional_requirements=[
+            "Join an SPD or become a Naval Specialist",
+            "Become a Squad Leader",
+            "Pass SNCO Board",
+        ],
     ),
     emoji="<:E7:1245860900162769016>",
 )
@@ -164,7 +177,17 @@ SENIOR_CHIEF_PETTY_OFFICER = NavyRank(
         channel_id=SAILORS_HANDBOOK_THREAD_ID,
         message_id=1292522552509464577,
     ),
-    rank_prerequisites=RankPrerequisites(["Interviewed for a CoS position"]),
+    rank_prerequisites=RankPrerequisites(
+        required_requirements=[
+            "Graduate from COSA",
+            "Honorable Conduct Medal",
+            "4 month service stripes",
+        ],
+        additional_requirements=[
+            "Interview for a CoS position",
+            "Join an SPD",
+        ],
+    ),
     emoji="<:E8:1245860921470091367>",
 )
 MIDSHIPMAN = NavyRank(
@@ -179,7 +202,15 @@ MIDSHIPMAN = NavyRank(
         channel_id=SAILORS_HANDBOOK_THREAD_ID,
         message_id=1292522626572484769,
     ),
-    rank_prerequisites=RankPrerequisites(["Officer Board"]),
+    rank_prerequisites=RankPrerequisites(
+        required_requirements=[
+            "Graduate from COSA",
+            "Honorable Conduct Medal",
+            "4 month service stripes",
+            "Host 35 official voyages",
+        ],
+        additional_requirements=["Pass Officer Board"],
+    ),
     emoji="<:O1:1245860986640928789>",
 )
 LIEUTENANT = NavyRank(
@@ -195,7 +226,7 @@ LIEUTENANT = NavyRank(
         message_id=1292522626572484769,
     ),
     rank_prerequisites=RankPrerequisites(
-        ["Mentorship under an SO", "Meets OCS requirements"]
+        additional_requirements=["Mentorship under an SO", "Meets OCS requirements"]
     ),
     emoji="<:O3:1245861011265814620>",
 )
@@ -212,7 +243,7 @@ LIEUTENANT_COMMANDER = NavyRank(
         message_id=1292522686177611898,
     ),
     rank_prerequisites=RankPrerequisites(
-        ["Voted on by the BOA", "Meets SOCS requirements"]
+        additional_requirements=["Voted on by the BOA", "Meets SOCS requirements"]
     ),
     emoji="<:O4:1245861035542315149>",
 )
@@ -229,10 +260,11 @@ COMMANDER = NavyRank(
         message_id=1292522686177611898,
     ),
     rank_prerequisites=RankPrerequisites(
-        [
-            "Recruit and maintain 4 members from outside the server on your ship, not including CO/XO/COS",
-            "Functional CoC on their ship (Can fulfill all of it's ship duties despite being incomplete)",
-        ]
+        required_requirements=["Wait 4 weeks as O-4"],
+        additional_requirements=[
+            "Recruit and maintain 4 members from outside the server on their ship, not including CO/XO/CoS",
+            "Functional chain of command on their ship that can fulfill ship duties despite being incomplete",
+        ],
     ),
     emoji="<:O5:1245861052554678365>",
 )
@@ -249,7 +281,8 @@ CAPTAIN = NavyRank(
         message_id=1292522686177611898,
     ),
     rank_prerequisites=RankPrerequisites(
-        ["Very Active ship", "Full CoC on their ship (CoS is optional)"]
+        required_requirements=["Wait 3 months as O-5", "Maritime Service Medal"],
+        additional_requirements=["Very active ship", "Full chain of command"],
     ),
     emoji="<:O6:1245861070950633574>",
 )
@@ -265,7 +298,7 @@ COMMODORE = NavyRank(
         channel_id=SAILORS_HANDBOOK_THREAD_ID,
         message_id=1292522754519728159,
     ),
-    rank_prerequisites=RankPrerequisites(["Hand selected by the AOTN"]),
+    rank_prerequisites=RankPrerequisites(additional_requirements=["Hand selected by the AOTN"]),
     emoji="<:O7:1245861091029024840>",
 )
 REAR_ADMIRAL = NavyRank(
@@ -281,7 +314,7 @@ REAR_ADMIRAL = NavyRank(
         message_id=1292522754519728159,
     ),
     rank_prerequisites=RankPrerequisites(
-        ["Hand selected by the AOTN", "Has to give flag ship command to another SO"]
+        additional_requirements=["Hand selected by the AOTN", "Has to give flag ship command to another SO"]
     ),
     emoji="<:O8:1245861113330008065>",
 )

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import OrderedDict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from logging import getLogger
 from warnings import warn
 
@@ -105,7 +105,8 @@ class Context:
 
 @dataclass
 class RankPrerequisites:
-    additional_requirements: list[str] = list
+    required_requirements: list[str] = field(default_factory=list)
+    additional_requirements: list[str] = field(default_factory=list)
 
 
 @dataclass
