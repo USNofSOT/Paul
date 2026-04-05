@@ -40,3 +40,6 @@ BC_BOA: Final[int] = 1101193993909456956
 
 # Bot Status Channel
 BOT_STATUS: Final[int] = 1296034003480215552
+
+# Bot testing / engineering alerts
+BOT_TEST_COMMAND: Final[int] = 1291589569602650154

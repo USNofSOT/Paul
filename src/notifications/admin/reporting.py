@@ -9,7 +9,8 @@ from src.config.notifications import NotificationRolloutMap
 from src.config.task_timing import (
     CHECK_AWARDS_TASK_TIME,
     CHECK_TRAINING_AWARDS_TASK_TIME,
-    COMMAND_NOTIFICATION_EVALUATOR_TASK_TIME,
+    COMMAND_NOTIFICATION_EVALUATOR_MAX_INTERVAL_HOURS,
+    COMMAND_NOTIFICATION_EVALUATOR_MIN_INTERVAL_HOURS,
     COMMAND_NOTIFICATION_WORKER_TASK_INTERVAL_SECONDS,
     TRACK_SHIP_SIZE_TASK_TIME,
 )
@@ -25,6 +26,10 @@ def _safe_text(value: str) -> str:
 
 def _format_clock(value: time) -> str:
     return value.strftime("%H:%M UTC")
+
+
+def _format_interval_window(minimum_hours: int, maximum_hours: int) -> str:
+    return f"every {minimum_hours}-{maximum_hours}h (jittered)"
 
 
 def _format_relative(value: datetime | None) -> str:
@@ -72,7 +77,7 @@ def build_notification_overview_embed(
         name="Task Timing",
         value=(
             f"Ship size: **{_format_clock(TRACK_SHIP_SIZE_TASK_TIME)}**\n"
-            f"Notifications evaluator: **{_format_clock(COMMAND_NOTIFICATION_EVALUATOR_TASK_TIME)}**\n"
+            f"Notifications evaluator: **{_format_interval_window(COMMAND_NOTIFICATION_EVALUATOR_MIN_INTERVAL_HOURS, COMMAND_NOTIFICATION_EVALUATOR_MAX_INTERVAL_HOURS)}**\n"
             f"Worker poll: **every {COMMAND_NOTIFICATION_WORKER_TASK_INTERVAL_SECONDS}s**\n"
             f"Awards: **{_format_clock(CHECK_AWARDS_TASK_TIME)}**\n"
             f"Training awards: **{_format_clock(CHECK_TRAINING_AWARDS_TASK_TIME)}**"
