@@ -65,6 +65,10 @@ class NotificationWorkerService:
         delivered_count = 0
         resolved_date = evaluation_date or local_today()
         pending_event_ids = self.event_repository.list_pending_event_ids(limit=batch_size)
+        cached_members = {
+            member.id: member
+            for member in getattr(guild, "members", [])
+        }
 
         for event_id in pending_event_ids:
             if not self.event_repository.claim_event(event_id):
@@ -76,7 +80,9 @@ class NotificationWorkerService:
 
             definition = self.definition_provider.get_definition(event.notification_type)
             sailor = self.sailor_repository.get_sailor(event.sailor_id)
-            member = guild.get_member(event.sailor_id)
+            member = cached_members.get(event.sailor_id) or guild.get_member(
+                event.sailor_id
+            )
             if sailor is None or member is None:
                 self.event_repository.mark_skipped(event_id, "sailor_or_member_missing")
                 continue
