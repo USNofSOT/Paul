@@ -109,11 +109,19 @@ class NotificationPayloadFactory:
             threshold_label: str,
             is_overdue: bool,
     ) -> str:
+        """
+        Build a clearer body message for a notification.
+
+        - Avoid repeating the user's display name directly after the mention (that produced
+          messages like: "@Name Name is due ..."). We keep the mention only.
+        - Use "to reach" for upcoming due dates for readability, keep "for reaching" when overdue.
+        """
         status_phrase = "became due" if is_overdue else "is due"
-        return (
-            f"<@{sailor_id}> {subject_name} {status_phrase} "
-            f"{due_timestamp} for reaching {threshold_label}."
-        )
+        if is_overdue:
+            # Overdue: keep phrasing that indicates it already became due
+            return f"<@{sailor_id}> {status_phrase} {due_timestamp} for reaching {threshold_label}."
+        # Upcoming: use 'to reach' and omit the redundant display name after the mention
+        return f"<@{sailor_id}> {status_phrase} {due_timestamp} to reach {threshold_label}."
 
     @staticmethod
     def _sanitize_subject_name(value: str) -> str:
