@@ -53,11 +53,17 @@ class NotificationSchedulerService:
 
         resolved_date = evaluation_date or local_today()
         created_events = 0
+        cached_members = {
+            member.id: member
+            for member in getattr(guild, "members", [])
+        }
 
         for definition in self.definition_provider.get_definitions():
             sailors = self.sailor_repository.get_sailors_with_activity(definition.activity_field)
             for sailor in sailors:
-                member = guild.get_member(sailor.discord_id)
+                member = cached_members.get(sailor.discord_id) or guild.get_member(
+                    sailor.discord_id
+                )
                 if member is None:
                     continue
 

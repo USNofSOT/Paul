@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from logging import getLogger
 
 import discord
@@ -28,12 +29,15 @@ class NotificationOps(commands.Cog):
         self.notification_service_factory = NotificationServiceFactory(
             rollout_map=NOTIFICATION_ROLLOUT
         )
+        self._manual_operation_lock = asyncio.Lock()
 
     @app_commands.command(
         name="notificationops",
         description="Inspect and operate command inactivity notifications.",
     )
+    @app_commands.guild_only()
     @app_commands.checks.has_any_role(*NSC_ROLES)
+    @app_commands.checks.cooldown(1, 10.0)
     @app_commands.describe(
         action="Which notification operation to run.",
         hidden="Should only you be able to see the response?",
@@ -81,23 +85,37 @@ class NotificationOps(commands.Cog):
                     event_repository.list_recent_events(limit=recent_limit)
                 )
             elif action.value == "run_evaluator":
-                created_events = await self.notification_service_factory.build_scheduler(
-                    event_repository=event_repository,
-                    sailor_repository=sailor_repository,
-                ).run_for_date(self.bot)
-                embed = build_notification_action_embed(
-                    "Notification Evaluator Ran",
-                    f"Created **{created_events}** notification event(s) for today.",
-                )
+                if self._manual_operation_lock.locked():
+                    embed = build_notification_action_embed(
+                        "Notification Operation Busy",
+                        "Another manual notification operation is already running.",
+                    )
+                else:
+                    async with self._manual_operation_lock:
+                        created_events = await self.notification_service_factory.build_scheduler(
+                            event_repository=event_repository,
+                            sailor_repository=sailor_repository,
+                        ).run_for_date(self.bot)
+                    embed = build_notification_action_embed(
+                        "Notification Evaluator Ran",
+                        f"Created **{created_events}** notification event(s) for today.",
+                    )
             else:
-                delivered_count = await self.notification_service_factory.build_worker(
-                    event_repository=event_repository,
-                    sailor_repository=sailor_repository,
-                ).run_once(self.bot)
-                embed = build_notification_action_embed(
-                    "Notification Worker Ran",
-                    f"Delivered **{delivered_count}** notification event(s).",
-                )
+                if self._manual_operation_lock.locked():
+                    embed = build_notification_action_embed(
+                        "Notification Operation Busy",
+                        "Another manual notification operation is already running.",
+                    )
+                else:
+                    async with self._manual_operation_lock:
+                        delivered_count = await self.notification_service_factory.build_worker(
+                            event_repository=event_repository,
+                            sailor_repository=sailor_repository,
+                        ).run_once(self.bot)
+                    embed = build_notification_action_embed(
+                        "Notification Worker Ran",
+                        f"Delivered **{delivered_count}** notification event(s).",
+                    )
 
             await interaction.followup.send(
                 embed=embed,

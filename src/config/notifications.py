@@ -34,14 +34,14 @@ NOTIFICATION_DEFINITION_CONFIGS: Final[NotificationDefinitionConfigMap] = {
     NotificationType.NO_VOYAGE_REMINDER: NotificationDefinitionConfig(
         activity_field="last_voyage_at",
         threshold_days=VOYAGING_REQUIREMENT_IN_DAYS,
-        trigger_offsets=(-7, -6, -5, -4, -3, -2, -1, 0),
+        trigger_offsets=(-7, -3, 0),
         template_key=TemplateKey.NO_VOYAGE_REMINDER,
         routing_target=RoutingTargetType.SHIP_COMMAND_CHANNEL,
     ),
     NotificationType.NO_HOSTING_REMINDER: NotificationDefinitionConfig(
         activity_field="last_hosting_at",
         threshold_days=HOSTING_REQUIREMENT_IN_DAYS,
-        trigger_offsets=(-3, -2, -1, 0),
+        trigger_offsets=(-3, 0),
         template_key=TemplateKey.NO_HOSTING_REMINDER,
         routing_target=RoutingTargetType.SHIP_COMMAND_CHANNEL,
     ),
@@ -60,7 +60,4 @@ NOTIFICATION_ROLLOUT: Final[NotificationRolloutMap] = {
     },
 }
 
-# Temporary route override for local testing.
-NOTIFICATION_CHANNEL_OVERRIDES: Final[NotificationChannelOverrideMap] = {
-    ROLE_ID_TITAN: 1291589569602650154,
-}
+NOTIFICATION_CHANNEL_OVERRIDES: Final[NotificationChannelOverrideMap] = {}
