@@ -2,6 +2,7 @@ import unittest
 from datetime import UTC, date, datetime
 
 from src.config.requirements import HOSTING_REQUIREMENT_IN_DAYS
+from src.config.ships import BC_TITAN
 from src.data.models import Sailor
 from src.notifications.payloads import NotificationPayloadFactory
 from src.notifications.renderer import EmbedNotificationRenderer
@@ -133,7 +134,7 @@ class TestRenderingAndRouting(unittest.TestCase):
         self.assertIsNone(route.destination_channel_id)
         self.assertEqual(route.skip_reason, "command_channel_not_found")
 
-    def test_route_resolver_uses_channel_override_for_titan(self) -> None:
+    def test_route_resolver_uses_ship_command_channel_for_titan(self) -> None:
         titan_context = ResolvedMemberContext(
             sailor_id=2,
             display_name="Titan Sailor",
@@ -147,10 +148,10 @@ class TestRenderingAndRouting(unittest.TestCase):
         route = ShipCommandRouteResolver().resolve(
             self.definition,
             titan_context,
-            DummyGuild(channels={1291589569602650154: object()}),
+            DummyGuild(channels={BC_TITAN: object()}),
         )
 
-        self.assertEqual(route.destination_channel_id, 1291589569602650154)
+        self.assertEqual(route.destination_channel_id, BC_TITAN)
         self.assertIsNone(route.skip_reason)
 
     def test_rollout_honors_ship_and_squad_scope(self) -> None:

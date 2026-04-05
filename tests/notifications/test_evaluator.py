@@ -37,7 +37,7 @@ class TestSailorInactivityEligibilityEvaluator(unittest.TestCase):
             notification_type=NotificationType.NO_VOYAGE_REMINDER,
             activity_field="last_voyage_at",
             threshold_days=VOYAGING_REQUIREMENT_IN_DAYS,
-            trigger_offsets=(-7, -6, -5, -4, -3, -2, -1, 0),
+            trigger_offsets=(-7, -3, 0),
             template_key=TemplateKey.NO_VOYAGE_REMINDER,
             routing_target=RoutingTargetType.SHIP_COMMAND_CHANNEL,
         )
@@ -75,7 +75,7 @@ class TestSailorInactivityEligibilityEvaluator(unittest.TestCase):
             notification_type=NotificationType.NO_HOSTING_REMINDER,
             activity_field="last_hosting_at",
             threshold_days=HOSTING_REQUIREMENT_IN_DAYS,
-            trigger_offsets=(-3, -2, -1, 0),
+            trigger_offsets=(-3, 0),
             template_key=TemplateKey.NO_HOSTING_REMINDER,
             routing_target=RoutingTargetType.SHIP_COMMAND_CHANNEL,
         )
@@ -109,7 +109,7 @@ class TestSailorInactivityEligibilityEvaluator(unittest.TestCase):
             notification_type=NotificationType.NO_HOSTING_REMINDER,
             activity_field="last_hosting_at",
             threshold_days=HOSTING_REQUIREMENT_IN_DAYS,
-            trigger_offsets=(-3, -2, -1, 0),
+            trigger_offsets=(-3, 0),
             template_key=TemplateKey.NO_HOSTING_REMINDER,
             routing_target=RoutingTargetType.SHIP_COMMAND_CHANNEL,
         )
@@ -132,7 +132,7 @@ class TestSailorInactivityEligibilityEvaluator(unittest.TestCase):
             notification_type=NotificationType.NO_HOSTING_REMINDER,
             activity_field="last_hosting_at",
             threshold_days=HOSTING_REQUIREMENT_IN_DAYS,
-            trigger_offsets=(-3, -2, -1, 0),
+            trigger_offsets=(-3, 0),
             template_key=TemplateKey.NO_HOSTING_REMINDER,
             routing_target=RoutingTargetType.SHIP_COMMAND_CHANNEL,
         )
