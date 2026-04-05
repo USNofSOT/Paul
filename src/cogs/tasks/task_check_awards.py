@@ -1,4 +1,3 @@
-import datetime
 from logging import getLogger
 from unittest.mock import AsyncMock, MagicMock
 
@@ -9,6 +8,7 @@ from discord.ext.commands.view import StringView
 from src.config import BOA_ROLE, MAX_MESSAGE_LENGTH
 from src.config.main_server import BC_BOA, GUILD_ID
 from src.config.ships import SHIPS
+from src.config.task_timing import CHECK_AWARDS_TASK_TIME
 from src.data.repository.sailor_repository import SailorRepository
 from src.utils.check_awards import check_sailor
 from src.utils.discord_utils import alert_engineers
@@ -72,8 +72,7 @@ class AutoCheckAwards(commands.Cog):
     def cog_unload(self):
         self.my_task.cancel()
 
-    # TODO: Move this into configuration as well
-    @tasks.loop(time=datetime.time(hour=15, minute=00, tzinfo=datetime.UTC))
+    @tasks.loop(time=CHECK_AWARDS_TASK_TIME)
     async def my_task(self):
         GUILD = self.bot.get_guild(GUILD_ID)
 
