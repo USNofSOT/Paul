@@ -71,10 +71,11 @@ class TestRenderingAndRouting(unittest.TestCase):
         embed = EmbedNotificationRenderer.to_embed(rendered)
 
         self.assertEqual(restored.title, "<:Venom:1239895956489633852> Hosting inactivity reminder")
-        self.assertIn("<@1> Render Sailor is due <t:", restored.body)
+        # Body now uses the mention only (no repeated display name) and uses "to reach" for upcoming
+        self.assertIn("<@1> is due <t:", restored.body)
         self.assertIn(":R>", restored.body)
         self.assertIn(
-            f"for reaching {HOSTING_REQUIREMENT_IN_DAYS} days without hosting.",
+            f"to reach {HOSTING_REQUIREMENT_IN_DAYS} days without hosting.",
             restored.body,
         )
         self.assertEqual(rendered.embed_title, restored.title)
@@ -98,7 +99,8 @@ class TestRenderingAndRouting(unittest.TestCase):
             reference_time=datetime(2026, 4, 3, 9, 0, tzinfo=UTC),
         )
 
-        self.assertIn("<@1> Render Sailor became due <t:", payload.body)
+        # Overdue notifications still use "became due" and the mention only
+        self.assertIn("<@1> became due <t:", payload.body)
         self.assertIn(":R>", payload.body)
 
     def test_payload_sanitizes_subject_name(self) -> None:
@@ -122,7 +124,8 @@ class TestRenderingAndRouting(unittest.TestCase):
 
         self.assertIn("<@1>", payload.body)
         self.assertNotIn("@everyone", payload.body)
-        self.assertIn("@\u200beveryone", payload.body)
+        # Sanitized display name is stored on the payload (and no longer repeated in the body)
+        self.assertIn("@\u200beveryone", payload.subject_name)
 
     def test_route_resolver_skips_when_command_channel_missing(self) -> None:
         route = ShipCommandRouteResolver().resolve(
