@@ -269,11 +269,14 @@ class PromotionServiceTests(unittest.TestCase):
         rear_admiral_section = self.service.evaluate(self.make_context(14, set()))[0]
         aotn_section = self.service.evaluate(self.make_context(15, set()))[0]
 
+        self.assertEqual(len(commodore_section.fields), 2)
         self.assertIn("Selected by AOTN", commodore_section.fields[0].value)
         self.assertIn("Notes - Commodore", commodore_section.fields[1].name)
+        self.assertEqual(len(rear_admiral_section.fields), 2)
         self.assertIn("Selected by AOTN", rear_admiral_section.fields[0].value)
         self.assertIn("No longer commands a ship", rear_admiral_section.fields[0].value)
         self.assertIn("Notes - Rear Admiral", rear_admiral_section.fields[1].name)
+        self.assertEqual(len(aotn_section.fields), 2)
         self.assertIn(
             "Hand selected by previous AOTN or by BOA vote should one not have been selected",
             aotn_section.fields[0].value,

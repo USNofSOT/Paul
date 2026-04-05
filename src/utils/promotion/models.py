@@ -32,6 +32,7 @@ class PromotionPathSpec:
     required_requirements: tuple[RequirementSpec, ...] = ()
     additional_requirements: tuple[RequirementSpec, ...] = ()
     flavor_requirements: tuple[RequirementSpec, ...] = ()
+    use_rank_additional_fallback: bool = True
     show_or_separator_after: bool = False
 
 

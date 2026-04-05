@@ -386,6 +386,7 @@ PROMOTION_PATHS_BY_RANK: dict[int, tuple[PromotionPathSpec, ...]] = {
             flavor_requirements=(
                 flavor_requirement("Bribe the admiral."),
             ),
+            use_rank_additional_fallback=False,
         ),
     ),
     14: (
@@ -398,6 +399,7 @@ PROMOTION_PATHS_BY_RANK: dict[int, tuple[PromotionPathSpec, ...]] = {
             flavor_requirements=(
                 flavor_requirement("Bribe the admiral."),
             ),
+            use_rank_additional_fallback=False,
         ),
     ),
     15: (
@@ -412,6 +414,7 @@ PROMOTION_PATHS_BY_RANK: dict[int, tuple[PromotionPathSpec, ...]] = {
             flavor_requirements=(
                 flavor_requirement("Bribe the admiral."),
             ),
+            use_rank_additional_fallback=False,
         ),
     ),
     16: (

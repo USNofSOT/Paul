@@ -41,7 +41,11 @@ class PromotionCheckService:
         for path in self.path_provider.get_paths(member_context.current_rank):
             next_rank = get_rank_by_index(path.next_rank_index)
             additional_requirements = path.additional_requirements
-            if not additional_requirements and next_rank.rank_prerequisites:
+            if (
+                    path.use_rank_additional_fallback
+                    and not additional_requirements
+                    and next_rank.rank_prerequisites
+            ):
                 additional_requirements = tuple(
                     RequirementSpec(
                         type="manual",
