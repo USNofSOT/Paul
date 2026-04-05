@@ -1,0 +1,87 @@
+from __future__ import annotations
+
+from datetime import date
+from typing import Protocol
+
+from discord import Guild
+
+from src.data.models import NotificationEvent, Sailor
+from src.notifications.types import (
+    EligibilityResult,
+    NotificationDefinition,
+    NotificationPayload,
+    RenderedNotification,
+    ResolvedMemberContext,
+    ResolvedRoute,
+)
+
+
+class TriggerDefinitionProvider(Protocol):
+    def get_definitions(self) -> tuple[NotificationDefinition, ...]: ...
+
+    def get_definition(self, notification_type: str) -> NotificationDefinition: ...
+
+
+class NotificationEligibilityEvaluator(Protocol):
+    def evaluate(
+            self,
+            definition: NotificationDefinition,
+            sailor: Sailor,
+            member_context: ResolvedMemberContext,
+            evaluation_date: date,
+    ) -> EligibilityResult | None: ...
+
+
+class NotificationEventRepositoryContract(Protocol):
+    def create_pending_event(
+            self,
+            *,
+            definition: NotificationDefinition,
+            sailor: Sailor,
+            member_context: ResolvedMemberContext,
+            eligibility: EligibilityResult,
+            destination_channel_id: int | None,
+            payload_snapshot: str,
+    ) -> tuple[NotificationEvent, bool]: ...
+
+    def list_pending_event_ids(self, *, limit: int) -> list[int]: ...
+
+    def claim_event(self, event_id: int) -> bool: ...
+
+    def get_event(self, event_id: int) -> NotificationEvent | None: ...
+
+    def list_recent_events(self, *, limit: int = 10) -> list[NotificationEvent]: ...
+
+    def count_by_status(self) -> dict[str, int]: ...
+
+    def update_payload_snapshot(self, event_id: int, payload_snapshot: str) -> None: ...
+
+    def mark_delivered(self, event_id: int) -> None: ...
+
+    def mark_skipped(self, event_id: int, reason: str) -> None: ...
+
+    def release_for_retry(self, event_id: int, reason: str) -> int: ...
+
+    def mark_failed(self, event_id: int, reason: str) -> int: ...
+
+
+class NotificationRouteResolver(Protocol):
+    def resolve(
+            self,
+            definition: NotificationDefinition,
+            member_context: ResolvedMemberContext,
+            guild: Guild,
+    ) -> ResolvedRoute: ...
+
+
+class NotificationRenderer(Protocol):
+    def render(self, payload: NotificationPayload) -> RenderedNotification: ...
+
+
+class NotificationDeliveryAdapter(Protocol):
+    async def send(
+            self,
+            guild: Guild,
+            destination_channel_id: int,
+            rendered: RenderedNotification,
+    ) -> None: ...

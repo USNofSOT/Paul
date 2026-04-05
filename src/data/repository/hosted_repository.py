@@ -183,7 +183,12 @@ class HostedRepository:
                 self.session.execute(
                     update(Sailor)
                     .where(Sailor.discord_id == target_id)
-                    .values({"hosted_count": coalesce(Sailor.hosted_count, 0) + 1})
+                    .values(
+                        {
+                            "hosted_count": coalesce(Sailor.hosted_count, 0) + 1,
+                            "last_hosting_at": log_time,
+                        }
+                    )
                 )
 
             self.session.commit()
