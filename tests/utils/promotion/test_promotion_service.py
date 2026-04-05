@@ -113,7 +113,8 @@ class PromotionServiceTests(unittest.TestCase):
         self.assertIn(f"<@&{NCO_IMPROVEMENT_RIBBON.role_id}>", required_field.value)
         self.assertIn("SLA Graduate", required_field.value)
         self.assertIn("Hosted ten voyages (10/10)", required_field.value)
-        self.assertIn("Joined an SPD or became a Naval Specialist", additional_field.value)
+        self.assertIn("Joined an SPD", additional_field.value)
+        self.assertNotIn("Naval Specialist", additional_field.value)
         self.assertIn(
             "Applied for XO to a squad or became a squad leader (when available)",
             additional_field.value,

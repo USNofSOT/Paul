@@ -239,15 +239,7 @@ PROMOTION_PATHS_BY_RANK: dict[int, tuple[PromotionPathSpec, ...]] = {
                 hosted_count_requirement("Hosted ten voyages", 10),
             ),
             additional_requirements=(
-                either_of_requirement(
-                    "Joined an SPD or became a Naval Specialist",
-                    role_presence_requirement("Joined an SPD", *SPD_ROLES),
-                    role_presence_requirement(
-                        "Became a Naval Specialist",
-                        NAVAL_SPECIALIST_ROLE,
-                    ),
-                    summary_only=True,
-                ),
+                role_presence_requirement("Joined an SPD", *SPD_ROLES),
                 either_of_requirement(
                     "Applied for XO to a squad or became a squad leader (when available)",
                     role_presence_requirement("Holds the Squad XO role", SQUAD_XO_ROLE),

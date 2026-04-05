@@ -134,7 +134,7 @@ PETTY_OFFICER = NavyRank(
             "10 hosted voyages",
         ],
         additional_requirements=[
-            "Join an SPD or become a Naval Specialist",
+            "Join an SPD",
             "Apply for a position of XO to a squad or become a squad leader (when available)",
         ],
     ),
