@@ -64,7 +64,7 @@ IMAGE_CACHES = {
         directory=".cache/ribbon_board",
         default_filename="ribbons.png",
         max_items=LARGE_IMAGE_CACHE_MAX_ITEMS,
-        ttl_seconds=SEVEN_DAYS_IN_SECONDS,
+        ttl_seconds=THIRTY_DAYS_IN_SECONDS,
         version=2,
     ),
     "ribbon_icon": ImageCacheConfig(
@@ -73,7 +73,7 @@ IMAGE_CACHES = {
         directory=".cache/ribbon_icon",
         default_filename="ribbon_icon.png",
         max_items=XLARGE_IMAGE_CACHE_MAX_ITEMS,
-        ttl_seconds=FOURTEEN_DAYS_IN_SECONDS,
+        ttl_seconds=THIRTY_DAYS_IN_SECONDS,
         version=1,
     ),
     "crewreport_voyage_chart": ImageCacheConfig(
