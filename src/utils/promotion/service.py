@@ -50,6 +50,8 @@ class PromotionCheckService:
                     )
                     for label in next_rank.rank_prerequisites.additional_requirements
                 )
+
+            flavor_requirements = path.flavor_requirements
             evaluation = PromotionEvaluation(
                 next_rank=next_rank,
                 next_rank_display_name=(
@@ -62,6 +64,10 @@ class PromotionCheckService:
                 additional_requirements=tuple(
                     self._evaluate_requirement(requirement, member_context)
                     for requirement in additional_requirements
+                ),
+                flavor_requirements=tuple(
+                    self._evaluate_requirement(requirement, member_context)
+                    for requirement in flavor_requirements
                 ),
                 show_or_separator_after=path.show_or_separator_after,
             )

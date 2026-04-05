@@ -79,6 +79,10 @@ def manual_requirement(label: str, status: str = "info") -> RequirementSpec:
     return RequirementSpec(type="manual", label=label, params={"status": status})
 
 
+def flavor_requirement(label: str) -> RequirementSpec:
+    return RequirementSpec(type="manual", label=label, params={"status": "info"})
+
+
 def time_in_rank_requirement(label: str, role_id: int, required_days: int) -> RequirementSpec:
     return RequirementSpec(
         type="time_in_rank",
@@ -259,6 +263,7 @@ PROMOTION_PATHS_BY_RANK: dict[int, tuple[PromotionPathSpec, ...]] = {
             required_requirements=(
                 time_in_rank_requirement("Waited one month as an E-6", E6_ROLES[0], 30),
                 hosted_count_requirement("Hosted twenty voyages", 20),
+                manual_requirement("Passed the SNCO Board", status="fail"),
             ),
             additional_requirements=(
                 either_of_requirement(
@@ -271,7 +276,6 @@ PROMOTION_PATHS_BY_RANK: dict[int, tuple[PromotionPathSpec, ...]] = {
                     summary_only=True,
                 ),
                 role_presence_requirement("Became a Squad Leader", SHIP_SL_ROLE),
-                manual_requirement("Passed the SNCO Board"),
             ),
         ),
     ),
@@ -291,10 +295,6 @@ PROMOTION_PATHS_BY_RANK: dict[int, tuple[PromotionPathSpec, ...]] = {
                     SERVICE_STRIPES,
                 ),
             ),
-            additional_requirements=(
-                manual_requirement("Interviewed for a CoS position"),
-                role_presence_requirement("Joined an SPD", *SPD_ROLES),
-            ),
             show_or_separator_after=True,
         ),
         PromotionPathSpec(
@@ -312,8 +312,8 @@ PROMOTION_PATHS_BY_RANK: dict[int, tuple[PromotionPathSpec, ...]] = {
                     SERVICE_STRIPES,
                 ),
                 hosted_count_requirement("Hosted thirty-five official voyages", 35),
+                manual_requirement("Passed the Officer Board", status="fail"),
             ),
-            additional_requirements=(manual_requirement("Passed the Officer Board"),),
         ),
     ),
     8: (
@@ -332,8 +332,8 @@ PROMOTION_PATHS_BY_RANK: dict[int, tuple[PromotionPathSpec, ...]] = {
                     SERVICE_STRIPES,
                 ),
                 hosted_count_requirement("Hosted thirty-five official voyages", 35),
+                manual_requirement("Passed the Officer Board", status="fail"),
             ),
-            additional_requirements=(manual_requirement("Passed the Officer Board"),),
         ),
     ),
     9: (
@@ -375,32 +375,43 @@ PROMOTION_PATHS_BY_RANK: dict[int, tuple[PromotionPathSpec, ...]] = {
                     MARITIME_SERVICE_MEDAL,
                     HOSTED_MEDALS,
                 ),
-            ),
-            additional_requirements=(
-                manual_requirement("Maintains a very active ship"),
-                manual_requirement("Built a full chain of command"),
+                manual_requirement("Built a full chain of command", status="fail"),
             ),
         ),
     ),
     13: (
         PromotionPathSpec(
             next_rank_index=14,
-            required_requirements=(manual_requirement("Must bribe the Admiral", status="fail"),),
+            required_requirements=(manual_requirement("Selected by AOTN", status="fail"),),
+            flavor_requirements=(
+                flavor_requirement("Bribe the admiral."),
+            ),
         ),
     ),
     14: (
         PromotionPathSpec(
             next_rank_index=15,
-            required_requirements=(manual_requirement("Selected by the AOTN"),),
-            additional_requirements=(
-                manual_requirement("Has to give flag ship command to another SO"),
+            required_requirements=(
+                manual_requirement("Selected by AOTN", status="fail"),
+                manual_requirement("No longer commands a ship", status="fail"),
+            ),
+            flavor_requirements=(
+                flavor_requirement("Bribe the admiral."),
             ),
         ),
     ),
     15: (
         PromotionPathSpec(
             next_rank_index=16,
-            required_requirements=(manual_requirement("Must bribe the Admiral", status="fail"),),
+            required_requirements=(
+                manual_requirement(
+                    "Hand selected by previous AOTN or by BOA vote should one not have been selected",
+                    status="fail",
+                ),
+            ),
+            flavor_requirements=(
+                flavor_requirement("Bribe the admiral."),
+            ),
         ),
     ),
     16: (

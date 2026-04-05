@@ -36,6 +36,18 @@ class DefaultPromotionRenderer:
                 )
             )
 
+        if evaluation.flavor_requirements:
+            fields.append(
+                RenderedField(
+                    name=f"Notes - {evaluation.next_rank_display_name}",
+                    value="\n".join(
+                        line
+                        for requirement in evaluation.flavor_requirements
+                        for line in requirement.lines
+                    ),
+                )
+            )
+
         required_statuses = {requirement.status for requirement in evaluation.required_requirements}
         return RenderedPromotionSections(
             fields=tuple(fields),

@@ -156,11 +156,11 @@ CHIEF_PETTY_OFFICER = NavyRank(
         required_requirements=[
             "1 month as E-6",
             "20 hosted voyages",
+            "Pass SNCO Board",
         ],
         additional_requirements=[
             "Join an SPD or become a Naval Specialist",
             "Become a Squad Leader",
-            "Pass SNCO Board",
         ],
     ),
     emoji="<:E7:1245860900162769016>",
@@ -183,10 +183,7 @@ SENIOR_CHIEF_PETTY_OFFICER = NavyRank(
             "Honorable Conduct Medal",
             "4 month service stripes",
         ],
-        additional_requirements=[
-            "Interview for a CoS position",
-            "Join an SPD",
-        ],
+        additional_requirements=[],
     ),
     emoji="<:E8:1245860921470091367>",
 )
@@ -208,8 +205,9 @@ MIDSHIPMAN = NavyRank(
             "Honorable Conduct Medal",
             "4 month service stripes",
             "Host 35 official voyages",
+            "Pass Officer Board",
         ],
-        additional_requirements=["Pass Officer Board"],
+        additional_requirements=[],
     ),
     emoji="<:O1:1245860986640928789>",
 )
@@ -281,8 +279,8 @@ CAPTAIN = NavyRank(
         message_id=1292522686177611898,
     ),
     rank_prerequisites=RankPrerequisites(
-        required_requirements=["Wait 3 months as O-5", "Maritime Service Medal"],
-        additional_requirements=["Very active ship", "Full chain of command"],
+        required_requirements=["Wait 3 months as O-5", "Maritime Service Medal", "Full chain of command"],
+        additional_requirements=[],
     ),
     emoji="<:O6:1245861070950633574>",
 )

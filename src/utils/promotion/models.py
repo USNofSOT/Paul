@@ -31,6 +31,7 @@ class PromotionPathSpec:
     next_rank_index: int
     required_requirements: tuple[RequirementSpec, ...] = ()
     additional_requirements: tuple[RequirementSpec, ...] = ()
+    flavor_requirements: tuple[RequirementSpec, ...] = ()
     show_or_separator_after: bool = False
 
 
@@ -62,6 +63,7 @@ class PromotionEvaluation:
     next_rank_display_name: str
     required_requirements: tuple[EvaluatedRequirement, ...]
     additional_requirements: tuple[EvaluatedRequirement, ...]
+    flavor_requirements: tuple[EvaluatedRequirement, ...]
     show_or_separator_after: bool = False
 
 

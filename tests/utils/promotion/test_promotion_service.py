@@ -9,9 +9,22 @@ from src.config.awards import (
     MARITIME_SERVICE_MEDAL,
     NCO_IMPROVEMENT_RIBBON,
 )
-from src.config.netc_server import COSA_GRADUATE_ROLE, OCS_GRADUATE_ROLE, SLA_GRADUATE_ROLE, SNLA_GRADUATE_ROLE
-from src.config.ranks_roles import E6_ROLES, NAVAL_SPECIALIST_ROLE, O1_ROLES, O4_ROLES, O5_ROLES, SHIP_SL_ROLE, \
-    SPD_ROLES, SQUAD_XO_ROLE
+from src.config.netc_server import (
+    COSA_GRADUATE_ROLE,
+    OCS_GRADUATE_ROLE,
+    SLA_GRADUATE_ROLE,
+    SNLA_GRADUATE_ROLE,
+)
+from src.config.ranks_roles import (
+    E6_ROLES,
+    NAVAL_SPECIALIST_ROLE,
+    O1_ROLES,
+    O4_ROLES,
+    O5_ROLES,
+    SHIP_SL_ROLE,
+    SPD_ROLES,
+    SQUAD_XO_ROLE,
+)
 from src.data import RoleChangeType
 from src.utils.promotion.models import PromotionContext
 from src.utils.promotion.service import build_default_promotion_check_service
@@ -124,7 +137,8 @@ class PromotionServiceTests(unittest.TestCase):
 
         self.assertIn("Waited one month as an E-6", required_field.value)
         self.assertIn("Hosted twenty voyages (20/20)", required_field.value)
-        self.assertIn("Passed the SNCO Board", additional_field.value)
+        self.assertIn("Passed the SNCO Board", required_field.value)
+        self.assertIn("Joined an SPD or became a Naval Specialist", additional_field.value)
 
     def test_naval_specialist_role_satisfies_specialist_branch(self) -> None:
         context = self.make_context(
@@ -147,6 +161,24 @@ class PromotionServiceTests(unittest.TestCase):
             additional_field.value,
         )
 
+    def test_e7_to_e8_has_no_spd_or_cos_additional_requirements(self) -> None:
+        context = self.make_context(
+            6,
+            {
+                HONORABLE_CONDUCT.role_id,
+                FOUR_MONTHS_SERVICE_STRIPES.role_id,
+                NAVAL_SPECIALIST_ROLE,
+            },
+            netc_role_ids={COSA_GRADUATE_ROLE},
+        )
+
+        rendered_sections = self.service.evaluate(context)
+        e8_section = rendered_sections[0]
+
+        self.assertEqual(len(e8_section.fields), 1)
+        self.assertNotIn("SPD", e8_section.fields[0].value)
+        self.assertNotIn("CoS", e8_section.fields[0].value)
+
     def test_e7_dual_path_renders_both_e8_and_o1(self) -> None:
         context = self.make_context(
             6,
@@ -165,6 +197,8 @@ class PromotionServiceTests(unittest.TestCase):
         self.assertTrue(rendered_sections[0].show_or_separator_after)
         self.assertIn("Senior Chief Petty Officer", rendered_sections[0].fields[0].name)
         self.assertIn("Midshipman", rendered_sections[1].fields[0].name)
+        self.assertIn("Passed the Officer Board", rendered_sections[1].fields[0].value)
+        self.assertEqual(len(rendered_sections[1].fields), 1)
 
     def test_snla_alone_does_not_satisfy_cosa_requirement(self) -> None:
         context = self.make_context(
@@ -221,11 +255,30 @@ class PromotionServiceTests(unittest.TestCase):
         )
 
         o4_required = self.service.evaluate(o4_context)[0].fields[0].value
-        o5_required = self.service.evaluate(o5_context)[0].fields[0].value
+        o5_section = self.service.evaluate(o5_context)[0]
+        o5_required = o5_section.fields[0].value
 
         self.assertIn("Waited four weeks as an O4", o4_required)
         self.assertIn("Waited three months as an O5", o5_required)
         self.assertIn("Maritime Service Medal", o5_required)
+        self.assertIn("Built a full chain of command", o5_required)
+        self.assertEqual(len(o5_section.fields), 1)
+
+    def test_admiralty_paths_render_manual_requirements_with_flavor_notes(self) -> None:
+        commodore_section = self.service.evaluate(self.make_context(13, set()))[0]
+        rear_admiral_section = self.service.evaluate(self.make_context(14, set()))[0]
+        aotn_section = self.service.evaluate(self.make_context(15, set()))[0]
+
+        self.assertIn("Selected by AOTN", commodore_section.fields[0].value)
+        self.assertIn("Notes - Commodore", commodore_section.fields[1].name)
+        self.assertIn("Selected by AOTN", rear_admiral_section.fields[0].value)
+        self.assertIn("No longer commands a ship", rear_admiral_section.fields[0].value)
+        self.assertIn("Notes - Rear Admiral", rear_admiral_section.fields[1].name)
+        self.assertIn(
+            "Hand selected by previous AOTN or by BOA vote should one not have been selected",
+            aotn_section.fields[0].value,
+        )
+        self.assertIn("Notes - Admiral Of The Navy", aotn_section.fields[1].name)
 
 
 if __name__ == "__main__":
