@@ -109,8 +109,8 @@ class PromotionServiceTests(unittest.TestCase):
         self.assertEqual(len(rendered_sections), 1)
         required_field, additional_field = rendered_sections[0].fields
         self.assertIn("Petty Officer", required_field.name)
-        self.assertIn("Legion of Conduct", required_field.value)
-        self.assertIn("NCO Improvement Ribbon", required_field.value)
+        self.assertIn(f"<@&{LEGION_OF_CONDUCT.role_id}>", required_field.value)
+        self.assertIn(f"<@&{NCO_IMPROVEMENT_RIBBON.role_id}>", required_field.value)
         self.assertIn("SLA Graduate", required_field.value)
         self.assertIn("Hosted ten voyages (10/10)", required_field.value)
         self.assertIn("Joined an SPD or became a Naval Specialist", additional_field.value)
@@ -260,7 +260,7 @@ class PromotionServiceTests(unittest.TestCase):
 
         self.assertIn("Waited four weeks as an O4", o4_required)
         self.assertIn("Waited three months as an O5", o5_required)
-        self.assertIn("Maritime Service Medal", o5_required)
+        self.assertIn(f"<@&{MARITIME_SERVICE_MEDAL.role_id}>", o5_required)
         self.assertIn("Built a full chain of command", o5_required)
         self.assertEqual(len(o5_section.fields), 1)
 
