@@ -3,7 +3,7 @@ from logging import getLogger
 from discord.ext import commands
 
 from src.config.training import ALL_TRAINING_RECORDS_CHANNELS
-from src.data.repository.training_records_repository import TrainingRecordsRepository
+from src.utils.discord_utils import EngineerAlertField, alert_engineers
 from src.utils.training_utils import process_training_record
 
 log = getLogger(__name__)
@@ -15,19 +15,37 @@ class OnMessageTraining(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        training_repository = TrainingRecordsRepository()
-
         applicable_channel_ids = [channel_id for channel_id in ALL_TRAINING_RECORDS_CHANNELS]
 
-        if message.channel.id in applicable_channel_ids and not message.author.bot:
-            log.info(f"[TRAINING] Training record posted in {message.channel.name}.")
+        message_channel = getattr(message, "channel", None)
+        channel_id = getattr(message_channel, "id", None)
+        author = getattr(message, "author", None)
+        if channel_id in applicable_channel_ids and not getattr(author, "bot", False):
+            channel_name = getattr(message_channel, "name", f"channel-{channel_id}")
+            log.info(f"[TRAINING] Training record posted in {channel_name}.")
             try:
-                 await process_training_record(message, message.channel)
-                 log.info(f"[TRAINING] Training record {message.id} saved.")
+                processed = await process_training_record(message, message_channel)
+                if processed:
+                    log.info(f"[TRAINING] Training record {message.id} saved.")
+                else:
+                    log.info(f"[TRAINING] Training record {message.id} skipped.")
             except Exception as e:
                 log.error(f"[TRAINING] Error saving training record: {e}")
-            finally:
-                training_repository.close_session()
+                channel_mention = getattr(message_channel, "mention", f"<#{channel_id}>")
+                author_mention = getattr(author, "mention", f"`{getattr(author, 'id', 'unknown')}`")
+                await alert_engineers(
+                    self.bot,
+                    f"Error saving training record in {channel_mention} for {author_mention}",
+                    e,
+                    title="Training Record Save Failed",
+                    fields=(
+                        EngineerAlertField("Channel", channel_mention),
+                        EngineerAlertField("Author", author_mention),
+                        EngineerAlertField(
+                            "Message ID", f"`{getattr(message, 'id', 'unknown')}`"
+                        ),
+                    ),
+                )
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(OnMessageTraining(bot))
