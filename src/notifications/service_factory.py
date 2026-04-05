@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Final
+
 from src.config.notifications import NOTIFICATION_ROLLOUT, NotificationRolloutMap
 from src.data.repository.notification_event_repository import NotificationEventRepository
 from src.data.repository.sailor_repository import SailorRepository
@@ -20,30 +22,30 @@ class NotificationServiceFactory:
             rollout_map: NotificationRolloutMap | None = None,
     ) -> None:
         self.rollout_map = rollout_map if rollout_map is not None else NOTIFICATION_ROLLOUT
+        self._definition_provider: Final = DefaultTriggerDefinitionProvider()
+        self._payload_factory: Final = NotificationPayloadFactory()
+        self._route_resolver: Final = ShipCommandRouteResolver()
+        self._eligibility_evaluator: Final = SailorInactivityEligibilityEvaluator()
+        self._renderer: Final = EmbedNotificationRenderer()
+        self._delivery_adapter: Final = DiscordNotificationDeliveryAdapter()
 
-    @staticmethod
-    def build_definition_provider() -> DefaultTriggerDefinitionProvider:
-        return DefaultTriggerDefinitionProvider()
+    def build_definition_provider(self) -> DefaultTriggerDefinitionProvider:
+        return self._definition_provider
 
-    @staticmethod
-    def build_payload_factory() -> NotificationPayloadFactory:
-        return NotificationPayloadFactory()
+    def build_payload_factory(self) -> NotificationPayloadFactory:
+        return self._payload_factory
 
-    @staticmethod
-    def build_route_resolver() -> ShipCommandRouteResolver:
-        return ShipCommandRouteResolver()
+    def build_route_resolver(self) -> ShipCommandRouteResolver:
+        return self._route_resolver
 
-    @staticmethod
-    def build_eligibility_evaluator() -> SailorInactivityEligibilityEvaluator:
-        return SailorInactivityEligibilityEvaluator()
+    def build_eligibility_evaluator(self) -> SailorInactivityEligibilityEvaluator:
+        return self._eligibility_evaluator
 
-    @staticmethod
-    def build_renderer() -> EmbedNotificationRenderer:
-        return EmbedNotificationRenderer()
+    def build_renderer(self) -> EmbedNotificationRenderer:
+        return self._renderer
 
-    @staticmethod
-    def build_delivery_adapter() -> DiscordNotificationDeliveryAdapter:
-        return DiscordNotificationDeliveryAdapter()
+    def build_delivery_adapter(self) -> DiscordNotificationDeliveryAdapter:
+        return self._delivery_adapter
 
     def build_scheduler(
             self,

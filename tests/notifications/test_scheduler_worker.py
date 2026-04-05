@@ -129,8 +129,8 @@ class TestNotificationSchedulerAndWorker(unittest.IsolatedAsyncioTestCase):
             rollout_map=self.rollout,
         )
 
-        created_first = await scheduler.run_for_date(self.bot, datetime(2026, 3, 24, tzinfo=UTC).date())
-        created_second = await scheduler.run_for_date(self.bot, datetime(2026, 3, 24, tzinfo=UTC).date())
+        created_first = await scheduler.run_for_date(self.bot, datetime(2026, 3, 22, tzinfo=UTC).date())
+        created_second = await scheduler.run_for_date(self.bot, datetime(2026, 3, 22, tzinfo=UTC).date())
 
         self.assertEqual(created_first, 1)
         self.assertEqual(created_second, 0)
@@ -149,8 +149,8 @@ class TestNotificationSchedulerAndWorker(unittest.IsolatedAsyncioTestCase):
             rollout_map=self.rollout,
         )
 
-        delivered_first = await worker.run_once(self.bot, datetime(2026, 3, 24, tzinfo=UTC).date())
-        delivered_second = await worker.run_once(self.bot, datetime(2026, 3, 24, tzinfo=UTC).date())
+        delivered_first = await worker.run_once(self.bot, datetime(2026, 3, 22, tzinfo=UTC).date())
+        delivered_second = await worker.run_once(self.bot, datetime(2026, 3, 22, tzinfo=UTC).date())
 
         self.assertEqual(delivered_first, 1)
         self.assertEqual(delivered_second, 0)
@@ -158,7 +158,7 @@ class TestNotificationSchedulerAndWorker(unittest.IsolatedAsyncioTestCase):
         event = self.session.query(NotificationEvent).first()
         self.assertEqual(event.status, NotificationStatus.DELIVERED.value)
 
-    async def test_scheduler_creates_one_event_per_daily_offset_without_duplicates(self) -> None:
+    async def test_scheduler_creates_one_event_per_configured_offset_without_duplicates(self) -> None:
         scheduler = NotificationSchedulerService(
             definition_provider=self.definition_provider,
             eligibility_evaluator=self.evaluator,
@@ -172,12 +172,7 @@ class TestNotificationSchedulerAndWorker(unittest.IsolatedAsyncioTestCase):
         created_events = 0
         for evaluation_date in (
                 date(2026, 3, 22),
-                date(2026, 3, 23),
-                date(2026, 3, 24),
-                date(2026, 3, 25),
                 date(2026, 3, 26),
-                date(2026, 3, 27),
-                date(2026, 3, 28),
                 date(2026, 3, 29),
         ):
             created_events += await scheduler.run_for_date(self.bot, evaluation_date)
@@ -189,11 +184,11 @@ class TestNotificationSchedulerAndWorker(unittest.IsolatedAsyncioTestCase):
             .all()
         )
 
-        self.assertEqual(created_events, 8)
-        self.assertEqual(len(events), 8)
+        self.assertEqual(created_events, 3)
+        self.assertEqual(len(events), 3)
         self.assertEqual(
             [event.trigger_offset for event in events],
-            [-7, -6, -5, -4, -3, -2, -1, 0],
+            [-7, -3, 0],
         )
 
     async def test_worker_skips_event_when_activity_cycle_changes(self) -> None:
@@ -206,7 +201,7 @@ class TestNotificationSchedulerAndWorker(unittest.IsolatedAsyncioTestCase):
             payload_factory=self.payload_factory,
             rollout_map=self.rollout,
         )
-        await scheduler.run_for_date(self.bot, datetime(2026, 3, 24, tzinfo=UTC).date())
+        await scheduler.run_for_date(self.bot, datetime(2026, 3, 22, tzinfo=UTC).date())
 
         sailor = self.session.query(Sailor).filter(Sailor.discord_id == 1).first()
         sailor.last_voyage_at = datetime(2026, 3, 24, 18, 0, tzinfo=UTC)
@@ -225,7 +220,7 @@ class TestNotificationSchedulerAndWorker(unittest.IsolatedAsyncioTestCase):
             rollout_map=self.rollout,
         )
 
-        delivered = await worker.run_once(self.bot, datetime(2026, 3, 24, tzinfo=UTC).date())
+        delivered = await worker.run_once(self.bot, datetime(2026, 3, 22, tzinfo=UTC).date())
 
         self.assertEqual(delivered, 0)
         self.assertEqual(delivery_adapter.send.await_count, 0)
@@ -243,7 +238,7 @@ class TestNotificationSchedulerAndWorker(unittest.IsolatedAsyncioTestCase):
             payload_factory=self.payload_factory,
             rollout_map=self.rollout,
         )
-        await scheduler.run_for_date(self.bot, datetime(2026, 3, 24, tzinfo=UTC).date())
+        await scheduler.run_for_date(self.bot, datetime(2026, 3, 22, tzinfo=UTC).date())
 
         worker = NotificationWorkerService(
             definition_provider=self.definition_provider,
@@ -258,9 +253,9 @@ class TestNotificationSchedulerAndWorker(unittest.IsolatedAsyncioTestCase):
         )
 
         with patch("src.notifications.worker.alert_engineers", new=AsyncMock()) as alert_mock:
-            await worker.run_once(self.bot, datetime(2026, 3, 24, tzinfo=UTC).date())
-            await worker.run_once(self.bot, datetime(2026, 3, 24, tzinfo=UTC).date())
-            await worker.run_once(self.bot, datetime(2026, 3, 24, tzinfo=UTC).date())
+            await worker.run_once(self.bot, datetime(2026, 3, 22, tzinfo=UTC).date())
+            await worker.run_once(self.bot, datetime(2026, 3, 22, tzinfo=UTC).date())
+            await worker.run_once(self.bot, datetime(2026, 3, 22, tzinfo=UTC).date())
 
         event = self.session.query(NotificationEvent).first()
         self.assertEqual(event.status, NotificationStatus.FAILED.value)
