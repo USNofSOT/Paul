@@ -1,10 +1,10 @@
-import datetime
 from logging import getLogger
 
 from discord.ext import commands, tasks
 
 from src.config.main_server import GUILD_ID
 from src.config.ships import SHIPS
+from src.config.task_timing import TRACK_SHIP_SIZE_TASK_TIME
 from src.data.repository.ship_repository import ShipRepository
 
 log = getLogger(__name__)
@@ -17,8 +17,7 @@ class AutoTrackShipSize(commands.Cog):
     def cog_unload(self):
         self.auto_track_ship_size.cancel()
 
-
-    @tasks.loop(time=datetime.time(hour=0, minute=00, tzinfo=datetime.timezone.utc))
+    @tasks.loop(time=TRACK_SHIP_SIZE_TASK_TIME)
     async def auto_track_ship_size(self):
         ship_repository = ShipRepository()
         try:

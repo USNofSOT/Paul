@@ -1,13 +1,14 @@
 import logging
-from typing import Any, Type
+from datetime import datetime
+from typing import Type
 
-from sqlalchemy import update, desc, and_, or_, func
+from sqlalchemy import desc, func, update
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.sql.functions import coalesce 
+from sqlalchemy.sql.functions import coalesce
 
 from src.data import SubclassType
 from src.data.engine import engine
-from src.data.models import Sailor
+from src.data.models import Hosted, Sailor, Voyages
 
 log = logging.getLogger(__name__)
 Session = sessionmaker(bind=engine)
@@ -140,6 +141,92 @@ class SailorRepository:
             log.error(f"Error incrementing voyage count: {e}")
             self.session.rollback()
             return False
+
+    def set_last_voyage_at_if_newer(self, target_id: int, activity_at: datetime) -> bool:
+        try:
+            sailor = (
+                self.session.query(Sailor)
+                .filter(Sailor.discord_id == target_id)
+                .first()
+            )
+            if sailor is None:
+                return False
+            if sailor.last_voyage_at is None or sailor.last_voyage_at < activity_at:
+                sailor.last_voyage_at = activity_at
+                self.session.commit()
+            return True
+        except Exception as e:
+            log.error(f"Error setting last voyage time: {e}")
+            self.session.rollback()
+            return False
+
+    def set_last_hosting_at_if_newer(self, target_id: int, activity_at: datetime) -> bool:
+        try:
+            sailor = (
+                self.session.query(Sailor)
+                .filter(Sailor.discord_id == target_id)
+                .first()
+            )
+            if sailor is None:
+                return False
+            if sailor.last_hosting_at is None or sailor.last_hosting_at < activity_at:
+                sailor.last_hosting_at = activity_at
+                self.session.commit()
+            return True
+        except Exception as e:
+            log.error(f"Error setting last hosting time: {e}")
+            self.session.rollback()
+            return False
+
+    def refresh_last_voyage_at_by_discord_id(self, target_id: int) -> datetime | None:
+        try:
+            latest_voyage = (
+                self.session.query(func.max(Voyages.log_time))
+                .filter(Voyages.target_id == target_id)
+                .scalar()
+            )
+            self.session.execute(
+                update(Sailor)
+                .where(Sailor.discord_id == target_id)
+                .values({"last_voyage_at": latest_voyage})
+            )
+            self.session.commit()
+            return latest_voyage
+        except Exception as e:
+            log.error(f"Error refreshing last voyage time: {e}")
+            self.session.rollback()
+            raise e
+
+    def refresh_last_hosting_at_by_discord_id(self, target_id: int) -> datetime | None:
+        try:
+            latest_hosting = (
+                self.session.query(func.max(Hosted.log_time))
+                .filter(Hosted.target_id == target_id)
+                .scalar()
+            )
+            self.session.execute(
+                update(Sailor)
+                .where(Sailor.discord_id == target_id)
+                .values({"last_hosting_at": latest_hosting})
+            )
+            self.session.commit()
+            return latest_hosting
+        except Exception as e:
+            log.error(f"Error refreshing last hosting time: {e}")
+            self.session.rollback()
+            raise e
+
+    def get_sailors_with_activity(self, activity_field: str) -> list[Sailor]:
+        try:
+            activity_column = getattr(Sailor, activity_field)
+            return (
+                self.session.query(Sailor)
+                .filter(activity_column.isnot(None))
+                .all()
+            )
+        except Exception as e:
+            log.error(f"Error retrieving sailors with activity field {activity_field}: {e}")
+            raise e
 
     def decrement_subclass_count_by_discord_id(self, target_id, subclass, subclass_count):
         """
