@@ -4,7 +4,8 @@ from logging import getLogger
 
 from discord.ext import commands, tasks
 
-from src.config import IMAGE_CACHE_JANITOR_INTERVAL_HOURS, IMAGE_CACHES
+from src.config import IMAGE_CACHES
+from src.config.task_timing import IMAGE_CACHE_JANITOR_TASK_INTERVAL_HOURS
 from src.data.repository.cache_stats_repository import CacheStatsRepository
 from src.utils.image_cache import CacheCleanupResult, cleanup_cache
 
@@ -54,7 +55,7 @@ class Janitor(commands.Cog):
     def cog_unload(self):
         self.janitor.cancel()
 
-    @tasks.loop(hours=IMAGE_CACHE_JANITOR_INTERVAL_HOURS)
+    @tasks.loop(hours=IMAGE_CACHE_JANITOR_TASK_INTERVAL_HOURS)
     async def janitor(self):
         cleanup_results = run_janitor_cleanup()
         persist_janitor_cleanup_results(cleanup_results)

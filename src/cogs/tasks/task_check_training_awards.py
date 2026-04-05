@@ -1,4 +1,3 @@
-import datetime
 from logging import getLogger
 
 from cogs.tasks.task_check_awards import fake_context
@@ -20,6 +19,8 @@ from discord.ext import commands, tasks
 from utils.check_awards import check_training
 from utils.discord_utils import alert_engineers
 
+from src.config.task_timing import CHECK_TRAINING_AWARDS_TASK_TIME
+
 log = getLogger(__name__)
 
 # Super nasty: reconsider - Trigs
@@ -33,8 +34,7 @@ class AutoCheckAwardsTraining(commands.Cog):
     def cog_unload(self):
         self.my_task.cancel()
 
-    # TODO: Move this into configuration as well
-    @tasks.loop(time=datetime.time(hour=15, minute=00, tzinfo=datetime.timezone.utc))
+    @tasks.loop(time=CHECK_TRAINING_AWARDS_TASK_TIME)
     async def my_task(self):
         log.info("Checking training awards")
         training_repository = TrainingRecordsRepository()

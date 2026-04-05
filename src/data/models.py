@@ -1,7 +1,16 @@
 import enum
 import logging
 
-from sqlalchemy import BIGINT, FLOAT, VARCHAR, Column, ForeignKey, Integer
+from sqlalchemy import (
+    BIGINT,
+    FLOAT,
+    VARCHAR,
+    Column,
+    Date,
+    ForeignKey,
+    Integer,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.mysql import TINYTEXT
 from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
 from sqlalchemy.sql.sqltypes import BOOLEAN, DATETIME, TEXT, Enum
@@ -194,6 +203,8 @@ class Sailor(Base):
     force_surgeon_points = Column(Integer, server_default="0")
     force_voyage_count = Column(Integer, server_default="0")
     force_hosted_count = Column(Integer, server_default="0")
+    last_voyage_at = Column(DATETIME, nullable=True)
+    last_hosting_at = Column(DATETIME, nullable=True)
 
     # One-to-Many relationship with Hosted
     hosted: Mapped[list["Hosted"]] = relationship(
@@ -437,6 +448,40 @@ class CommandCooldownStat(Base):
         nullable=False,
         server_default="0",
     )
+
+
+class NotificationEvent(Base):
+    __tablename__ = "notification_events"
+    __table_args__ = (
+        UniqueConstraint(
+            "notification_type",
+            "sailor_id",
+            "threshold_date",
+            "trigger_offset",
+            name="uq_notification_events_deduplication",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    notification_type = Column(VARCHAR(64), nullable=False)
+    status = Column(VARCHAR(32), nullable=False)
+    sailor_id = mapped_column(ForeignKey("sailor.discord_id"), nullable=False)
+    ship_role_id = Column(BIGINT, nullable=True)
+    squad_role_id = Column(BIGINT, nullable=True)
+    source_activity_at = Column(DATETIME, nullable=True)
+    source_activity_date = Column(Date, nullable=False)
+    threshold_date = Column(Date, nullable=False)
+    trigger_offset = Column(Integer, nullable=False)
+    scheduled_for_date = Column(Date, nullable=False)
+    destination_channel_id = Column(BIGINT, nullable=True)
+    payload_snapshot = Column(TEXT, nullable=True)
+    skip_reason = Column(TEXT, nullable=True)
+    failure_reason = Column(TEXT, nullable=True)
+    attempt_count = Column(Integer, nullable=False, server_default="0")
+    claimed_at = Column(DATETIME, nullable=True)
+    delivered_at = Column(DATETIME, nullable=True)
+    created_at = Column(DATETIME, nullable=False)
+    updated_at = Column(DATETIME, nullable=False)
 
 
 # Nifty function to create all tables
