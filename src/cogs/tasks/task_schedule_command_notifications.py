@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+import asyncio
+import random
 from logging import getLogger
 
 from discord.ext import commands, tasks
 
-from src.config.task_timing import COMMAND_NOTIFICATION_EVALUATOR_TASK_TIME
+from src.config.task_timing import (
+    COMMAND_NOTIFICATION_EVALUATOR_MAX_INTERVAL_HOURS,
+    COMMAND_NOTIFICATION_EVALUATOR_MIN_INTERVAL_HOURS,
+)
 from src.data.repository.notification_event_repository import NotificationEventRepository
 from src.data.repository.sailor_repository import SailorRepository
 from src.notifications.service_factory import NotificationServiceFactory
@@ -16,14 +21,34 @@ log = getLogger(__name__)
 class ScheduleCommandNotifications(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
+        self._random = random.Random()
+        self._run_count = 0
         self.notification_service_factory = NotificationServiceFactory()
         self.evaluate_notifications.start()
 
     def cog_unload(self) -> None:
         self.evaluate_notifications.cancel()
 
-    @tasks.loop(time=COMMAND_NOTIFICATION_EVALUATOR_TASK_TIME)
+    def _sample_additional_delay_seconds(self) -> float:
+        max_additional_hours = (
+                COMMAND_NOTIFICATION_EVALUATOR_MAX_INTERVAL_HOURS
+                - COMMAND_NOTIFICATION_EVALUATOR_MIN_INTERVAL_HOURS
+        )
+        return self._random.uniform(0.0, max_additional_hours * 60 * 60)
+
+    @tasks.loop(hours=COMMAND_NOTIFICATION_EVALUATOR_MIN_INTERVAL_HOURS)
     async def evaluate_notifications(self) -> None:
+        is_first_run = self._run_count == 0
+        self._run_count += 1
+
+        if not is_first_run:
+            additional_delay_seconds = self._sample_additional_delay_seconds()
+            log.info(
+                "Delaying command inactivity notification evaluation by %.0f seconds.",
+                additional_delay_seconds,
+            )
+            await asyncio.sleep(additional_delay_seconds)
+
         event_repository = NotificationEventRepository()
         sailor_repository = SailorRepository()
         scheduler = self.notification_service_factory.build_scheduler(
