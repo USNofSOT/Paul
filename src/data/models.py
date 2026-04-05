@@ -42,6 +42,8 @@ class TraingType(enum.Enum):
     NETC = "NETC"
     JLA = "JLA"
     SNLA = "SNLA"
+    SLA = "SLA"
+    COSA = "COSA"
     OCS = "OCS"
     SOCS = "SOCS"
 
@@ -246,6 +248,9 @@ class TrainingRecord(Base):
 
     snla_training_points = Column(Integer, nullable=False, server_default="0")
     # snla_graduation_date = Column(DATETIME, nullable=True, server_default=None) - No longer being tracked
+
+    sla_training_points = Column(Integer, nullable=False, server_default="0")
+    cosa_training_points = Column(Integer, nullable=False, server_default="0")
 
     ocs_training_points = Column(Integer, nullable=False, server_default="0")
     # ocs_graduation_date = Column(DATETIME, nullable=True, server_default=None) - No longer being tracked

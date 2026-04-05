@@ -24,6 +24,11 @@ class OnDeleteTraining(commands.Cog):
             try:
                 training_repository.delete_training(log_id=message.message_id, log_channel_id=message.channel_id)
                 log.info(f"[TRAINING] Training record {message.message_id} deleted.")
+            except ValueError:
+                log.warning(
+                    "[TRAINING] Skipping deletion for training record %s because no stored record was found.",
+                    message.message_id,
+                )
             except Exception as e:
                 log.error(f"[TRAINING] Error deleting training record: {e}")
             finally:
