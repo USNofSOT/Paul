@@ -1,13 +1,13 @@
 import logging
 from datetime import datetime
 from datetime import timedelta
-from typing import Type, List
+from typing import Type
 
-from sqlalchemy import delete
-from sqlalchemy.orm import sessionmaker, InstrumentedAttribute
+from sqlalchemy import delete, update
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql.functions import count
 
-from src.data import Sailor, Voyages
+from src.data import Sailor
 from src.data.engine import engine
 from src.data.models import Voyages
 
@@ -66,6 +66,11 @@ class VoyageRepository:
             for log_id, target_id, log_time, ship_role_id in voyage_data:
                 if not self.session.query(Voyages).filter_by(log_id=log_id, target_id=target_id).first():
                     self.session.add(Voyages(log_id=log_id, target_id=target_id, log_time=log_time, ship_role_id=ship_role_id))
+                    self.session.execute(
+                        update(Sailor)
+                        .where(Sailor.discord_id == target_id)
+                        .values({"last_voyage_at": log_time})
+                    )
             self.session.commit()
         except Exception as e:
             log.error(f"Error inserting voyage data: {e}")

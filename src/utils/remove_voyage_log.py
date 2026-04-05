@@ -1,8 +1,11 @@
 import logging
 
 from src.data.repository.hosted_repository import remove_hosted_entry_by_log_id
-from src.data.repository.sailor_repository import decrement_voyage_count_by_discord_id, \
-    decrement_hosted_count_by_discord_id
+from src.data.repository.sailor_repository import (
+    SailorRepository,
+    decrement_hosted_count_by_discord_id,
+    decrement_voyage_count_by_discord_id,
+)
 from src.data.repository.voyage_repository import remove_voyage_log_entries
 from src.utils.discord_utils import alert_engineers
 
@@ -10,6 +13,7 @@ log = logging.getLogger(__name__)
 
 async def remove_voyage_log_data(bot, log_id, hosted_repository, voyage_repository, subclass_repository = None):
     log_txt = f"[{log_id}] remove_voyage_log_data called. \n"
+    sailor_repository = SailorRepository()
     try:
         host = hosted_repository.get_host_by_log_id(log_id)
         if host:
@@ -36,6 +40,10 @@ async def remove_voyage_log_data(bot, log_id, hosted_repository, voyage_reposito
             remove_hosted_entry_by_log_id(log_id)
             log_txt += f" Removed hosted entry for {log_id}. \n"
 
+            for participant_id in participant_ids:
+                sailor_repository.refresh_last_voyage_at_by_discord_id(participant_id)
+            sailor_repository.refresh_last_hosting_at_by_discord_id(host_id)
+
             log.info(f"[{log_id}] Voyage log data successfully removed.")
     except Exception as e:
         log.error(f"[{log_id}] Error removing old data: {e}")
@@ -44,3 +52,5 @@ async def remove_voyage_log_data(bot, log_id, hosted_repository, voyage_reposito
             message=f"Error removing data from voyage log message {log_id} \n {log_txt}",
             exception=e
         )
+    finally:
+        sailor_repository.close_session()
