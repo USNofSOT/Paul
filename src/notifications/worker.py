@@ -23,7 +23,7 @@ from src.notifications.contracts import (
 from src.notifications.date_utils import local_today
 from src.notifications.payloads import NotificationPayloadFactory
 from src.notifications.rollout import is_notification_enabled_for_member
-from src.utils.discord_utils import alert_engineers
+from src.utils.discord_utils import EngineerAlertField, alert_engineers
 
 log = logging.getLogger(__name__)
 
@@ -150,6 +150,19 @@ class NotificationWorkerService:
                             f"ship_role={event.ship_role_id} attempts={final_attempt}"
                         ),
                         exception=exc,
+                        title="Notification Delivery Failed",
+                        fields=(
+                            EngineerAlertField("Event ID", f"`{event_id}`"),
+                            EngineerAlertField(
+                                "Notification Type", f"`{event.notification_type}`"
+                            ),
+                            EngineerAlertField(
+                                "Sailor ID", f"`{event.sailor_id}`"
+                            ),
+                            EngineerAlertField(
+                                "Attempts", f"`{final_attempt}`"
+                            ),
+                        ),
                     )
                 else:
                     self.event_repository.release_for_retry(event_id, str(exc))

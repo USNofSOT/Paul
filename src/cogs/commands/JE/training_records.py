@@ -7,21 +7,71 @@ from src.config.awards import TRAINING_MEDALS
 from src.config.main_server import GUILD_ID
 from src.config.netc_server import (
     HIGH_COMMAND_OF_NETC_ROLES,
-    JLA_GRADUATE_ROLE,
-    JLA_INSTRUCTOR_ROLE,
+    NETC_ACTIVE_CURRICULUMS,
     NETC_GUILD_ID,
-    OCS_GRADUATE_ROLE,
-    OCS_INSTRUCTOR_ROLE,
-    SNLA_GRADUATE_ROLE,
-    SNLA_INSTRUCTOR_ROLE,
-    SOCS_GRADUATE_ROLE,
-    SOCS_INSTRUCTOR_ROLE,
+    NETC_LEGACY_CURRICULUMS,
 )
 from src.config.ranks_roles import JE_AND_UP, NETC_ROLE, NRC_ROLE
 from src.data import TrainingRecord
 from src.data.repository.training_records_repository import TrainingRecordsRepository
 from src.utils.embeds import default_embed
 from src.utils.time_utils import format_time, get_time_difference_past
+
+ACTIVE_NETC_POINT_FIELDS = (
+    ("jla_training_points", "Total JLA Points"),
+    ("sla_training_points", "Total SLA Points"),
+    ("cosa_training_points", "Total COSA Points"),
+    ("ocs_training_points", "Total OCS Points"),
+    ("socs_training_points", "SOCS Points"),
+)
+LEGACY_TRAINING_POINT_FIELDS = (
+    ("snla_training_points", "Total SNLA Points"),
+    ("nla_training_points", "Total NLA Points"),
+    ("vla_training_points", "Total VLA Points"),
+)
+
+
+def _curricula_for_graduate_roles(
+        member_role_ids: set[int], curricula: tuple[tuple[str, int, int, int], ...]
+) -> list[str]:
+    return [
+        name for name, _, _, graduate_role in curricula if graduate_role in member_role_ids
+    ]
+
+
+def _curricula_for_instructor_roles(
+        member_role_ids: set[int], curricula: tuple[tuple[str, int, int, int], ...]
+) -> list[str]:
+    return [
+        name
+        for name, _, instructor_role, _ in curricula
+        if instructor_role in member_role_ids
+    ]
+
+
+def _get_positive_point_fields(
+        training_record: TrainingRecord, point_fields: tuple[tuple[str, str], ...]
+) -> list[tuple[str, int]]:
+    return [
+        (label, points)
+        for attribute_name, label in point_fields
+        if (points := getattr(training_record, attribute_name, 0)) > 0
+    ]
+
+
+def _format_curriculum_list(curricula: list[str]) -> str:
+    return "\n".join(f"- {name}" for name in curricula)
+
+
+def _add_breakdown_fields(
+        embed: discord.Embed,
+        title: str,
+        point_fields: list[tuple[str, int]],
+) -> None:
+    embed.add_field(name="\u200b", value="\u200b", inline=False)
+    embed.add_field(name=title, value="\u200b", inline=False)
+    for label, points in point_fields:
+        embed.add_field(name=label, value=f"{points}", inline=True)
 
 
 class TrainingRecords(commands.Cog):
@@ -60,34 +110,43 @@ class TrainingRecords(commands.Cog):
         except AttributeError:
             pass
 
-        relevant_departments = [
-            self.bot.get_guild(GUILD_ID).get_role(role)
-            for role in [NETC_ROLE, NRC_ROLE]
-        ]
+        target_role_ids = {role.id for role in target.roles}
+        main_guild = self.bot.get_guild(GUILD_ID)
+        relevant_departments = []
+        if main_guild is not None:
+            relevant_departments = [
+                role
+                for role in (
+                    main_guild.get_role(NETC_ROLE),
+                    main_guild.get_role(NRC_ROLE),
+                )
+                if role is not None
+            ]
+        department_mentions = "\n".join(
+            [role.mention for role in relevant_departments if role.id in target_role_ids]
+        )
         embed.add_field(
             name="Department",
-            value=f"{ '\n'.join([role.mention for role in relevant_departments if role in target.roles]) or 'None'}",
+            value=department_mentions or "None",
         )
         embed.add_field(
             name="Training Points",
             value=f"{training_record.netc_training_points+training_record.nrc_training_points + training_record.st_training_points}",
         )
         # if user NRC and NETC Department member
-        if NETC_ROLE in [role.id for role in target.roles] and NRC_ROLE in [
-            role.id for role in target.roles
-        ]:
+        if NETC_ROLE in target_role_ids and NRC_ROLE in target_role_ids:
             embed.add_field(
                 name="NRC / NETC Points",
                 value=f"{training_record.nrc_training_points + training_record.st_training_points} / {training_record.netc_training_points}",
             )
         # if user is NRC Department member
-        elif NETC_ROLE in [role.id for role in target.roles]:
+        elif NETC_ROLE in target_role_ids:
             embed.add_field(
                 name="NETC Points",
                 value=f"{training_record.netc_training_points}",
             )
         # if user is NETC Department member
-        elif NRC_ROLE in [role.id for role in target.roles]:
+        elif NRC_ROLE in target_role_ids:
             embed.add_field(
                 name="NRC Points",
                 value=f"{training_record.nrc_training_points + training_record.st_training_points}",
@@ -98,46 +157,43 @@ class TrainingRecords(commands.Cog):
                 value="\u200b",
             )
 
-        netc_member = self.bot.get_guild(NETC_GUILD_ID).get_member(target.id)
+        netc_guild = self.bot.get_guild(NETC_GUILD_ID)
+        netc_member = netc_guild.get_member(target.id) if netc_guild is not None else None
         if netc_member is not None:
+            netc_member_role_ids = {role.id for role in netc_member.roles}
             embed.add_field(
                 name="Time in NETC",
                 value=f"{format_time(get_time_difference_past(netc_member.joined_at))}",
             )
-            graduate_roles = [
-                ("JLA", JLA_GRADUATE_ROLE),
-                ("SNLA", SNLA_GRADUATE_ROLE),
-                ("OCS", OCS_GRADUATE_ROLE),
-                ("SOCS", SOCS_GRADUATE_ROLE),
-            ]
-            graduate_roles = [
-                (name, role)
-                for name, role in graduate_roles
-                if role in [role.id for role in netc_member.roles]
-            ]
-            if len(graduate_roles) > 0:
+            active_graduate_curricula = _curricula_for_graduate_roles(
+                netc_member_role_ids, NETC_ACTIVE_CURRICULUMS
+            )
+            legacy_graduate_curricula = _curricula_for_graduate_roles(
+                netc_member_role_ids, NETC_LEGACY_CURRICULUMS
+            )
+            active_instructor_curricula = _curricula_for_instructor_roles(
+                netc_member_role_ids, NETC_ACTIVE_CURRICULUMS
+            )
+            legacy_instructor_curricula = _curricula_for_instructor_roles(
+                netc_member_role_ids, NETC_LEGACY_CURRICULUMS
+            )
+
+            if len(active_graduate_curricula) > 0:
                 embed.add_field(
                     name="Graduated for",
-                    value="\n".join([f"- {name}" for name, role in graduate_roles]),
+                    value=_format_curriculum_list(active_graduate_curricula + legacy_graduate_curricula),
                     inline=True,
                 )
-            instructor_roles = [
-                ("JLA", JLA_INSTRUCTOR_ROLE),
-                ("SNLA", SNLA_INSTRUCTOR_ROLE),
-                ("OCS", OCS_INSTRUCTOR_ROLE),
-                ("SOCS", SOCS_INSTRUCTOR_ROLE),
-            ]
-            instructor_roles = [
-                (name, role)
-                for name, role in instructor_roles
-                if role in [role.id for role in netc_member.roles]
-            ]
-            if len(instructor_roles) > 0:
+            if len(active_instructor_curricula) > 0:
                 embed.add_field(
                     name="Instructor for",
-                    value="\n".join([f"- {name}" for name, role in instructor_roles]),
+                    value=_format_curriculum_list(active_instructor_curricula + legacy_instructor_curricula),
                     inline=True,
                 )
+
+        else:
+            active_instructor_curricula = []
+            legacy_instructor_curricula = []
 
         if (
             training_record.nrc_training_points > 0
@@ -157,57 +213,18 @@ class TrainingRecords(commands.Cog):
                     inline=True,
                 )
 
-        if netc_member is not None:
-            netc_member_roles = [role.id for role in netc_member.roles]
-            if any(
-                role in netc_member_roles
-                for role in [
-                    JLA_INSTRUCTOR_ROLE,
-                    SNLA_INSTRUCTOR_ROLE,
-                    OCS_INSTRUCTOR_ROLE,
-                    SOCS_INSTRUCTOR_ROLE,
-                ]
-            ):
-                embed.add_field(name="\u200b", value="\u200b", inline=False)
-                embed.add_field(
-                    name="NETC Points Breakdown:", value="\u200b", inline=False
-                )
-            if training_record.jla_training_points > 0:
-                embed.add_field(
-                    name="Total JLA Points",
-                    value=f"{training_record.jla_training_points}",
-                    inline=True,
-                )
-            if training_record.snla_training_points > 0:
-                embed.add_field(
-                    name="Total SNLA Points",
-                    value=f"{training_record.snla_training_points}",
-                    inline=True,
-                )
-            if training_record.ocs_training_points > 0:
-                embed.add_field(
-                    name="Total OCS Points",
-                    value=f"{training_record.ocs_training_points}",
-                    inline=True,
-                )
-            if training_record.socs_training_points > 0:
-                embed.add_field(
-                    name="SOCS Points",
-                    value=f"{training_record.socs_training_points}",
-                    inline=True,
-                )
-            if training_record.nla_training_points > 0:
-                embed.add_field(
-                    name="Total NLA Points",
-                    value=f"{training_record.nla_training_points}",
-                    inline=True,
-                )
-            if training_record.nla_training_points > 0:
-                embed.add_field(
-                    name="Total VLA Points",
-                    value=f"{training_record.vla_training_points}",
-                    inline=True,
-                )
+        active_point_fields = _get_positive_point_fields(
+            training_record, ACTIVE_NETC_POINT_FIELDS
+        )
+        legacy_point_fields = _get_positive_point_fields(
+            training_record, LEGACY_TRAINING_POINT_FIELDS
+        )
+        if len(active_point_fields) > 0 or len(active_instructor_curricula) > 0:
+            _add_breakdown_fields(embed, "NETC Points Breakdown:", active_point_fields)
+        if len(legacy_point_fields) > 0 or len(legacy_instructor_curricula) > 0:
+            _add_breakdown_fields(
+                embed, "Legacy Training Breakdown:", legacy_point_fields
+            )
 
         embed.add_field(name="\u200b", value="\u200b", inline=False)
 
