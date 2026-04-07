@@ -11,7 +11,12 @@ from src.config.task_timing import COMMAND_NOTIFICATION_WORKER_TASK_INTERVAL_SEC
 from src.data.repository.notification_event_repository import NotificationEventRepository
 from src.data.repository.sailor_repository import SailorRepository
 from src.notifications.service_factory import NotificationServiceFactory
-from src.utils.discord_utils import alert_engineers
+from src.utils.discord_utils import (
+    AlertSeverity,
+    EngineerAlertField,
+    alert_engineers,
+    send_engineer_log,
+)
 
 log = getLogger(__name__)
 
@@ -39,6 +44,16 @@ class ProcessCommandNotifications(commands.Cog):
             delivered_count = await worker.run_once(self.bot)
             if delivered_count:
                 log.info("Delivered %s command inactivity notifications.", delivered_count)
+
+                await send_engineer_log(
+                    self.bot,
+                    severity=AlertSeverity.INFO,
+                    title="Notification Worker Results",
+                    description="The notification worker has finished a delivery cycle.",
+                    fields=(
+                        EngineerAlertField("Delivered Notifications", f"**{delivered_count}**"),
+                    ),
+                )
         except Exception as exc:
             log.error("Error processing command inactivity notifications.", exc_info=True)
             await alert_engineers(
