@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from discord import Guild
 
+from src.config.main_server import BOT_TEST_COMMAND, ENVIRONMENT
 from src.config.notifications import NOTIFICATION_CHANNEL_OVERRIDES
 from src.notifications.types import (
     NotificationDefinition,
@@ -50,6 +51,15 @@ class ShipCommandRouteResolver:
             return ResolvedRoute(
                 destination_channel_id=None,
                 skip_reason="command_channel_not_found",
+            )
+
+        # Reroute all notifications to the engineer channel in non-PROD environments
+        if ENVIRONMENT != "PROD":
+            if guild.get_channel(BOT_TEST_COMMAND) is not None:
+                return ResolvedRoute(destination_channel_id=BOT_TEST_COMMAND)
+            return ResolvedRoute(
+                destination_channel_id=None,
+                skip_reason="engineer_channel_not_found_in_dev",
             )
 
         return ResolvedRoute(destination_channel_id=destination_channel_id)

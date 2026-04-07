@@ -1,22 +1,18 @@
 from logging import getLogger
 
-import discord, config, asyncio
-import os
+import asyncio
+import config
 from discord.ext import commands
-from discord import app_commands
-from src.config import VOYAGE_LOGS
-from sqlalchemy.orm import sessionmaker
-from src.utils.process_voyage_log import Process_Voyage_Log
 
-from src.data import engine
+from src.config import VOYAGE_LOGS, ENVIRONMENT
 from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.sailor_repository import SailorRepository
 from src.data.repository.voyage_repository import VoyageRepository
+from src.utils.process_voyage_log import Process_Voyage_Log
 
 # from utils.database_manager import DatabaseManager   # Imports Database Manager from Utilies if needed uncomment it!
 
 log = getLogger(__name__)
-ENV : str = os.getenv('ENVIRONMENT', "DEV")
 
 class On_Load_Voyages(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -27,8 +23,8 @@ class On_Load_Voyages(commands.Cog):
         voyage_repository = VoyageRepository()
         hosted_repository = HostedRepository()
         sailor_repository = SailorRepository()
-    
-        if not ENV=="PROD":
+
+        if ENVIRONMENT != "PROD":
             log.info("Not In Production")
             return
         try:

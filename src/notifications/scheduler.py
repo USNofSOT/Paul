@@ -58,16 +58,20 @@ class NotificationSchedulerService:
             for member in getattr(guild, "members", [])
         }
 
-        for definition in self.definition_provider.get_definitions():
-            sailors = self.sailor_repository.get_sailors_with_activity(definition.activity_field)
-            for sailor in sailors:
-                member = cached_members.get(sailor.discord_id) or guild.get_member(
-                    sailor.discord_id
-                )
-                if member is None:
-                    continue
+        definitions = self.definition_provider.get_definitions()
+        activity_fields = list({d.activity_field for d in definitions})
+        sailors = self.sailor_repository.get_sailors_with_any_activity(activity_fields)
 
-                member_context = build_member_context(member)
+        for sailor in sailors:
+            member = cached_members.get(sailor.discord_id) or guild.get_member(
+                sailor.discord_id
+            )
+            if member is None:
+                continue
+
+            member_context = build_member_context(member)
+
+            for definition in definitions:
                 if not is_notification_enabled_for_member(
                         self.rollout_map,
                         definition.notification_type,

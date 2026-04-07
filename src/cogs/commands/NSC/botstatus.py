@@ -1,13 +1,12 @@
-import discord
-import logging
-from discord.ext import commands, tasks
-from config import BOT_STATUS, GUILD_ID, NSC_ROLES
-from datetime import datetime, timedelta
 import json
-import os
+import logging
+from datetime import datetime
+
+import discord
+from config import BOT_STATUS, GUILD_ID, NSC_ROLES, ENVIRONMENT
+from discord.ext import commands
 
 log=logging.getLogger(__name__)
-ENV : str = os.getenv('ENVIRONMENT', "DEV")
 
 class BotStatus(commands.Cog):
       
@@ -22,7 +21,7 @@ class BotStatus(commands.Cog):
 
     def load_status_message_id(self):
         """Loads the status message ID from the file."""
-        if not ENV=="PROD":
+        if ENVIRONMENT != "PROD":
             log.info("Not In Production")
             return
         try:
@@ -46,7 +45,7 @@ class BotStatus(commands.Cog):
         Args:
             status: 1 for online, 0 for offline.
         """
-        if not ENV=="PROD":
+        if ENVIRONMENT != "PROD":
             log.info("Not In Production")
             return
         if status not in [0, 1]:

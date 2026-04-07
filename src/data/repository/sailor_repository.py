@@ -228,6 +228,19 @@ class SailorRepository:
             log.error(f"Error retrieving sailors with activity field {activity_field}: {e}")
             raise e
 
+    def get_sailors_with_any_activity(self, activity_fields: list[str]) -> list[Sailor]:
+        try:
+            filters = [getattr(Sailor, field).isnot(None) for field in activity_fields]
+            from sqlalchemy import or_
+            return (
+                self.session.query(Sailor)
+                .filter(or_(*filters))
+                .all()
+            )
+        except Exception as e:
+            log.error(f"Error retrieving sailors with any activity fields {activity_fields}: {e}")
+            raise e
+
     def decrement_subclass_count_by_discord_id(self, target_id, subclass, subclass_count):
         """
         Decrement the subclass count for a specific Sailor
