@@ -1,4 +1,3 @@
-import os
 import re
 from logging import getLogger
 
@@ -14,6 +13,7 @@ from utils.ship_utils import convert_to_ordinal
 from src.config import (
     CANNONEER_SYNONYMS,
     CARPENTER_SYNONYMS,
+    ENVIRONMENT,
     FLEX_SYNONYMS,
     GRENADIER_SYNONYMS,
     GUILD_ID,
@@ -132,7 +132,7 @@ class ConfirmView(discord.ui.View):
         # Remove emoji send by bot discord py
         for reaction in log_message.reactions:
             if reaction.me:
-                if str(os.getenv("ENVIRONMENT", "DEV")) == "PROD":
+                if ENVIRONMENT == "PROD":
                     await reaction.clear()
 
         await interaction.response.send_message(

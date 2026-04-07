@@ -13,7 +13,12 @@ from src.config.task_timing import (
 from src.data.repository.notification_event_repository import NotificationEventRepository
 from src.data.repository.sailor_repository import SailorRepository
 from src.notifications.service_factory import NotificationServiceFactory
-from src.utils.discord_utils import alert_engineers
+from src.utils.discord_utils import (
+    AlertSeverity,
+    EngineerAlertField,
+    alert_engineers,
+    send_engineer_log,
+)
 
 log = getLogger(__name__)
 
@@ -58,6 +63,25 @@ class ScheduleCommandNotifications(commands.Cog):
         try:
             created_events = await scheduler.run_for_date(self.bot)
             log.info("Scheduled %s command inactivity notification events.", created_events)
+
+            if created_events > 0:
+                await send_engineer_log(
+                    self.bot,
+                    severity=AlertSeverity.INFO,
+                    title="Notification Evaluator Results",
+                    description="The notification evaluator has finished running and created new events.",
+                    fields=(
+                        EngineerAlertField("Created Events", f"**{created_events}**"),
+                    ),
+                )
+            else:
+                await send_engineer_log(
+                    self.bot,
+                    severity=AlertSeverity.INFO,
+                    title="Notification Evaluator Heartbeat",
+                    description="The notification evaluator has finished running. No new events were created.",
+                    notify_engineers=False,
+                )
         except Exception as exc:
             log.error("Error scheduling command inactivity notifications.", exc_info=True)
             await alert_engineers(
