@@ -74,14 +74,6 @@ class ScheduleCommandNotifications(commands.Cog):
                         EngineerAlertField("Created Events", f"**{created_events}**"),
                     ),
                 )
-            else:
-                await send_engineer_log(
-                    self.bot,
-                    severity=AlertSeverity.INFO,
-                    title="Notification Evaluator Heartbeat",
-                    description="The notification evaluator has finished running. No new events were created.",
-                    notify_engineers=False,
-                )
         except Exception as exc:
             log.error("Error scheduling command inactivity notifications.", exc_info=True)
             await alert_engineers(
