@@ -5,8 +5,8 @@ from typing import Final
 
 # Daily tasks are intentionally staggered to reduce burst load on the guild and DB.
 TRACK_SHIP_SIZE_TASK_TIME: Final[time] = time(hour=0, minute=3, tzinfo=UTC)
-COMMAND_NOTIFICATION_EVALUATOR_MIN_INTERVAL_HOURS: Final[int] = 24
-COMMAND_NOTIFICATION_EVALUATOR_MAX_INTERVAL_HOURS: Final[int] = 26
+COMMAND_NOTIFICATION_EVALUATOR_MIN_INTERVAL_HOURS: Final[int] = 1
+COMMAND_NOTIFICATION_EVALUATOR_MAX_INTERVAL_HOURS: Final[int] = 2
 CHECK_AWARDS_TASK_TIME: Final[time] = time(hour=15, minute=5, tzinfo=UTC)
 CHECK_TRAINING_AWARDS_TASK_TIME: Final[time] = time(hour=15, minute=12, tzinfo=UTC)
 

@@ -43,3 +43,6 @@ BOT_STATUS: Final[int] = 1296034003480215552
 
 # Bot testing / engineering alerts
 BOT_TEST_COMMAND: Final[int] = 1291589569602650154
+
+# ENVIRONMENT
+ENVIRONMENT: Final[str] = os.getenv("ENVIRONMENT", "DEV")
