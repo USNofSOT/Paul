@@ -1,5 +1,6 @@
 import unittest
 
+from src.config.main_server import BOT_LOG_DEV, BOT_LOG_PROD, get_bot_log_channel_id
 from src.utils.discord_utils import (
     EngineerAlert,
     EngineerAlertField,
@@ -52,6 +53,10 @@ class DummyBot:
 
 
 class TestDiscordUtils(unittest.IsolatedAsyncioTestCase):
+    def test_bot_log_channel_helper_uses_environment(self) -> None:
+        self.assertEqual(get_bot_log_channel_id("DEV"), BOT_LOG_DEV)
+        self.assertEqual(get_bot_log_channel_id("PROD"), BOT_LOG_PROD)
+
     def test_engineer_alert_embed_uses_severity_label_and_fields(self) -> None:
         embed = engineer_alert_embed(
             severity=AlertSeverity.WARNING,

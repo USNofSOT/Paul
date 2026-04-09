@@ -13,24 +13,19 @@ from src.utils.ship_utils import get_ship_by_role_id
 
 
 class ShipCommandRouteResolver:
-    def resolve(
+    def resolve_ship_role(
             self,
-            definition: NotificationDefinition,
-            member_context: ResolvedMemberContext,
+            ship_role_id: int | None,
             guild: Guild,
     ) -> ResolvedRoute:
-        del definition
-
-        if member_context.ship_role_id is None:
+        if ship_role_id is None:
             return ResolvedRoute(
                 destination_channel_id=None,
                 skip_reason="missing_ship_role",
             )
 
-        ship = get_ship_by_role_id(member_context.ship_role_id)
-        destination_channel_id = NOTIFICATION_CHANNEL_OVERRIDES.get(
-            member_context.ship_role_id
-        )
+        ship = get_ship_by_role_id(ship_role_id)
+        destination_channel_id = NOTIFICATION_CHANNEL_OVERRIDES.get(ship_role_id)
 
         if ship is None and destination_channel_id is None:
             return ResolvedRoute(
@@ -63,3 +58,12 @@ class ShipCommandRouteResolver:
             )
 
         return ResolvedRoute(destination_channel_id=destination_channel_id)
+
+    def resolve(
+            self,
+            definition: NotificationDefinition,
+            member_context: ResolvedMemberContext,
+            guild: Guild,
+    ) -> ResolvedRoute:
+        del definition
+        return self.resolve_ship_role(member_context.ship_role_id, guild)

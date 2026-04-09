@@ -461,7 +461,7 @@ class NotificationEvent(Base):
         UniqueConstraint(
             "notification_type",
             "sailor_id",
-            "threshold_date",
+            "threshold_at",
             "trigger_offset",
             name="uq_notification_events_deduplication",
         ),
@@ -475,8 +475,10 @@ class NotificationEvent(Base):
     squad_role_id = Column(BIGINT, nullable=True)
     source_activity_at = Column(DATETIME, nullable=True)
     source_activity_date = Column(Date, nullable=False)
+    threshold_at = Column(DATETIME, nullable=False)
     threshold_date = Column(Date, nullable=False)
     trigger_offset = Column(Integer, nullable=False)
+    scheduled_for_at = Column(DATETIME, nullable=False)
     scheduled_for_date = Column(Date, nullable=False)
     destination_channel_id = Column(BIGINT, nullable=True)
     payload_snapshot = Column(TEXT, nullable=True)

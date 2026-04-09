@@ -3,10 +3,13 @@ import unittest
 
 from src.cogs.tasks.task_process_command_notifications import ProcessCommandNotifications
 from src.cogs.tasks.task_schedule_command_notifications import ScheduleCommandNotifications
+from src.cogs.tasks.task_ship_health_summary import ShipHealthSummaryTask
 from src.config.task_timing import (
     COMMAND_NOTIFICATION_EVALUATOR_MAX_INTERVAL_HOURS,
     COMMAND_NOTIFICATION_EVALUATOR_MIN_INTERVAL_HOURS,
     COMMAND_NOTIFICATION_WORKER_TASK_INTERVAL_SECONDS,
+    SHIP_HEALTH_SUMMARY_TASK_TIME,
+    SHIP_HEALTH_SUMMARY_TASK_WEEKDAY,
 )
 
 
@@ -36,3 +39,10 @@ class TestNotificationTaskConfiguration(unittest.TestCase):
             ProcessCommandNotifications.process_notifications.seconds,
             COMMAND_NOTIFICATION_WORKER_TASK_INTERVAL_SECONDS,
         )
+
+    def test_ship_health_summary_uses_configured_time(self) -> None:
+        self.assertEqual(
+            ShipHealthSummaryTask.ship_health_summary.time,
+            [SHIP_HEALTH_SUMMARY_TASK_TIME],
+        )
+        self.assertEqual(SHIP_HEALTH_SUMMARY_TASK_WEEKDAY, 4)

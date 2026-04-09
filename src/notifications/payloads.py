@@ -16,6 +16,7 @@ from src.notifications.types import (
     ResolvedMemberContext,
     TemplateKey,
 )
+from src.utils.emoji_utils import resolve_ship_emoji
 from src.utils.ship_utils import get_ship_by_role_id
 
 
@@ -37,12 +38,8 @@ class NotificationPayloadFactory:
             else None
         )
         resolved_reference_time = ensure_utc(reference_time or datetime.now(UTC))
-        ship_emoji = ship.emoji if ship and ship.emoji else ":ship:"
-        status_label = (
-            "Due today"
-            if eligibility.days_remaining == 0
-            else f"{eligibility.days_remaining} day(s) remaining"
-        )
+        ship_emoji = resolve_ship_emoji(ship_role_id=member_context.ship_role_id, ship=ship)
+        status_label = self._build_status_label(eligibility.days_remaining)
         due_timestamp = self._format_relative_datetime(eligibility.threshold_at)
 
         if definition.template_key == TemplateKey.NO_VOYAGE_REMINDER:
@@ -84,6 +81,8 @@ class NotificationPayloadFactory:
             metadata={
                 "ship_role_id": str(member_context.ship_role_id or ""),
                 "squad_role_id": str(member_context.squad_role_id or ""),
+                "threshold_at": eligibility.threshold_at.isoformat(),
+                "scheduled_for_at": eligibility.scheduled_for_at.isoformat(),
                 "scheduled_for_date": eligibility.scheduled_for_date.isoformat(),
                 "ship_emoji": ship_emoji,
             },
@@ -122,6 +121,14 @@ class NotificationPayloadFactory:
             return f"<@{sailor_id}> {status_phrase} {due_timestamp} for reaching {threshold_label}."
         # Upcoming: use 'to reach' and omit the redundant display name after the mention
         return f"<@{sailor_id}> {status_phrase} {due_timestamp} to reach {threshold_label}."
+
+    @staticmethod
+    def _build_status_label(days_remaining: int) -> str:
+        if days_remaining == 0:
+            return "Due today"
+        if days_remaining < 0:
+            return f"{abs(days_remaining)} day(s) overdue"
+        return f"{days_remaining} day(s) remaining"
 
     @staticmethod
     def _sanitize_subject_name(value: str) -> str:

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 from datetime import UTC, datetime
 
 from sqlalchemy import func
@@ -8,14 +7,13 @@ from sqlalchemy.exc import IntegrityError
 
 from src.data.models import NotificationEvent, Sailor
 from src.data.repository.common.base_repository import BaseRepository
+from src.notifications.date_utils import ensure_utc
 from src.notifications.types import (
     EligibilityResult,
     NotificationDefinition,
     NotificationStatus,
     ResolvedMemberContext,
 )
-
-log = logging.getLogger(__name__)
 
 
 class NotificationEventRepository(BaseRepository[NotificationEvent]):
@@ -32,20 +30,66 @@ class NotificationEventRepository(BaseRepository[NotificationEvent]):
             destination_channel_id: int | None,
             payload_snapshot: str,
     ) -> tuple[NotificationEvent, bool]:
+        return self._create_event(
+            definition=definition,
+            sailor=sailor,
+            member_context=member_context,
+            eligibility=eligibility,
+            status=NotificationStatus.PENDING.value,
+            destination_channel_id=destination_channel_id,
+            payload_snapshot=payload_snapshot,
+        )
+
+    def create_skipped_event(
+            self,
+            *,
+            definition: NotificationDefinition,
+            sailor: Sailor,
+            member_context: ResolvedMemberContext,
+            eligibility: EligibilityResult,
+            payload_snapshot: str,
+            skip_reason: str,
+    ) -> tuple[NotificationEvent, bool]:
+        return self._create_event(
+            definition=definition,
+            sailor=sailor,
+            member_context=member_context,
+            eligibility=eligibility,
+            status=NotificationStatus.SKIPPED.value,
+            destination_channel_id=None,
+            payload_snapshot=payload_snapshot,
+            skip_reason=skip_reason,
+        )
+
+    def _create_event(
+            self,
+            *,
+            definition: NotificationDefinition,
+            sailor: Sailor,
+            member_context: ResolvedMemberContext,
+            eligibility: EligibilityResult,
+            status: str,
+            destination_channel_id: int | None,
+            payload_snapshot: str,
+            skip_reason: str | None = None,
+    ) -> tuple[NotificationEvent, bool]:
         now = datetime.now(UTC)
         event = NotificationEvent(
             notification_type=definition.notification_type.value,
-            status=NotificationStatus.PENDING.value,
+            status=status,
             sailor_id=sailor.discord_id,
             ship_role_id=member_context.ship_role_id,
             squad_role_id=member_context.squad_role_id,
             source_activity_at=eligibility.source_activity_at,
             source_activity_date=eligibility.source_activity_date,
+            threshold_at=eligibility.threshold_at,
             threshold_date=eligibility.threshold_date,
             trigger_offset=eligibility.trigger_offset,
+            scheduled_for_at=eligibility.scheduled_for_at,
             scheduled_for_date=eligibility.scheduled_for_date,
             destination_channel_id=destination_channel_id,
             payload_snapshot=payload_snapshot,
+            skip_reason=skip_reason,
             created_at=now,
             updated_at=now,
         )
@@ -60,18 +104,22 @@ class NotificationEventRepository(BaseRepository[NotificationEvent]):
                 .filter(
                     NotificationEvent.notification_type == definition.notification_type.value,
                     NotificationEvent.sailor_id == sailor.discord_id,
-                    NotificationEvent.threshold_date == eligibility.threshold_date,
+                    NotificationEvent.threshold_at == eligibility.threshold_at,
                     NotificationEvent.trigger_offset == eligibility.trigger_offset,
                 )
                 .first()
             )
             return existing, False
 
-    def list_pending_event_ids(self, *, limit: int) -> list[int]:
+    def list_due_event_ids(self, *, limit: int, due_before: datetime) -> list[int]:
+        resolved_due_before = ensure_utc(due_before)
         rows = (
             self.session.query(NotificationEvent.id)
-            .filter(NotificationEvent.status == NotificationStatus.PENDING.value)
-            .order_by(NotificationEvent.scheduled_for_date.asc(), NotificationEvent.id.asc())
+            .filter(
+                NotificationEvent.status == NotificationStatus.PENDING.value,
+                NotificationEvent.scheduled_for_at <= resolved_due_before,
+            )
+            .order_by(NotificationEvent.scheduled_for_at.asc(), NotificationEvent.id.asc())
             .limit(limit)
             .all()
         )

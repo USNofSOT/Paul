@@ -6,12 +6,14 @@ from logging import getLogger
 
 from discord.ext import commands, tasks
 
+from src.config.notifications import NOTIFICATION_LOOKAHEAD_HOURS
 from src.config.task_timing import (
     COMMAND_NOTIFICATION_EVALUATOR_MAX_INTERVAL_HOURS,
     COMMAND_NOTIFICATION_EVALUATOR_MIN_INTERVAL_HOURS,
 )
 from src.data.repository.notification_event_repository import NotificationEventRepository
 from src.data.repository.sailor_repository import SailorRepository
+from src.notifications.admin.engineer_overview import build_ship_overview_field
 from src.notifications.service_factory import NotificationServiceFactory
 from src.utils.discord_utils import (
     AlertSeverity,
@@ -29,6 +31,12 @@ class ScheduleCommandNotifications(commands.Cog):
         self._random = random.Random()
         self._run_count = 0
         self.notification_service_factory = NotificationServiceFactory()
+        log.info(
+            "[NOTIFICATIONS] Scheduler task initialised: every %s-%sh with %sh lookahead.",
+            COMMAND_NOTIFICATION_EVALUATOR_MIN_INTERVAL_HOURS,
+            COMMAND_NOTIFICATION_EVALUATOR_MAX_INTERVAL_HOURS,
+            NOTIFICATION_LOOKAHEAD_HOURS,
+        )
         self.evaluate_notifications.start()
 
     def cog_unload(self) -> None:
@@ -36,8 +44,8 @@ class ScheduleCommandNotifications(commands.Cog):
 
     def _sample_additional_delay_seconds(self) -> float:
         max_additional_hours = (
-                COMMAND_NOTIFICATION_EVALUATOR_MAX_INTERVAL_HOURS
-                - COMMAND_NOTIFICATION_EVALUATOR_MIN_INTERVAL_HOURS
+            COMMAND_NOTIFICATION_EVALUATOR_MAX_INTERVAL_HOURS
+            - COMMAND_NOTIFICATION_EVALUATOR_MIN_INTERVAL_HOURS
         )
         return self._random.uniform(0.0, max_additional_hours * 60 * 60)
 
@@ -61,8 +69,14 @@ class ScheduleCommandNotifications(commands.Cog):
             sailor_repository=sailor_repository,
         )
         try:
-            created_events = await scheduler.run_for_date(self.bot)
+            run_summary = await scheduler.run_once(self.bot)
+            created_events = run_summary.event_count
             log.info("Scheduled %s command inactivity notification events.", created_events)
+
+            fields = [EngineerAlertField("Created Events", f"**{created_events}**")]
+            ship_overview_field = build_ship_overview_field(run_summary.per_ship_counts)
+            if ship_overview_field is not None:
+                fields.append(ship_overview_field)
 
             if created_events > 0:
                 await send_engineer_log(
@@ -70,9 +84,7 @@ class ScheduleCommandNotifications(commands.Cog):
                     severity=AlertSeverity.INFO,
                     title="Notification Evaluator Results",
                     description="The notification evaluator has finished running and created new events.",
-                    fields=(
-                        EngineerAlertField("Created Events", f"**{created_events}**"),
-                    ),
+                    fields=tuple(fields),
                 )
         except Exception as exc:
             log.error("Error scheduling command inactivity notifications.", exc_info=True)
