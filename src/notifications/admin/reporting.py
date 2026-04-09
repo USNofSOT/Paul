@@ -5,7 +5,11 @@ from datetime import datetime, time
 import discord
 from discord.utils import escape_markdown, escape_mentions
 
-from src.config.notifications import NotificationRolloutMap
+from src.config.notifications import (
+    NOTIFICATION_DELIVERY_GRACE_HOURS,
+    NOTIFICATION_LOOKAHEAD_HOURS,
+    NotificationRolloutMap,
+)
 from src.config.task_timing import (
     CHECK_AWARDS_TASK_TIME,
     CHECK_TRAINING_AWARDS_TASK_TIME,
@@ -17,6 +21,7 @@ from src.config.task_timing import (
 from src.data.models import NotificationEvent
 from src.notifications.types import NotificationDefinition, NotificationStatus, NotificationType
 from src.utils.embeds import default_embed
+from src.utils.emoji_utils import render_ship_label
 from src.utils.ship_utils import get_ship_by_role_id
 
 
@@ -36,6 +41,12 @@ def _format_relative(value: datetime | None) -> str:
     if value is None:
         return "Never"
     return f"<t:{int(value.timestamp())}:R>"
+
+
+def _format_timestamp(value: datetime | None) -> str:
+    if value is None:
+        return "N/A"
+    return f"<t:{int(value.timestamp())}:f>"
 
 
 def _format_offsets(offsets: tuple[int, ...]) -> str:
@@ -79,6 +90,7 @@ def build_notification_overview_embed(
             f"Ship size: **{_format_clock(TRACK_SHIP_SIZE_TASK_TIME)}**\n"
             f"Notifications evaluator: **{_format_interval_window(COMMAND_NOTIFICATION_EVALUATOR_MIN_INTERVAL_HOURS, COMMAND_NOTIFICATION_EVALUATOR_MAX_INTERVAL_HOURS)}**\n"
             f"Worker poll: **every {COMMAND_NOTIFICATION_WORKER_TASK_INTERVAL_SECONDS}s**\n"
+            f"Projection: **{NOTIFICATION_LOOKAHEAD_HOURS}h lookahead**, **{NOTIFICATION_DELIVERY_GRACE_HOURS}h grace**\n"
             f"Awards: **{_format_clock(CHECK_AWARDS_TASK_TIME)}**\n"
             f"Training awards: **{_format_clock(CHECK_TRAINING_AWARDS_TASK_TIME)}**"
         ),
@@ -136,10 +148,10 @@ def build_notification_definitions_embed(
 
 def _format_event_line(event: NotificationEvent) -> str:
     return (
-        f"`#{event.id}` `{event.notification_type}` `{event.status}` "
-        f"sailor={event.sailor_id} offset={event.trigger_offset} "
-        f"scheduled={event.scheduled_for_date.isoformat()} "
-        f"created={_format_relative(event.created_at)}"
+        f"`#{event.id}` {render_ship_label(ship_role_id=event.ship_role_id)} "
+        f"`{event.notification_type}` `{event.status}` sailor={event.sailor_id} "
+        f"offset={event.trigger_offset} scheduled={_format_timestamp(event.scheduled_for_at)} "
+        f"threshold={_format_timestamp(event.threshold_at)} created={_format_relative(event.created_at)}"
     )
 
 

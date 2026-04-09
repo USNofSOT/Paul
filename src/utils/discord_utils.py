@@ -9,7 +9,7 @@ import discord
 from discord.ext import commands
 
 from src.config import ENGINEERS
-from src.config.main_server import BOT_TEST_COMMAND, GUILD_ID
+from src.config.main_server import GUILD_ID, get_bot_log_channel_id
 from src.utils.embeds import AlertSeverity, engineer_alert_embed
 
 log = getLogger(__name__)
@@ -30,7 +30,7 @@ class EngineerAlert:
     fields: tuple[EngineerAlertField, ...] = field(default_factory=tuple)
     notify_engineers: bool = True
     guild_id: int = GUILD_ID
-    channel_id: int = BOT_TEST_COMMAND
+    channel_id: int = field(default_factory=get_bot_log_channel_id)
 
 
 class EngineerAlertDispatcher(Protocol):
@@ -117,7 +117,7 @@ async def send_engineer_log(
         exception: Exception | None = None,
         fields: tuple[EngineerAlertField, ...] = (),
         notify_engineers: bool = False,
-        channel_id: int = BOT_TEST_COMMAND,
+        channel_id: int | None = None,
         guild_id: int = GUILD_ID,
         dispatcher: EngineerAlertDispatcher = DEFAULT_ENGINEER_ALERT_DISPATCHER,
 ) -> None:
@@ -131,7 +131,7 @@ async def send_engineer_log(
             fields=fields,
             notify_engineers=notify_engineers,
             guild_id=guild_id,
-            channel_id=channel_id,
+            channel_id=channel_id if channel_id is not None else get_bot_log_channel_id(),
         ),
         dispatcher=dispatcher,
     )
