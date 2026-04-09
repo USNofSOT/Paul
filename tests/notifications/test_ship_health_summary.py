@@ -177,10 +177,6 @@ class TestShipHealthSummary(unittest.IsolatedAsyncioTestCase):
             ship_role_id=ROLE_ID_VENOM,
             ship_name="USS Venom",
             ship_size=5,
-            squad_memberships={
-                "Alpha Squad": [1, 2],
-                "Bravo Squad": [3, 4],
-            },
             sailor_ids=[1, 2, 3, 4, 5],
             reference_time=self.reference_time,
         )
@@ -195,13 +191,6 @@ class TestShipHealthSummary(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(summary.recent_voyage_delta, 1)
         self.assertEqual(summary.recent_hosting_count, 1)
         self.assertEqual(summary.recent_hosting_delta, 0)
-        self.assertEqual(
-            [
-                (squad.squad_name, squad.overdue_member_ids)
-                for squad in summary.squad_summaries
-            ],
-            [("Alpha Squad", (2,)), ("Bravo Squad", (4,))],
-        )
 
     def test_renderer_uses_ship_emoji_and_compact_sections(self) -> None:
         rendered = ShipHealthSummaryEmbedRenderer().render(
@@ -209,10 +198,6 @@ class TestShipHealthSummary(unittest.IsolatedAsyncioTestCase):
                 ship_role_id=ROLE_ID_VENOM,
                 ship_name="USS Venom",
                 ship_size=5,
-                squad_memberships={
-                    "Alpha Squad": [1, 2],
-                    "Bravo Squad": [3, 4],
-                },
                 sailor_ids=[1, 2, 3, 4, 5],
                 reference_time=self.reference_time,
             )
@@ -222,19 +207,16 @@ class TestShipHealthSummary(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(rendered.embed_description, "Weekly operational overview for USS Venom.")
         self.assertEqual(
             [field.name for field in rendered.fields],
-            ["👥 Crew", "⚓ Recent Activity", "🧭 Squads"],
+            ["👥 Crew", "⚓ Recent Activity"],
         )
         self.assertIn("5 (-2)", rendered.fields[0].value)
         self.assertIn("2 (+1)", rendered.fields[1].value)
-        self.assertIn("Alpha Squad", rendered.fields[2].value)
-        self.assertIn("  - <@2>", rendered.fields[2].value)
-        self.assertIn("  - <@4>", rendered.fields[2].value)
         self.assertEqual(
             rendered.image_attachment_filename,
             "ship_health_summary_chart.png",
         )
         self.assertIsNotNone(rendered.image_attachment_bytes)
-        self.assertEqual(rendered.footer, "Automated weekly command summary")
+        self.assertEqual(rendered.footer, "")
 
     async def test_service_sends_one_summary_per_enabled_ship(self) -> None:
         delivery_adapter = SuccessfulDeliveryAdapter()
