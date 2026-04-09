@@ -45,4 +45,4 @@ class TestNotificationTaskConfiguration(unittest.TestCase):
             ShipHealthSummaryTask.ship_health_summary.time,
             [SHIP_HEALTH_SUMMARY_TASK_TIME],
         )
-        self.assertEqual(SHIP_HEALTH_SUMMARY_TASK_WEEKDAY, 0)
+        self.assertEqual(SHIP_HEALTH_SUMMARY_TASK_WEEKDAY, 4)
