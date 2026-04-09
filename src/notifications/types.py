@@ -67,6 +67,31 @@ class NotificationRunSummary:
 
 
 @dataclass(frozen=True)
+class ShipHealthSummary:
+    ship_role_id: int
+    ship_name: str
+    ship_size: int
+    ship_size_delta: int
+    voyaging_due_soon_count: int
+    voyaging_overdue_count: int
+    hosting_due_soon_count: int
+    hosting_overdue_count: int
+    recent_voyage_count: int
+    recent_voyage_delta: int
+    recent_hosting_count: int
+    recent_hosting_delta: int
+    recent_activity_days: int
+
+
+@dataclass(frozen=True)
+class ShipHealthSummaryRunSummary:
+    summary_count: int
+    skipped_count: int = 0
+    per_ship_counts: dict[int | None, int] = field(default_factory=dict)
+    skipped_ship_counts: dict[int | None, int] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
 class NotificationField:
     name: str
     value: str
@@ -106,3 +131,5 @@ class RenderedNotification:
     footer: str
     color_value: int
     thumbnail_url: str | None = None
+    image_attachment_filename: str | None = None
+    image_attachment_bytes: bytes | None = None
