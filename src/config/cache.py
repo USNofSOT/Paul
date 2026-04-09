@@ -130,6 +130,15 @@ IMAGE_CACHES = {
         ttl_seconds=TWO_HOURS_IN_SECONDS,
         version=1,
     ),
+    "ship_health_summary_chart": ImageCacheConfig(
+        name="ship_health_summary_chart",
+        category=SHIPS_CACHE_CATEGORY,
+        directory=".cache/ships/health_summary_chart",
+        default_filename="ship_health_summary_chart.png",
+        max_items=MEDIUM_IMAGE_CACHE_MAX_ITEMS,
+        ttl_seconds=TWO_HOURS_IN_SECONDS,
+        version=1,
+    ),
     "pocket_watch_activity_chart": ImageCacheConfig(
         name="pocket_watch_activity_chart",
         category=REPORTS_CACHE_CATEGORY,

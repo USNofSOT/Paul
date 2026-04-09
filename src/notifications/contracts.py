@@ -13,6 +13,8 @@ from src.notifications.types import (
     RenderedNotification,
     ResolvedMemberContext,
     ResolvedRoute,
+    ShipHealthSummary,
+    ShipHealthSummaryRunSummary,
 )
 
 
@@ -86,6 +88,12 @@ class NotificationEventRepositoryContract(Protocol):
 
 
 class NotificationRouteResolver(Protocol):
+    def resolve_ship_role(
+            self,
+            ship_role_id: int | None,
+            guild: Guild,
+    ) -> ResolvedRoute: ...
+
     def resolve(
             self,
             definition: NotificationDefinition,
@@ -105,3 +113,28 @@ class NotificationDeliveryAdapter(Protocol):
             destination_channel_id: int,
             rendered: RenderedNotification,
     ) -> None: ...
+
+
+class ShipHealthSummaryDataProvider(Protocol):
+    def build_summary(
+            self,
+            *,
+            ship_role_id: int,
+            ship_name: str,
+            ship_size: int,
+            squad_memberships: dict[str, list[int]],
+            sailor_ids: list[int],
+            reference_time: datetime,
+    ) -> ShipHealthSummary: ...
+
+
+class ShipHealthSummaryRenderer(Protocol):
+    def render(self, summary: ShipHealthSummary) -> RenderedNotification: ...
+
+
+class ShipHealthSummaryServiceContract(Protocol):
+    async def run_once(
+            self,
+            bot,
+            reference_time: datetime | None = None,
+    ) -> ShipHealthSummaryRunSummary: ...

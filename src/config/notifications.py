@@ -31,6 +31,7 @@ NotificationDefinitionConfigMap: TypeAlias = dict[
 ]
 NotificationRolloutMap: TypeAlias = dict[NotificationType, dict[int, tuple[int, ...]]]
 NotificationChannelOverrideMap: TypeAlias = dict[int, int]
+ShipHealthSummaryRollout: TypeAlias = tuple[int, ...]
 
 NOTIFICATION_DEFINITION_CONFIGS: Final[NotificationDefinitionConfigMap] = {
     NotificationType.NO_VOYAGE_REMINDER: NotificationDefinitionConfig(
@@ -65,3 +66,12 @@ NOTIFICATION_ROLLOUT: Final[NotificationRolloutMap] = {
 }
 
 NOTIFICATION_CHANNEL_OVERRIDES: Final[NotificationChannelOverrideMap] = {}
+
+SHIP_HEALTH_SUMMARY_ENABLED: Final[bool] = True
+SHIP_HEALTH_SUMMARY_RECENT_ACTIVITY_DAYS: Final[int] = 7
+SHIP_HEALTH_SUMMARY_VOYAGE_DUE_SOON_DAYS: Final[int] = 7
+SHIP_HEALTH_SUMMARY_HOSTING_DUE_SOON_DAYS: Final[int] = 3
+SHIP_HEALTH_SUMMARY_ROLLOUT: Final[ShipHealthSummaryRollout] = (
+    ROLE_ID_TITAN,
+    ROLE_ID_VENOM
+)

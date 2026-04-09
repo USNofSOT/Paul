@@ -34,6 +34,8 @@ class EmbedNotificationRenderer:
         embed.color = discord.Color(rendered.color_value)
         if rendered.thumbnail_url:
             embed.set_thumbnail(url=rendered.thumbnail_url)
+        if rendered.image_attachment_filename:
+            embed.set_image(url=f"attachment://{rendered.image_attachment_filename}")
         for field in rendered.fields:
             embed.add_field(name=field.name, value=field.value, inline=field.inline)
         embed.set_footer(text=rendered.footer)
