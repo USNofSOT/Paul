@@ -41,8 +41,16 @@ BC_BOA: Final[int] = 1101193993909456956
 # Bot Status Channel
 BOT_STATUS: Final[int] = 1296034003480215552
 
-# Bot testing / engineering alerts
+# NSC command / mock preview channel
 BOT_TEST_COMMAND: Final[int] = 1291589569602650154
+
+# Bot log channels
+BOT_LOG_DEV: Final[int] = 1491900249219010611
+BOT_LOG_PROD: Final[int] = 1491900249219010611
 
 # ENVIRONMENT
 ENVIRONMENT: Final[str] = os.getenv("ENVIRONMENT", "DEV")
+
+
+def get_bot_log_channel_id(environment: str = ENVIRONMENT) -> int:
+    return BOT_LOG_PROD if environment == "PROD" else BOT_LOG_DEV

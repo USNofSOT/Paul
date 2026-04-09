@@ -54,6 +54,7 @@ class TestNotificationEventRepository(unittest.TestCase):
             threshold_at=datetime(2026, 3, 29, 12, 0, tzinfo=UTC),
             threshold_date=date(2026, 3, 29),
             trigger_offset=-7,
+            scheduled_for_at=datetime(2026, 3, 22, 12, 0, tzinfo=UTC),
             scheduled_for_date=date(2026, 3, 22),
             days_remaining=7,
         )
@@ -63,7 +64,7 @@ class TestNotificationEventRepository(unittest.TestCase):
         NotificationEvent.__table__.drop(self.engine)
         Sailor.__table__.drop(self.engine)
 
-    def test_create_pending_event_deduplicates(self) -> None:
+    def test_create_pending_event_deduplicates_by_exact_cycle(self) -> None:
         first, created_first = self.repository.create_pending_event(
             definition=self.definition,
             sailor=self.sailor,
@@ -85,6 +86,46 @@ class TestNotificationEventRepository(unittest.TestCase):
         self.assertFalse(created_second)
         self.assertEqual(first.id, second.id)
         self.assertEqual(self.session.query(NotificationEvent).count(), 1)
+
+    def test_list_due_event_ids_uses_exact_schedule_order(self) -> None:
+        first_eligibility = self.eligibility
+        second_eligibility = EligibilityResult(
+            source_activity_at=datetime(2026, 3, 1, 12, 0, tzinfo=UTC),
+            source_activity_date=date(2026, 3, 1),
+            threshold_at=datetime(2026, 3, 29, 12, 0, tzinfo=UTC),
+            threshold_date=date(2026, 3, 29),
+            trigger_offset=-3,
+            scheduled_for_at=datetime(2026, 3, 26, 12, 0, tzinfo=UTC),
+            scheduled_for_date=date(2026, 3, 26),
+            days_remaining=3,
+        )
+        self.repository.create_pending_event(
+            definition=self.definition,
+            sailor=self.sailor,
+            member_context=self.member_context,
+            eligibility=second_eligibility,
+            destination_channel_id=999,
+            payload_snapshot="{}",
+        )
+        self.repository.create_pending_event(
+            definition=self.definition,
+            sailor=self.sailor,
+            member_context=self.member_context,
+            eligibility=first_eligibility,
+            destination_channel_id=999,
+            payload_snapshot="{}",
+        )
+
+        due_event_ids = self.repository.list_due_event_ids(
+            limit=10,
+            due_before=datetime(2026, 3, 23, 0, 0, tzinfo=UTC),
+        )
+
+        self.assertEqual(len(due_event_ids), 1)
+        self.assertEqual(
+            self.repository.get_event(due_event_ids[0]).scheduled_for_at.isoformat(),
+            "2026-03-22T12:00:00",
+        )
 
     def test_claim_and_retry_state_transitions(self) -> None:
         event, _ = self.repository.create_pending_event(
@@ -149,6 +190,7 @@ class TestNotificationEventRepository(unittest.TestCase):
             threshold_at=datetime(2026, 3, 29, 12, 0, tzinfo=UTC),
             threshold_date=date(2026, 3, 29),
             trigger_offset=-6,
+            scheduled_for_at=datetime(2026, 3, 23, 12, 0, tzinfo=UTC),
             scheduled_for_date=date(2026, 3, 23),
             days_remaining=6,
         )

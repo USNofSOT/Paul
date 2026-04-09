@@ -1,6 +1,7 @@
 import unittest
 from datetime import UTC, date, datetime
 
+from src.config.main_server import BOT_TEST_COMMAND, ENVIRONMENT
 from src.config.requirements import HOSTING_REQUIREMENT_IN_DAYS
 from src.config.ships import BC_TITAN
 from src.data.models import Sailor
@@ -32,7 +33,7 @@ class TestRenderingAndRouting(unittest.TestCase):
             notification_type=NotificationType.NO_HOSTING_REMINDER,
             activity_field="last_hosting_at",
             threshold_days=HOSTING_REQUIREMENT_IN_DAYS,
-            trigger_offsets=(-3, -2, -1, 0),
+            trigger_offsets=(-3, 0, 7),
             template_key=TemplateKey.NO_HOSTING_REMINDER,
             routing_target=RoutingTargetType.SHIP_COMMAND_CHANNEL,
         )
@@ -52,6 +53,7 @@ class TestRenderingAndRouting(unittest.TestCase):
             threshold_at=datetime(2026, 4, 3, 8, 0, tzinfo=UTC),
             threshold_date=date(2026, 4, 3),
             trigger_offset=-3,
+            scheduled_for_at=datetime(2026, 3, 31, 8, 0, tzinfo=UTC),
             scheduled_for_date=date(2026, 3, 31),
             days_remaining=3,
         )
@@ -78,6 +80,7 @@ class TestRenderingAndRouting(unittest.TestCase):
             f"to reach {HOSTING_REQUIREMENT_IN_DAYS} days without hosting.",
             restored.body,
         )
+        self.assertEqual(restored.days_remaining_label, "3 day(s) remaining")
         self.assertEqual(rendered.embed_title, restored.title)
         self.assertEqual(
             rendered.footer,
@@ -102,6 +105,29 @@ class TestRenderingAndRouting(unittest.TestCase):
         # Overdue notifications still use "became due" and the mention only
         self.assertIn("<@1> became due <t:", payload.body)
         self.assertIn(":R>", payload.body)
+
+    def test_payload_uses_overdue_status_label_for_post_threshold_offsets(self) -> None:
+        overdue_payload = NotificationPayloadFactory().build(
+            self.definition,
+            self.sailor,
+            self.member_context,
+            EligibilityResult(
+                source_activity_at=datetime(2026, 3, 20, 8, 0, tzinfo=UTC),
+                source_activity_date=date(2026, 3, 20),
+                threshold_at=datetime(2026, 4, 3, 8, 0, tzinfo=UTC),
+                threshold_date=date(2026, 4, 3),
+                trigger_offset=7,
+                scheduled_for_at=datetime(2026, 4, 10, 8, 0, tzinfo=UTC),
+                scheduled_for_date=date(2026, 4, 10),
+                days_remaining=-7,
+            ),
+            reference_time=datetime(2026, 4, 10, 8, 5, tzinfo=UTC),
+        )
+        rendered = EmbedNotificationRenderer().render(overdue_payload)
+
+        self.assertEqual(overdue_payload.days_remaining_label, "7 day(s) overdue")
+        self.assertIn("<@1> became due <t:", overdue_payload.body)
+        self.assertGreater(rendered.color_value, 0)
 
     def test_payload_sanitizes_subject_name(self) -> None:
         risky_context = ResolvedMemberContext(
@@ -151,10 +177,16 @@ class TestRenderingAndRouting(unittest.TestCase):
         route = ShipCommandRouteResolver().resolve(
             self.definition,
             titan_context,
-            DummyGuild(channels={BC_TITAN: object()}),
+            DummyGuild(
+                channels={
+                    BC_TITAN: object(),
+                    BOT_TEST_COMMAND: object(),
+                }
+            ),
         )
 
-        self.assertEqual(route.destination_channel_id, BC_TITAN)
+        expected_channel = BOT_TEST_COMMAND if ENVIRONMENT != "PROD" else BC_TITAN
+        self.assertEqual(route.destination_channel_id, expected_channel)
         self.assertIsNone(route.skip_reason)
 
     def test_rollout_honors_ship_and_squad_scope(self) -> None:

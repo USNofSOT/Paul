@@ -13,6 +13,8 @@ from src.notifications.types import NotificationType, RoutingTargetType, Templat
 APPLICATION_TIMEZONE: Final[str] = "UTC"
 NOTIFICATION_WORKER_BATCH_SIZE: Final[int] = 25
 NOTIFICATION_MAX_DELIVERY_ATTEMPTS: Final[int] = 3
+NOTIFICATION_LOOKAHEAD_HOURS: Final[int] = 36
+NOTIFICATION_DELIVERY_GRACE_HOURS: Final[int] = 3
 
 
 @dataclass(frozen=True)
@@ -34,14 +36,14 @@ NOTIFICATION_DEFINITION_CONFIGS: Final[NotificationDefinitionConfigMap] = {
     NotificationType.NO_VOYAGE_REMINDER: NotificationDefinitionConfig(
         activity_field="last_voyage_at",
         threshold_days=VOYAGING_REQUIREMENT_IN_DAYS,
-        trigger_offsets=(-7, -3, 0),
+        trigger_offsets=(-7, -3, 0, 7),
         template_key=TemplateKey.NO_VOYAGE_REMINDER,
         routing_target=RoutingTargetType.SHIP_COMMAND_CHANNEL,
     ),
     NotificationType.NO_HOSTING_REMINDER: NotificationDefinitionConfig(
         activity_field="last_hosting_at",
         threshold_days=HOSTING_REQUIREMENT_IN_DAYS,
-        trigger_offsets=(-3, 0),
+        trigger_offsets=(-3, 0, 7),
         template_key=TemplateKey.NO_HOSTING_REMINDER,
         routing_target=RoutingTargetType.SHIP_COMMAND_CHANNEL,
     ),

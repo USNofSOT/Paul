@@ -41,7 +41,7 @@ class EmbedNotificationRenderer:
 
     @staticmethod
     def _resolve_color(payload: NotificationPayload) -> discord.Color:
-        if payload.days_remaining_label == "Due today":
+        if payload.days_remaining_label == "Due today" or "overdue" in payload.days_remaining_label:
             return discord.Color.red()
         if payload.template_key == "NO_HOSTING_REMINDER":
             return discord.Color.orange()

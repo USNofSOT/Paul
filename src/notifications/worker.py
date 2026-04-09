@@ -1,16 +1,19 @@
 from __future__ import annotations
 
 import logging
-from datetime import UTC, date, datetime
+from collections import defaultdict
+from datetime import UTC, datetime, timedelta
 
 from discord.ext import commands
 
 from src.config.main_server import GUILD_ID
 from src.config.notifications import (
+    NOTIFICATION_DELIVERY_GRACE_HOURS,
     NOTIFICATION_MAX_DELIVERY_ATTEMPTS,
     NOTIFICATION_WORKER_BATCH_SIZE,
 )
 from src.data.repository.sailor_repository import SailorRepository
+from src.notifications.admin.engineer_overview import build_ship_overview_field
 from src.notifications.context import build_member_context
 from src.notifications.contracts import (
     NotificationDeliveryAdapter,
@@ -20,9 +23,10 @@ from src.notifications.contracts import (
     NotificationRouteResolver,
     TriggerDefinitionProvider,
 )
-from src.notifications.date_utils import local_today
+from src.notifications.date_utils import ensure_utc
 from src.notifications.payloads import NotificationPayloadFactory
 from src.notifications.rollout import is_notification_enabled_for_member
+from src.notifications.types import EligibilityResult, NotificationRunSummary
 from src.utils.discord_utils import EngineerAlertField, alert_engineers
 
 log = logging.getLogger(__name__)
@@ -54,17 +58,23 @@ class NotificationWorkerService:
     async def run_once(
             self,
             bot: commands.Bot,
-            evaluation_date: date | None = None,
+            reference_time: datetime | None = None,
             batch_size: int = NOTIFICATION_WORKER_BATCH_SIZE,
-    ) -> int:
+            grace_hours: int = NOTIFICATION_DELIVERY_GRACE_HOURS,
+    ) -> NotificationRunSummary:
         guild = bot.get_guild(GUILD_ID)
         if guild is None:
             log.warning("Notification worker skipped because the guild is unavailable.")
-            return 0
+            return NotificationRunSummary(event_count=0)
 
         delivered_count = 0
-        resolved_date = evaluation_date or local_today()
-        pending_event_ids = self.event_repository.list_pending_event_ids(limit=batch_size)
+        resolved_now = ensure_utc(reference_time or datetime.now(UTC))
+        delivery_deadline = resolved_now - timedelta(hours=grace_hours)
+        pending_event_ids = self.event_repository.list_due_event_ids(
+            limit=batch_size,
+            due_before=resolved_now,
+        )
+        per_ship_counts: defaultdict[int | None, int] = defaultdict(int)
         cached_members = {
             member.id: member
             for member in getattr(guild, "members", [])
@@ -76,6 +86,11 @@ class NotificationWorkerService:
 
             event = self.event_repository.get_event(event_id)
             if event is None:
+                continue
+
+            scheduled_for_at = ensure_utc(event.scheduled_for_at)
+            if scheduled_for_at < delivery_deadline:
+                self.event_repository.mark_skipped(event_id, "delivery_window_elapsed")
                 continue
 
             definition = self.definition_provider.get_definition(event.notification_type)
@@ -96,18 +111,11 @@ class NotificationWorkerService:
                 self.event_repository.mark_skipped(event_id, "rollout_disabled")
                 continue
 
-            eligibility = self.eligibility_evaluator.evaluate(
-                definition,
-                sailor,
-                member_context,
-                resolved_date,
-            )
-            if (
-                    eligibility is None
-                    or eligibility.trigger_offset != event.trigger_offset
-                    or eligibility.threshold_date != event.threshold_date
-                    or eligibility.source_activity_date != event.source_activity_date
-                    or eligibility.scheduled_for_date != event.scheduled_for_date
+            if not self.eligibility_evaluator.matches_event(
+                    definition,
+                    sailor,
+                    member_context,
+                    event,
             ):
                 self.event_repository.mark_skipped(event_id, "activity_cycle_changed")
                 continue
@@ -124,8 +132,8 @@ class NotificationWorkerService:
                 definition,
                 sailor,
                 member_context,
-                eligibility,
-                reference_time=datetime.now(UTC),
+                self._event_to_eligibility(event),
+                reference_time=resolved_now,
             )
             self.event_repository.update_payload_snapshot(
                 event_id,
@@ -162,6 +170,17 @@ class NotificationWorkerService:
                             EngineerAlertField(
                                 "Attempts", f"`{final_attempt}`"
                             ),
+                            EngineerAlertField(
+                                "Scheduled For",
+                                f"<t:{int(scheduled_for_at.timestamp())}:f>",
+                            ),
+                            *tuple(
+                                field
+                                for field in (
+                                    build_ship_overview_field({event.ship_role_id: 1}),
+                                )
+                                if field is not None
+                            ),
                         ),
                     )
                 else:
@@ -170,5 +189,22 @@ class NotificationWorkerService:
 
             self.event_repository.mark_delivered(event_id)
             delivered_count += 1
+            per_ship_counts[event.ship_role_id] += 1
 
-        return delivered_count
+        return NotificationRunSummary(
+            event_count=delivered_count,
+            per_ship_counts=dict(per_ship_counts),
+        )
+
+    @staticmethod
+    def _event_to_eligibility(event) -> EligibilityResult:
+        return EligibilityResult(
+            source_activity_at=ensure_utc(event.source_activity_at),
+            source_activity_date=event.source_activity_date,
+            threshold_at=ensure_utc(event.threshold_at),
+            threshold_date=event.threshold_date,
+            trigger_offset=event.trigger_offset,
+            scheduled_for_at=ensure_utc(event.scheduled_for_at),
+            scheduled_for_date=event.scheduled_for_date,
+            days_remaining=(event.threshold_date - event.scheduled_for_date).days,
+        )
