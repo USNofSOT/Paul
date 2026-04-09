@@ -7,7 +7,7 @@ from src.config.requirements import (
     HOSTING_REQUIREMENT_IN_DAYS,
     VOYAGING_REQUIREMENT_IN_DAYS,
 )
-from src.config.ships import ROLE_ID_TITAN, ROLE_ID_VENOM
+from src.config.ships import ROLE_ID_TITAN, ROLE_ID_VENOM, ROLE_ID_GENESIS
 from src.notifications.types import NotificationType, RoutingTargetType, TemplateKey
 
 APPLICATION_TIMEZONE: Final[str] = "UTC"
@@ -58,10 +58,12 @@ NOTIFICATION_ROLLOUT: Final[NotificationRolloutMap] = {
     NotificationType.NO_VOYAGE_REMINDER: {
         ROLE_ID_TITAN: (),
         ROLE_ID_VENOM: (),
+        ROLE_ID_GENESIS: ()
     },
     NotificationType.NO_HOSTING_REMINDER: {
         ROLE_ID_TITAN: (),
         ROLE_ID_VENOM: (),
+        ROLE_ID_GENESIS: ()
     },
 }
 
@@ -73,5 +75,6 @@ SHIP_HEALTH_SUMMARY_VOYAGE_DUE_SOON_DAYS: Final[int] = 7
 SHIP_HEALTH_SUMMARY_HOSTING_DUE_SOON_DAYS: Final[int] = 3
 SHIP_HEALTH_SUMMARY_ROLLOUT: Final[ShipHealthSummaryRollout] = (
     ROLE_ID_TITAN,
-    ROLE_ID_VENOM
+    ROLE_ID_VENOM,
+    ROLE_ID_GENESIS
 )
