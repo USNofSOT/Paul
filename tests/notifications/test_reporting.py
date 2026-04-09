@@ -23,8 +23,10 @@ class TestNotificationReporting(unittest.TestCase):
             squad_role_id=None,
             source_activity_at=datetime(2026, 4, 1, 12, 0, tzinfo=UTC),
             source_activity_date=date(2026, 4, 1),
+            threshold_at=datetime(2026, 4, 15, 12, 0, tzinfo=UTC),
             threshold_date=date(2026, 4, 15),
             trigger_offset=-1,
+            scheduled_for_at=datetime(2026, 4, 14, 12, 0, tzinfo=UTC),
             scheduled_for_date=date(2026, 4, 14),
             destination_channel_id=123,
             payload_snapshot="{}",
@@ -49,6 +51,7 @@ class TestNotificationReporting(unittest.TestCase):
         self.assertIn("NO_VOYAGE_REMINDER", embed.fields[1].value)
         self.assertIn("Pending: **1**", embed.fields[2].value)
         self.assertIn("`#1`", embed.fields[3].value)
+        self.assertIn("scheduled=<t:", embed.fields[3].value)
 
     def test_build_notification_definition_and_recent_event_embeds(self) -> None:
         definitions = DefaultTriggerDefinitionProvider().get_definitions()
@@ -61,8 +64,10 @@ class TestNotificationReporting(unittest.TestCase):
             squad_role_id=None,
             source_activity_at=datetime(2026, 3, 1, 12, 0, tzinfo=UTC),
             source_activity_date=date(2026, 3, 1),
+            threshold_at=datetime(2026, 3, 29, 12, 0, tzinfo=UTC),
             threshold_date=date(2026, 3, 29),
             trigger_offset=0,
+            scheduled_for_at=datetime(2026, 3, 29, 12, 0, tzinfo=UTC),
             scheduled_for_date=date(2026, 3, 29),
             destination_channel_id=123,
             payload_snapshot="{}",

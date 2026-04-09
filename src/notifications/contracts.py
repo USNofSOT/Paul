@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import datetime
 from typing import Protocol
 
 from discord import Guild
@@ -13,6 +13,8 @@ from src.notifications.types import (
     RenderedNotification,
     ResolvedMemberContext,
     ResolvedRoute,
+    ShipHealthSummary,
+    ShipHealthSummaryRunSummary,
 )
 
 
@@ -23,13 +25,22 @@ class TriggerDefinitionProvider(Protocol):
 
 
 class NotificationEligibilityEvaluator(Protocol):
-    def evaluate(
+    def project_for_window(
             self,
             definition: NotificationDefinition,
             sailor: Sailor,
             member_context: ResolvedMemberContext,
-            evaluation_date: date,
-    ) -> EligibilityResult | None: ...
+            window_start: datetime,
+            window_end: datetime,
+    ) -> tuple[EligibilityResult, ...]: ...
+
+    def matches_event(
+            self,
+            definition: NotificationDefinition,
+            sailor: Sailor,
+            member_context: ResolvedMemberContext,
+            event: NotificationEvent,
+    ) -> bool: ...
 
 
 class NotificationEventRepositoryContract(Protocol):
@@ -44,7 +55,18 @@ class NotificationEventRepositoryContract(Protocol):
             payload_snapshot: str,
     ) -> tuple[NotificationEvent, bool]: ...
 
-    def list_pending_event_ids(self, *, limit: int) -> list[int]: ...
+    def create_skipped_event(
+            self,
+            *,
+            definition: NotificationDefinition,
+            sailor: Sailor,
+            member_context: ResolvedMemberContext,
+            eligibility: EligibilityResult,
+            payload_snapshot: str,
+            skip_reason: str,
+    ) -> tuple[NotificationEvent, bool]: ...
+
+    def list_due_event_ids(self, *, limit: int, due_before: datetime) -> list[int]: ...
 
     def claim_event(self, event_id: int) -> bool: ...
 
@@ -66,6 +88,12 @@ class NotificationEventRepositoryContract(Protocol):
 
 
 class NotificationRouteResolver(Protocol):
+    def resolve_ship_role(
+            self,
+            ship_role_id: int | None,
+            guild: Guild,
+    ) -> ResolvedRoute: ...
+
     def resolve(
             self,
             definition: NotificationDefinition,
@@ -85,3 +113,28 @@ class NotificationDeliveryAdapter(Protocol):
             destination_channel_id: int,
             rendered: RenderedNotification,
     ) -> None: ...
+
+
+class ShipHealthSummaryDataProvider(Protocol):
+    def build_summary(
+            self,
+            *,
+            ship_role_id: int,
+            ship_name: str,
+            ship_size: int,
+            squad_memberships: dict[str, list[int]],
+            sailor_ids: list[int],
+            reference_time: datetime,
+    ) -> ShipHealthSummary: ...
+
+
+class ShipHealthSummaryRenderer(Protocol):
+    def render(self, summary: ShipHealthSummary) -> RenderedNotification: ...
+
+
+class ShipHealthSummaryServiceContract(Protocol):
+    async def run_once(
+            self,
+            bot,
+            reference_time: datetime | None = None,
+    ) -> ShipHealthSummaryRunSummary: ...

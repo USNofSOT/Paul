@@ -34,6 +34,8 @@ class EmbedNotificationRenderer:
         embed.color = discord.Color(rendered.color_value)
         if rendered.thumbnail_url:
             embed.set_thumbnail(url=rendered.thumbnail_url)
+        if rendered.image_attachment_filename:
+            embed.set_image(url=f"attachment://{rendered.image_attachment_filename}")
         for field in rendered.fields:
             embed.add_field(name=field.name, value=field.value, inline=field.inline)
         embed.set_footer(text=rendered.footer)
@@ -41,7 +43,7 @@ class EmbedNotificationRenderer:
 
     @staticmethod
     def _resolve_color(payload: NotificationPayload) -> discord.Color:
-        if payload.days_remaining_label == "Due today":
+        if payload.days_remaining_label == "Due today" or "overdue" in payload.days_remaining_label:
             return discord.Color.red()
         if payload.template_key == "NO_HOSTING_REMINDER":
             return discord.Color.orange()
