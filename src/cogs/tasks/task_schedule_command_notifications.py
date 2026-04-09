@@ -44,8 +44,8 @@ class ScheduleCommandNotifications(commands.Cog):
 
     def _sample_additional_delay_seconds(self) -> float:
         max_additional_hours = (
-                COMMAND_NOTIFICATION_EVALUATOR_MAX_INTERVAL_HOURS
-                - COMMAND_NOTIFICATION_EVALUATOR_MIN_INTERVAL_HOURS
+            COMMAND_NOTIFICATION_EVALUATOR_MAX_INTERVAL_HOURS
+            - COMMAND_NOTIFICATION_EVALUATOR_MIN_INTERVAL_HOURS
         )
         return self._random.uniform(0.0, max_additional_hours * 60 * 60)
 
