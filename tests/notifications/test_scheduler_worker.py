@@ -1,16 +1,19 @@
 import unittest
-from datetime import UTC, datetime
-from datetime import date
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, patch
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from src.config.main_server import BOT_TEST_COMMAND
+from src.config.notifications import (
+    NOTIFICATION_DELIVERY_GRACE_HOURS,
+    NOTIFICATION_LOOKAHEAD_HOURS,
+)
 from src.config.ships import BC_VENOM, ROLE_ID_VENOM
 from src.data.models import NotificationEvent, Sailor
 from src.data.repository.notification_event_repository import NotificationEventRepository
 from src.data.repository.sailor_repository import SailorRepository
-from src.notifications.context import build_member_context
 from src.notifications.definitions import DefaultTriggerDefinitionProvider
 from src.notifications.evaluator import SailorInactivityEligibilityEvaluator
 from src.notifications.payloads import NotificationPayloadFactory
@@ -46,15 +49,20 @@ class DummyChannel:
 
 
 class DummyGuild:
-    def __init__(self, member: DummyMember, channel: DummyChannel) -> None:
+    def __init__(self, member: DummyMember, channel: DummyChannel, test_channel: DummyChannel) -> None:
         self._member = member
         self._channel = channel
+        self._test_channel = test_channel
 
     def get_member(self, member_id: int):
         return self._member if self._member.id == member_id else None
 
     def get_channel(self, channel_id: int):
-        return self._channel if self._channel.id == channel_id else None
+        if self._channel.id == channel_id:
+            return self._channel
+        if self._test_channel.id == channel_id:
+            return self._test_channel
+        return None
 
 
 class DummyBot:
@@ -94,7 +102,8 @@ class TestNotificationSchedulerAndWorker(unittest.IsolatedAsyncioTestCase):
         self.squad_role = DummyRole(555, "Alpha Squad")
         self.member = DummyMember(1, "Test Sailor", [self.ship_role, self.squad_role])
         self.channel = DummyChannel(BC_VENOM)
-        self.bot = DummyBot(DummyGuild(self.member, self.channel))
+        self.test_channel = DummyChannel(BOT_TEST_COMMAND)
+        self.bot = DummyBot(DummyGuild(self.member, self.channel, self.test_channel))
 
         sailor = Sailor(
             discord_id=1,
@@ -118,8 +127,8 @@ class TestNotificationSchedulerAndWorker(unittest.IsolatedAsyncioTestCase):
         NotificationEvent.__table__.drop(self.engine)
         Sailor.__table__.drop(self.engine)
 
-    async def test_scheduler_reruns_do_not_duplicate_and_worker_delivers_once(self) -> None:
-        scheduler = NotificationSchedulerService(
+    def _build_scheduler(self) -> NotificationSchedulerService:
+        return NotificationSchedulerService(
             definition_provider=self.definition_provider,
             eligibility_evaluator=self.evaluator,
             route_resolver=self.route_resolver,
@@ -129,15 +138,8 @@ class TestNotificationSchedulerAndWorker(unittest.IsolatedAsyncioTestCase):
             rollout_map=self.rollout,
         )
 
-        created_first = await scheduler.run_for_date(self.bot, datetime(2026, 3, 22, tzinfo=UTC).date())
-        created_second = await scheduler.run_for_date(self.bot, datetime(2026, 3, 22, tzinfo=UTC).date())
-
-        self.assertEqual(created_first, 1)
-        self.assertEqual(created_second, 0)
-        self.assertEqual(self.session.query(NotificationEvent).count(), 1)
-
-        delivery_adapter = SuccessfulDeliveryAdapter()
-        worker = NotificationWorkerService(
+    def _build_worker(self, delivery_adapter) -> NotificationWorkerService:
+        return NotificationWorkerService(
             definition_provider=self.definition_provider,
             eligibility_evaluator=self.evaluator,
             route_resolver=self.route_resolver,
@@ -149,166 +151,237 @@ class TestNotificationSchedulerAndWorker(unittest.IsolatedAsyncioTestCase):
             rollout_map=self.rollout,
         )
 
-        delivered_first = await worker.run_once(self.bot, datetime(2026, 3, 22, tzinfo=UTC).date())
-        delivered_second = await worker.run_once(self.bot, datetime(2026, 3, 22, tzinfo=UTC).date())
+    async def test_scheduler_precreates_exact_time_events_without_duplicates(self) -> None:
+        scheduler = self._build_scheduler()
 
-        self.assertEqual(delivered_first, 1)
-        self.assertEqual(delivered_second, 0)
-        self.assertEqual(delivery_adapter.send.await_count, 1)
-        event = self.session.query(NotificationEvent).first()
-        self.assertEqual(event.status, NotificationStatus.DELIVERED.value)
-
-    async def test_scheduler_creates_one_event_per_configured_offset_without_duplicates(self) -> None:
-        scheduler = NotificationSchedulerService(
-            definition_provider=self.definition_provider,
-            eligibility_evaluator=self.evaluator,
-            route_resolver=self.route_resolver,
-            event_repository=self.event_repo,
-            sailor_repository=self.sailor_repo,
-            payload_factory=self.payload_factory,
-            rollout_map=self.rollout,
+        first = await scheduler.run_once(
+            self.bot,
+            reference_time=datetime(2026, 3, 21, 12, 0, tzinfo=UTC),
+            lookahead_hours=NOTIFICATION_LOOKAHEAD_HOURS,
         )
-
-        created_events = 0
-        for evaluation_date in (
-                date(2026, 3, 22),
-                date(2026, 3, 26),
-                date(2026, 3, 29),
-        ):
-            created_events += await scheduler.run_for_date(self.bot, evaluation_date)
-            created_events += await scheduler.run_for_date(self.bot, evaluation_date)
+        second = await scheduler.run_once(
+            self.bot,
+            reference_time=datetime(2026, 3, 25, 12, 0, tzinfo=UTC),
+            lookahead_hours=NOTIFICATION_LOOKAHEAD_HOURS,
+        )
+        duplicate = await scheduler.run_once(
+            self.bot,
+            reference_time=datetime(2026, 3, 25, 12, 0, tzinfo=UTC),
+            lookahead_hours=NOTIFICATION_LOOKAHEAD_HOURS,
+        )
 
         events = (
             self.session.query(NotificationEvent)
-            .order_by(NotificationEvent.trigger_offset.asc())
+            .order_by(NotificationEvent.scheduled_for_at.asc())
             .all()
         )
 
-        self.assertEqual(created_events, 3)
-        self.assertEqual(len(events), 3)
+        self.assertEqual(first.event_count, 1)
+        self.assertEqual(second.event_count, 1)
+        self.assertEqual(duplicate.event_count, 0)
+        self.assertEqual(first.per_ship_counts, {ROLE_ID_VENOM: 1})
+        self.assertEqual(second.per_ship_counts, {ROLE_ID_VENOM: 1})
+        self.assertEqual(len(events), 2)
         self.assertEqual(
             [event.trigger_offset for event in events],
-            [-7, -3, 0],
+            [-7, -3],
+        )
+        self.assertEqual(
+            [event.scheduled_for_at.isoformat() for event in events],
+            [
+                "2026-03-22T12:00:00",
+                "2026-03-26T12:00:00",
+            ],
         )
 
-    async def test_worker_skips_event_when_activity_cycle_changes(self) -> None:
-        scheduler = NotificationSchedulerService(
-            definition_provider=self.definition_provider,
-            eligibility_evaluator=self.evaluator,
-            route_resolver=self.route_resolver,
-            event_repository=self.event_repo,
-            sailor_repository=self.sailor_repo,
-            payload_factory=self.payload_factory,
-            rollout_map=self.rollout,
+    async def test_scheduler_precreates_single_seven_day_overdue_event(self) -> None:
+        scheduler = self._build_scheduler()
+
+        summary = await scheduler.run_once(
+            self.bot,
+            reference_time=datetime(2026, 4, 5, 0, 30, tzinfo=UTC),
+            lookahead_hours=NOTIFICATION_LOOKAHEAD_HOURS,
         )
-        await scheduler.run_for_date(self.bot, datetime(2026, 3, 22, tzinfo=UTC).date())
+
+        events = (
+            self.session.query(NotificationEvent)
+            .order_by(NotificationEvent.scheduled_for_at.asc())
+            .all()
+        )
+
+        self.assertEqual(summary.event_count, 1)
+        self.assertEqual(summary.per_ship_counts, {ROLE_ID_VENOM: 1})
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0].trigger_offset, 7)
+        self.assertEqual(events[0].scheduled_for_at.isoformat(), "2026-04-05T12:00:00")
+
+    async def test_worker_delivers_only_due_events(self) -> None:
+        scheduler = self._build_scheduler()
+        await scheduler.run_once(
+            self.bot,
+            reference_time=datetime(2026, 3, 21, 12, 0, tzinfo=UTC),
+        )
+
+        delivery_adapter = SuccessfulDeliveryAdapter()
+        worker = self._build_worker(delivery_adapter)
+
+        early = await worker.run_once(
+            self.bot,
+            reference_time=datetime(2026, 3, 22, 11, 59, tzinfo=UTC),
+        )
+        due = await worker.run_once(
+            self.bot,
+            reference_time=datetime(2026, 3, 22, 12, 5, tzinfo=UTC),
+        )
+
+        self.assertEqual(early.event_count, 0)
+        self.assertEqual(due.event_count, 1)
+        self.assertEqual(due.per_ship_counts, {ROLE_ID_VENOM: 1})
+        self.assertEqual(delivery_adapter.send.await_count, 1)
+
+    async def test_worker_skips_events_after_grace_window_elapses(self) -> None:
+        scheduler = self._build_scheduler()
+        await scheduler.run_once(
+            self.bot,
+            reference_time=datetime(2026, 3, 21, 12, 0, tzinfo=UTC),
+        )
+
+        worker = self._build_worker(SuccessfulDeliveryAdapter())
+        summary = await worker.run_once(
+            self.bot,
+            reference_time=datetime(2026, 3, 22, 12, 0, tzinfo=UTC)
+                           + timedelta(hours=NOTIFICATION_DELIVERY_GRACE_HOURS, minutes=1),
+        )
+
+        event = self.session.query(NotificationEvent).order_by(NotificationEvent.id.asc()).first()
+        self.assertEqual(summary.event_count, 0)
+        self.assertEqual(event.status, NotificationStatus.SKIPPED.value)
+        self.assertEqual(event.skip_reason, "delivery_window_elapsed")
+
+    async def test_worker_skips_event_when_activity_cycle_changes(self) -> None:
+        scheduler = self._build_scheduler()
+        await scheduler.run_once(
+            self.bot,
+            reference_time=datetime(2026, 3, 21, 12, 0, tzinfo=UTC),
+        )
 
         sailor = self.session.query(Sailor).filter(Sailor.discord_id == 1).first()
         sailor.last_voyage_at = datetime(2026, 3, 24, 18, 0, tzinfo=UTC)
         self.session.commit()
 
         delivery_adapter = SuccessfulDeliveryAdapter()
-        worker = NotificationWorkerService(
-            definition_provider=self.definition_provider,
-            eligibility_evaluator=self.evaluator,
-            route_resolver=self.route_resolver,
-            renderer=EmbedNotificationRenderer(),
-            delivery_adapter=delivery_adapter,
-            event_repository=self.event_repo,
-            sailor_repository=self.sailor_repo,
-            payload_factory=self.payload_factory,
-            rollout_map=self.rollout,
+        worker = self._build_worker(delivery_adapter)
+        summary = await worker.run_once(
+            self.bot,
+            reference_time=datetime(2026, 3, 22, 12, 5, tzinfo=UTC),
         )
 
-        delivered = await worker.run_once(self.bot, datetime(2026, 3, 22, tzinfo=UTC).date())
-
-        self.assertEqual(delivered, 0)
+        self.assertEqual(summary.event_count, 0)
         self.assertEqual(delivery_adapter.send.await_count, 0)
-        event = self.session.query(NotificationEvent).first()
+        event = self.session.query(NotificationEvent).order_by(NotificationEvent.id.asc()).first()
         self.assertEqual(event.status, NotificationStatus.SKIPPED.value)
         self.assertEqual(event.skip_reason, "activity_cycle_changed")
 
     async def test_worker_alerts_engineers_after_retry_exhaustion(self) -> None:
-        scheduler = NotificationSchedulerService(
-            definition_provider=self.definition_provider,
-            eligibility_evaluator=self.evaluator,
-            route_resolver=self.route_resolver,
-            event_repository=self.event_repo,
-            sailor_repository=self.sailor_repo,
-            payload_factory=self.payload_factory,
-            rollout_map=self.rollout,
+        scheduler = self._build_scheduler()
+        await scheduler.run_once(
+            self.bot,
+            reference_time=datetime(2026, 3, 21, 12, 0, tzinfo=UTC),
         )
-        await scheduler.run_for_date(self.bot, datetime(2026, 3, 22, tzinfo=UTC).date())
 
-        worker = NotificationWorkerService(
-            definition_provider=self.definition_provider,
-            eligibility_evaluator=self.evaluator,
-            route_resolver=self.route_resolver,
-            renderer=EmbedNotificationRenderer(),
-            delivery_adapter=FailingDeliveryAdapter(),
-            event_repository=self.event_repo,
-            sailor_repository=self.sailor_repo,
-            payload_factory=self.payload_factory,
-            rollout_map=self.rollout,
-        )
+        worker = self._build_worker(FailingDeliveryAdapter())
+        due_time = datetime(2026, 3, 22, 12, 5, tzinfo=UTC)
 
         with patch("src.notifications.worker.alert_engineers", new=AsyncMock()) as alert_mock:
-            await worker.run_once(self.bot, datetime(2026, 3, 22, tzinfo=UTC).date())
-            await worker.run_once(self.bot, datetime(2026, 3, 22, tzinfo=UTC).date())
-            await worker.run_once(self.bot, datetime(2026, 3, 22, tzinfo=UTC).date())
+            await worker.run_once(self.bot, reference_time=due_time)
+            await worker.run_once(self.bot, reference_time=due_time + timedelta(minutes=5))
+            await worker.run_once(self.bot, reference_time=due_time + timedelta(minutes=10))
 
-        event = self.session.query(NotificationEvent).first()
+        event = self.session.query(NotificationEvent).order_by(NotificationEvent.id.asc()).first()
         self.assertEqual(event.status, NotificationStatus.FAILED.value)
         self.assertEqual(event.attempt_count, 3)
         self.assertEqual(alert_mock.await_count, 1)
+        fields = alert_mock.await_args.kwargs["fields"]
+        self.assertTrue(any(field.label == "Ship Overview" for field in fields))
 
     async def test_worker_refreshes_payload_snapshot_with_runtime_wording(self) -> None:
-        definition = self.definition_provider.get_definition("NO_VOYAGE_REMINDER")
-        sailor = self.sailor_repo.get_sailor(1)
-        member_context = build_member_context(self.member)
-        eligibility = self.evaluator.evaluate(
-            definition,
-            sailor,
-            member_context,
-            date(2026, 3, 29),
+        scheduler = self._build_scheduler()
+        await scheduler.run_once(
+            self.bot,
+            reference_time=datetime(2026, 3, 28, 0, 0, tzinfo=UTC),
         )
-        assert eligibility is not None
 
-        original_payload = self.payload_factory.build(
-            definition,
-            sailor,
-            member_context,
-            eligibility,
-            reference_time=datetime(2026, 3, 29, 9, 0, tzinfo=UTC),
-        )
-        event, _ = self.event_repo.create_pending_event(
-            definition=definition,
-            sailor=sailor,
-            member_context=member_context,
-            eligibility=eligibility,
-            destination_channel_id=BC_VENOM,
-            payload_snapshot=self.payload_factory.to_snapshot(original_payload),
-        )
+        event = self.session.query(NotificationEvent).order_by(NotificationEvent.id.asc()).first()
         self.assertIn("is due", event.payload_snapshot)
 
         delivery_adapter = SuccessfulDeliveryAdapter()
-        worker = NotificationWorkerService(
-            definition_provider=self.definition_provider,
-            eligibility_evaluator=self.evaluator,
-            route_resolver=self.route_resolver,
-            renderer=EmbedNotificationRenderer(),
-            delivery_adapter=delivery_adapter,
-            event_repository=self.event_repo,
-            sailor_repository=self.sailor_repo,
-            payload_factory=self.payload_factory,
-            rollout_map=self.rollout,
+        worker = self._build_worker(delivery_adapter)
+        summary = await worker.run_once(
+            self.bot,
+            reference_time=datetime(2026, 3, 29, 15, 0, tzinfo=UTC),
+            batch_size=10,
         )
 
-        with patch("src.notifications.worker.datetime") as mocked_datetime:
-            mocked_datetime.now.return_value = datetime(2026, 3, 29, 15, 0, tzinfo=UTC)
-            delivered = await worker.run_once(self.bot, date(2026, 3, 29))
-
-        refreshed_event = self.session.query(NotificationEvent).first()
-        self.assertEqual(delivered, 1)
+        refreshed_event = self.session.query(NotificationEvent).filter(
+            NotificationEvent.id == event.id
+        ).first()
+        self.assertEqual(summary.event_count, 1)
         self.assertIn("became due", refreshed_event.payload_snapshot)
         self.assertEqual(refreshed_event.status, NotificationStatus.DELIVERED.value)
+
+    async def test_worker_renders_overdue_status_for_seven_day_overdue_event(self) -> None:
+        scheduler = self._build_scheduler()
+        await scheduler.run_once(
+            self.bot,
+            reference_time=datetime(2026, 4, 5, 0, 0, tzinfo=UTC),
+        )
+
+        delivery_adapter = SuccessfulDeliveryAdapter()
+        worker = self._build_worker(delivery_adapter)
+        summary = await worker.run_once(
+            self.bot,
+            reference_time=datetime(2026, 4, 5, 12, 5, tzinfo=UTC),
+            batch_size=10,
+        )
+
+        refreshed_event = self.session.query(NotificationEvent).order_by(
+            NotificationEvent.id.asc()
+        ).first()
+        self.assertEqual(summary.event_count, 1)
+        self.assertIn("became due", refreshed_event.payload_snapshot)
+        self.assertIn("7 day(s) overdue", refreshed_event.payload_snapshot)
+        self.assertEqual(refreshed_event.status, NotificationStatus.DELIVERED.value)
+
+    async def test_scheduler_counts_ships_in_summary(self) -> None:
+        scheduler = self._build_scheduler()
+        first = await scheduler.run_once(
+            self.bot,
+            reference_time=datetime(2026, 3, 21, 12, 0, tzinfo=UTC),
+        )
+        second = await scheduler.run_once(
+            self.bot,
+            reference_time=datetime(2026, 3, 25, 12, 0, tzinfo=UTC),
+        )
+
+        self.assertEqual(first.per_ship_counts, {ROLE_ID_VENOM: 1})
+        self.assertEqual(second.per_ship_counts, {ROLE_ID_VENOM: 1})
+
+    async def test_scheduler_records_skipped_event_when_route_missing(self) -> None:
+        scheduler = self._build_scheduler()
+        unroutable_bot = DummyBot(
+            DummyGuild(
+                self.member,
+                DummyChannel(999999),
+                DummyChannel(888888),
+            )
+        )
+
+        summary = await scheduler.run_once(
+            unroutable_bot,
+            reference_time=datetime(2026, 3, 21, 12, 0, tzinfo=UTC),
+        )
+
+        event = self.session.query(NotificationEvent).order_by(NotificationEvent.id.asc()).first()
+        self.assertEqual(summary.event_count, 1)
+        self.assertEqual(event.status, NotificationStatus.SKIPPED.value)
+        self.assertEqual(event.skip_reason, "command_channel_not_found")

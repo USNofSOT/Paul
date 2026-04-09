@@ -3,12 +3,12 @@ from __future__ import annotations
 import asyncio
 from logging import getLogger
 
-import config
 import discord
+
+import config
 from core import Bot
 from data.engine import engine_string
 from data.migrations.migrate import run_migrations
-
 from src.data import create_tables
 from src.utils.logger import initialise_logger
 
@@ -27,7 +27,10 @@ async def main():
 
 
 if __name__ == "__main__":
-    create_tables()
     initialise_logger()
+    log.info("Initialising database tables")
+    create_tables()
+    log.info("Running database migrations")
     run_migrations(engine_string)
+    log.info("Startup bootstrap complete; launching bot event loop")
     asyncio.run(main())

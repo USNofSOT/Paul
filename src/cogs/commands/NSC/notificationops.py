@@ -92,13 +92,13 @@ class NotificationOps(commands.Cog):
                     )
                 else:
                     async with self._manual_operation_lock:
-                        created_events = await self.notification_service_factory.build_scheduler(
+                        run_summary = await self.notification_service_factory.build_scheduler(
                             event_repository=event_repository,
                             sailor_repository=sailor_repository,
-                        ).run_for_date(self.bot)
+                        ).run_once(self.bot)
                     embed = build_notification_action_embed(
                         "Notification Evaluator Ran",
-                        f"Created **{created_events}** notification event(s) for today.",
+                        f"Created **{run_summary.event_count}** notification event(s) in the lookahead window.",
                     )
             else:
                 if self._manual_operation_lock.locked():
@@ -108,13 +108,13 @@ class NotificationOps(commands.Cog):
                     )
                 else:
                     async with self._manual_operation_lock:
-                        delivered_count = await self.notification_service_factory.build_worker(
+                        run_summary = await self.notification_service_factory.build_worker(
                             event_repository=event_repository,
                             sailor_repository=sailor_repository,
                         ).run_once(self.bot)
                     embed = build_notification_action_embed(
                         "Notification Worker Ran",
-                        f"Delivered **{delivered_count}** notification event(s).",
+                        f"Delivered **{run_summary.event_count}** due notification event(s).",
                     )
 
             await interaction.followup.send(

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import datetime
 from typing import Protocol
 
 from discord import Guild
@@ -23,13 +23,22 @@ class TriggerDefinitionProvider(Protocol):
 
 
 class NotificationEligibilityEvaluator(Protocol):
-    def evaluate(
+    def project_for_window(
             self,
             definition: NotificationDefinition,
             sailor: Sailor,
             member_context: ResolvedMemberContext,
-            evaluation_date: date,
-    ) -> EligibilityResult | None: ...
+            window_start: datetime,
+            window_end: datetime,
+    ) -> tuple[EligibilityResult, ...]: ...
+
+    def matches_event(
+            self,
+            definition: NotificationDefinition,
+            sailor: Sailor,
+            member_context: ResolvedMemberContext,
+            event: NotificationEvent,
+    ) -> bool: ...
 
 
 class NotificationEventRepositoryContract(Protocol):
@@ -44,7 +53,18 @@ class NotificationEventRepositoryContract(Protocol):
             payload_snapshot: str,
     ) -> tuple[NotificationEvent, bool]: ...
 
-    def list_pending_event_ids(self, *, limit: int) -> list[int]: ...
+    def create_skipped_event(
+            self,
+            *,
+            definition: NotificationDefinition,
+            sailor: Sailor,
+            member_context: ResolvedMemberContext,
+            eligibility: EligibilityResult,
+            payload_snapshot: str,
+            skip_reason: str,
+    ) -> tuple[NotificationEvent, bool]: ...
+
+    def list_due_event_ids(self, *, limit: int, due_before: datetime) -> list[int]: ...
 
     def claim_event(self, event_id: int) -> bool: ...
 

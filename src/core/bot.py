@@ -10,6 +10,7 @@ from discord.ext import commands
 from discord.ext.commands import CommandNotFound
 
 from src.cogs import EXTENSIONS
+from src.config.main_server import ENVIRONMENT, GUILD_ID, get_bot_log_channel_id
 from src.core.command_cooldowns import (
     apply_configured_cooldowns,
     handle_app_command_cooldown_error,
@@ -17,6 +18,8 @@ from src.core.command_cooldowns import (
 )
 from src.data import BotInteractionType
 from src.data.repository.auditlog_repository import AuditLogRepository
+from src.utils.discord_utils import EngineerAlertField, send_engineer_log
+from src.utils.embeds import AlertSeverity
 
 log= getLogger(__name__)
 import discord
@@ -40,8 +43,32 @@ class Bot(discord.ext.commands.Bot):
             command_prefix="!",
             intents=discord.Intents.all(),
         )
+        self._startup_log_sent = False
+
     async def on_ready(self) -> None:
-        log.info(f"logged in as {self.user}")
+        guild = self.get_guild(GUILD_ID)
+        log.info("logged in as %s", self.user)
+        log.info(
+            "[STARTUP] Environment=%s Guild=%s BotLogChannel=%s",
+            ENVIRONMENT,
+            f"{guild.name} ({guild.id})" if guild is not None else f"Unavailable ({GUILD_ID})",
+            get_bot_log_channel_id(),
+        )
+        if self._startup_log_sent:
+            return
+
+        try:
+            await send_engineer_log(
+                self,
+                severity=AlertSeverity.INFO,
+                title="Bot Startup",
+                description="Paul connected and completed startup.",
+                fields=_build_startup_log_fields(guild_name=guild.name if guild else None),
+                notify_engineers=False,
+            )
+            self._startup_log_sent = True
+        except Exception:
+            log.error("Failed to send startup summary to bot log channel.", exc_info=True)
     '''
         try:
             spd_guild = self.get_guild(SPD_ID)
@@ -142,3 +169,13 @@ class Bot(discord.ext.commands.Bot):
         log.info("All extentions loaded")
         # await self.tree.sync()
         log.info("Tree Synced")
+
+
+def _build_startup_log_fields(*, guild_name: str | None) -> tuple[EngineerAlertField, ...]:
+    guild_label = guild_name or f"Unavailable ({GUILD_ID})"
+    return (
+        EngineerAlertField("Environment", f"`{ENVIRONMENT}`"),
+        EngineerAlertField("Guild", guild_label),
+        EngineerAlertField("Extensions", f"`{len(EXTENSIONS)}`"),
+        EngineerAlertField("Bot Log Channel", f"`{get_bot_log_channel_id()}`"),
+    )

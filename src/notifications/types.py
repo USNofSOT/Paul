@@ -55,8 +55,15 @@ class EligibilityResult:
     threshold_at: datetime
     threshold_date: date
     trigger_offset: int
+    scheduled_for_at: datetime
     scheduled_for_date: date
     days_remaining: int
+
+
+@dataclass(frozen=True)
+class NotificationRunSummary:
+    event_count: int
+    per_ship_counts: dict[int | None, int] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
