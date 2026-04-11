@@ -122,7 +122,6 @@ class ShipHealthSummaryDataProvider(Protocol):
             ship_role_id: int,
             ship_name: str,
             ship_size: int,
-            squad_memberships: dict[str, list[int]],
             sailor_ids: list[int],
             reference_time: datetime,
     ) -> ShipHealthSummary: ...
