@@ -155,7 +155,7 @@ USS_ADUN = Ship(
     max_size=33
 )
 
-USS_HYPERION = Ship(
+USS_MYSTERY = Ship(
     name="USS Mystery",
     boat_command_channel_id=BC_HYPERION,
     role_id=ROLE_ID_HYPERION,
@@ -173,7 +173,7 @@ USS_NIGHTINGALE = Ship(
 
 WILDS_FLEET = Fleet(
     name="The Wilds Fleet",
-    ships=(USS_ADUN, USS_HYPERION, USS_NIGHTINGALE),
+    ships=(USS_ADUN, USS_MYSTERY, USS_NIGHTINGALE),
     role_id=933919084616228874,
     flagship=None,
     emoji="<:Wilds:1270890769292591134>",
