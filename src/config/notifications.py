@@ -7,7 +7,14 @@ from src.config.requirements import (
     HOSTING_REQUIREMENT_IN_DAYS,
     VOYAGING_REQUIREMENT_IN_DAYS,
 )
-from src.config.ships import ROLE_ID_TITAN, ROLE_ID_VENOM, ROLE_ID_GENESIS
+from src.config.ships import (
+    ROLE_ID_EOS,
+    ROLE_ID_GENESIS,
+    ROLE_ID_GLETSJER,
+    ROLE_ID_NIGHTINGALE,
+    ROLE_ID_TITAN,
+    ROLE_ID_VENOM,
+)
 from src.notifications.types import NotificationType, RoutingTargetType, TemplateKey
 
 APPLICATION_TIMEZONE: Final[str] = "UTC"
@@ -56,11 +63,17 @@ NOTIFICATION_DEFINITION_CONFIGS: Final[NotificationDefinitionConfigMap] = {
 # - ship role present with squad role IDs: enabled only for those squads on that ship
 NOTIFICATION_ROLLOUT: Final[NotificationRolloutMap] = {
     NotificationType.NO_VOYAGE_REMINDER: {
+        ROLE_ID_EOS: (),
+        ROLE_ID_GLETSJER: (),
+        ROLE_ID_NIGHTINGALE: (),
         ROLE_ID_TITAN: (),
         ROLE_ID_VENOM: (),
         ROLE_ID_GENESIS: ()
     },
     NotificationType.NO_HOSTING_REMINDER: {
+        ROLE_ID_EOS: (),
+        ROLE_ID_GLETSJER: (),
+        ROLE_ID_NIGHTINGALE: (),
         ROLE_ID_TITAN: (),
         ROLE_ID_VENOM: (),
         ROLE_ID_GENESIS: ()
