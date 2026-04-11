@@ -37,7 +37,7 @@ docs/                Developer documentation
 
 ## Running Paul
 
-Paul currently starts from [`src/main.py`](/C:/Users/coenw/Documents/Code/USN/Paul/src/main.py).
+Paul currently starts from [`src/main.py`](src/main.py).
 
 ```bash
 uv run src/main.py
