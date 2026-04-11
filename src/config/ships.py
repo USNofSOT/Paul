@@ -156,10 +156,10 @@ USS_ADUN = Ship(
 )
 
 USS_HYPERION = Ship(
-    name="USS Hyperion",
+    name="USS Mystery",
     boat_command_channel_id=BC_HYPERION,
     role_id=ROLE_ID_HYPERION,
-    emoji="<:hyperion1:1162043891185369199>",
+    emoji="<:USSMysteryLogo:1491898644901662940>",
     max_size=24
 )
 
