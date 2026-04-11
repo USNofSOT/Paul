@@ -65,7 +65,7 @@ Run the application from the repository root:
 uv run src/main.py
 ```
 
-The startup sequence in [`src/main.py`](src/main.py) is:
+The startup sequence in [`src/main.py`](/C:/Users/coenw/Documents/Code/USN/Paul/src/main.py) is:
 
 1. `initialise_logger()`
 2. `create_tables()`

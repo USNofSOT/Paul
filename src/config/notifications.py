@@ -7,14 +7,7 @@ from src.config.requirements import (
     HOSTING_REQUIREMENT_IN_DAYS,
     VOYAGING_REQUIREMENT_IN_DAYS,
 )
-from src.config.ships import (
-    ROLE_ID_EOS,
-    ROLE_ID_GENESIS,
-    ROLE_ID_GLETSJER,
-    ROLE_ID_NIGHTINGALE,
-    ROLE_ID_TITAN,
-    ROLE_ID_VENOM,
-)
+from src.config.ships import ROLE_ID_TITAN, ROLE_ID_VENOM, ROLE_ID_GENESIS
 from src.notifications.types import NotificationType, RoutingTargetType, TemplateKey
 
 APPLICATION_TIMEZONE: Final[str] = "UTC"
@@ -87,9 +80,6 @@ SHIP_HEALTH_SUMMARY_RECENT_ACTIVITY_DAYS: Final[int] = 7
 SHIP_HEALTH_SUMMARY_VOYAGE_DUE_SOON_DAYS: Final[int] = 7
 SHIP_HEALTH_SUMMARY_HOSTING_DUE_SOON_DAYS: Final[int] = 3
 SHIP_HEALTH_SUMMARY_ROLLOUT: Final[ShipHealthSummaryRollout] = (
-    ROLE_ID_EOS,
-    ROLE_ID_GLETSJER,
-    ROLE_ID_NIGHTINGALE,
     ROLE_ID_TITAN,
     ROLE_ID_VENOM,
     ROLE_ID_GENESIS
