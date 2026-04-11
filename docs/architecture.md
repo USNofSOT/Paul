@@ -18,7 +18,7 @@ together.
 
 ## Startup Flow
 
-Paul starts in [`src/main.py`](/C:/Users/coenw/Documents/Code/USN/Paul/src/main.py). The process bootstraps the local
+Paul starts in [`src/main.py`](src/main.py). The process bootstraps the local
 runtime before the Discord connection is opened.
 
 ```mermaid
