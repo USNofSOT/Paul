@@ -13,7 +13,7 @@ from src.config.ships import (
     ROLE_ID_GLETSJER,
     ROLE_ID_NIGHTINGALE,
     ROLE_ID_TITAN,
-    ROLE_ID_VENOM,
+    ROLE_ID_VENOM, ROLE_ID_SERENITY, ROLE_ID_ADUN,
 )
 from src.notifications.types import NotificationType, RoutingTargetType, TemplateKey
 
@@ -68,7 +68,9 @@ NOTIFICATION_ROLLOUT: Final[NotificationRolloutMap] = {
         ROLE_ID_NIGHTINGALE: (),
         ROLE_ID_TITAN: (),
         ROLE_ID_VENOM: (),
-        ROLE_ID_GENESIS: ()
+        ROLE_ID_GENESIS: (),
+        ROLE_ID_SERENITY: (),
+        ROLE_ID_ADUN: ()
     },
     NotificationType.NO_HOSTING_REMINDER: {
         ROLE_ID_EOS: (),
@@ -76,7 +78,9 @@ NOTIFICATION_ROLLOUT: Final[NotificationRolloutMap] = {
         ROLE_ID_NIGHTINGALE: (),
         ROLE_ID_TITAN: (),
         ROLE_ID_VENOM: (),
-        ROLE_ID_GENESIS: ()
+        ROLE_ID_GENESIS: (),
+        ROLE_ID_SERENITY: (),
+        ROLE_ID_ADUN: ()
     },
 }
 
@@ -92,5 +96,7 @@ SHIP_HEALTH_SUMMARY_ROLLOUT: Final[ShipHealthSummaryRollout] = (
     ROLE_ID_NIGHTINGALE,
     ROLE_ID_TITAN,
     ROLE_ID_VENOM,
-    ROLE_ID_GENESIS
+    ROLE_ID_GENESIS,
+    ROLE_ID_SERENITY,
+    ROLE_ID_ADUN
 )
