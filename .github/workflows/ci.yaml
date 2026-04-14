@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - "3.12"
+          - "3.14"
     steps:
       - name: "⌛ Checking out the code"
         uses: actions/checkout@v3
@@ -35,7 +35,7 @@ jobs:
 #      - name: "🐍 Setting up Python"
 #        uses: actions/setup-python@v4
 #        with:
-#          python-version: '3.12'
+#          python-version: '3.14'
 #      - name: "📦 Installing dependencies"
 #        run: pip install black ruff
 #      - name: "🧹 Running Black"

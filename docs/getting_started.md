@@ -5,17 +5,17 @@ dependency, and the normal day-to-day commands used while working on the bot.
 
 ## Prerequisites
 
-- Python 3.12
+- Python 3.14
 - [Astral UV](https://docs.astral.sh/uv/getting-started/installation/)
 - Access to a MySQL database for local development
 - A Discord bot token and any environment-specific values you need for testing
 
 ## 1. Install Python and Dependencies
 
-Install Python 3.12 through `uv` if you do not already have it:
+Install Python 3.14 through `uv` if you do not already have it:
 
 ```bash
-uv python install 3.12
+uv python install 3.14
 ```
 
 Create the environment and install project dependencies:
