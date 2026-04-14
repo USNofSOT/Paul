@@ -16,6 +16,7 @@ from src.core.command_cooldowns import (
     handle_app_command_cooldown_error,
     handle_text_command_cooldown_error,
 )
+from src.core.discord_compat import apply_team_member_permissions_compat
 from src.data import BotInteractionType
 from src.data.repository.auditlog_repository import AuditLogRepository
 from src.utils.discord_utils import EngineerAlertField, send_engineer_log
@@ -39,6 +40,7 @@ def create_low_priority_task(func):
 
 class Bot(discord.ext.commands.Bot):
     def __init__(self):
+        apply_team_member_permissions_compat()
         super().__init__(
             command_prefix="!",
             intents=discord.Intents.all(),
