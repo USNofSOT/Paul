@@ -3,7 +3,7 @@ name = "paul"
 version = "0.1.0"
 description = "A Discord bot for the The United States Navy SoT"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.13, <3.14"
 dependencies = [
     "alembic==1.18.4",
     "discord-py==2.7.1",
