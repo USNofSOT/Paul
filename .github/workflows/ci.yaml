@@ -14,7 +14,6 @@ jobs:
       matrix:
         python-version:
           - "3.13"
-          - "3.14"
     steps:
       - name: "⌛ Checking out the code"
         uses: actions/checkout@v3
@@ -23,7 +22,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: "📦 Installing dependencies"
-        run: uv sync --locked --all-extras --dev
+        run: uv sync --locked --all-extras --all-groups
+      - name: "🐍 Checking compilability"
+        run: uv run python -m compileall src tests
       - name: "🧪 Running tests"
         # For example, using `pytest`
         run: uv run pytest tests
