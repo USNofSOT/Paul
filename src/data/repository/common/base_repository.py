@@ -40,7 +40,8 @@ def _with_transient_retry(func):
 
                 logger.warning(
                     "Transient DB error on %s (attempt %d/3): %s",
-                    func.__name__, attempt + 1, e
+                    func.__name__, attempt + 1, e,
+                    notify_engineer=True
                 )
                 if attempt < 2:
                     time.sleep(0.5 * (attempt + 1))
@@ -86,7 +87,7 @@ class BaseRepository(Generic[T]):
             try:
                 self.session.close()
             except Exception as e:
-                logger.error("Error closing session: %s", e)
+                logger.error("Error closing session: %s", e, notify_engineer=True)
 
         self._closed = True
         self.session = None
@@ -120,7 +121,7 @@ class BaseRepository(Generic[T]):
         except Exception as e:
             if self.session:
                 self.session.rollback()
-            logger.error("Error finding entities of type %s: %s", self.entity_type.__name__, e)
+            logger.error("Error finding entities of type %s: %s", self.entity_type.__name__, e, notify_engineer=True)
             raise
 
     @_with_transient_retry
@@ -134,7 +135,8 @@ class BaseRepository(Generic[T]):
         except Exception as e:
             if self.session:
                 self.session.rollback()
-            logger.error("Error getting entity %s with ID %s: %s", self.entity_type.__name__, entity_id, e)
+            logger.error("Error getting entity %s with ID %s: %s", self.entity_type.__name__, entity_id, e,
+                         notify_engineer=True)
             raise
 
     @_with_transient_retry
@@ -176,7 +178,7 @@ class BaseRepository(Generic[T]):
         except Exception as e:
             if self.session:
                 self.session.rollback()
-            logger.error("Error removing entity: %s", e)
+            logger.error("Error removing entity: %s", e, notify_engineer=True)
             raise
 
     def _create_multiple(self, entities: List[T]) -> List[T]:
@@ -186,7 +188,7 @@ class BaseRepository(Generic[T]):
             return entities
         except Exception as e:
             self.session.rollback()
-            logger.error("Error creating multiple entities: %s", e)
+            logger.error("Error creating multiple entities: %s", e, notify_engineer=True)
             raise
 
     def _create_single(self, entity: T) -> T:
@@ -196,7 +198,7 @@ class BaseRepository(Generic[T]):
             return entity
         except Exception as e:
             self.session.rollback()
-            logger.error("Error creating entity: %s", e)
+            logger.error("Error creating entity: %s", e, notify_engineer=True)
             raise
 
     def _update_multiple(self, entities: List[T]) -> List[T]:
@@ -207,7 +209,7 @@ class BaseRepository(Generic[T]):
             return entities
         except Exception as e:
             self.session.rollback()
-            logger.error("Error updating multiple entities: %s", e)
+            logger.error("Error updating multiple entities: %s", e, notify_engineer=True)
             raise
 
     def _update_single(self, entity: T) -> T:
@@ -217,5 +219,5 @@ class BaseRepository(Generic[T]):
             return entity
         except Exception as e:
             self.session.rollback()
-            logger.error("Error updating entity: %s", e)
+            logger.error("Error updating entity: %s", e, notify_engineer=True)
             raise
