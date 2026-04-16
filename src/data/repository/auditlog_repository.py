@@ -1,6 +1,8 @@
 import datetime
 import logging
-from typing import Optional, List
+from typing import Type
+
+from sqlalchemy.orm import sessionmaker
 
 from src.data import (
     BanChangeLog,
@@ -12,90 +14,72 @@ from src.data import (
     RoleChangeType,
     TimeoutLog,
 )
-from src.data.repository.common.base_repository import BaseRepository, Session
-from src.data.repository.sailor_repository import SailorRepository
+from src.data.engine import engine
+from src.data.repository.sailor_repository import ensure_sailor_exists
 from src.utils.time_utils import utc_time_now
 
 log = logging.getLogger(__name__)
+Session = sessionmaker(bind=engine)
 
+class AuditLogRepository:
+    def __init__(self):
+        self.session = Session()
 
-class AuditLogRepository(BaseRepository[RoleChangeLog]):
-    def __init__(self, session: Optional[Session] = None):
-        # We'll use RoleChangeLog as the default entity type for BaseRepository initialization
-        super().__init__(RoleChangeLog, session)
-        self.sailor_repository = SailorRepository(session=self.session)
+    def get_session(self):
+        return self.session
 
-    def get_bans_changes_for_e2_or_above_and_between_dates(self, start_date: datetime.datetime,
-                                                           end_date: datetime.datetime) -> List[BanChangeLog]:
+    def close_session(self):
+        self.session.close()
+
+    def get_bans_changes_for_e2_or_above_and_between_dates(self, start_date: datetime, end_date: datetime) -> [BanChangeLog]:
         try:
             return self.session.query(BanChangeLog).filter(BanChangeLog.log_time >= start_date, BanChangeLog.log_time <= end_date).all()
         except Exception as e:
             log.error(f"Error getting ban changes for E2 or above and between dates: {e}")
-            self.session.rollback()
             raise e
 
-    def get_leave_changes_for_e2_or_above_and_between_dates(self, e2_or_above: bool, start_date: datetime.datetime,
-                                                            end_date: datetime.datetime) -> List[LeaveChangeLog]:
+    def get_leave_changes_for_e2_or_above_and_between_dates(self, e2_or_above: bool, start_date: datetime, end_date: datetime) -> [LeaveChangeLog]:
         try:
             return self.session.query(LeaveChangeLog).filter(LeaveChangeLog.e2_or_above == e2_or_above, LeaveChangeLog.log_time >= start_date, LeaveChangeLog.log_time <= end_date).all()
         except Exception as e:
             log.error(f"Error getting leave changes for E2 or above and between dates: {e}")
-            self.session.rollback()
             raise e
 
-    def get_role_changes_for_role_and_action_between_dates(self, role_id: int, action: RoleChangeType,
-                                                           start_date: datetime.datetime,
-                                                           end_date: datetime.datetime) -> List[RoleChangeLog]:
+    def get_role_changes_for_role_and_action_between_dates(self, role_id: int, action: RoleChangeType, start_date: datetime, end_date: datetime) -> [RoleChangeLog]:
         try:
             return self.session.query(RoleChangeLog).filter(RoleChangeLog.role_id == role_id, RoleChangeLog.change_type == action, RoleChangeLog.log_time >= start_date, RoleChangeLog.log_time <= end_date).all()
         except Exception as e:
             log.error(f"Error getting role changes for role and action between dates: {e}")
-            self.session.rollback()
             raise e
 
-    def get_latest_role_log_for_target_and_role(self, target_id: int, role_id: int) -> RoleChangeLog | None:
+    def get_latest_role_log_for_target_and_role(self, target_id: int, role_id: int) -> Type[RoleChangeLog] | None:
         try:
             return self.session.query(RoleChangeLog).filter(RoleChangeLog.target_id == target_id, RoleChangeLog.role_id == role_id).order_by(RoleChangeLog.log_time.desc()).first()
         except Exception as e:
             log.error(f"Error getting latest role log for target and role: {e}")
-            self.session.rollback()
             raise e
 
-    def get_timeout_logs(self, target_id: int = None, limit: int = 10) -> List[TimeoutLog]:
-        try:
-            query = self.session.query(TimeoutLog).order_by(TimeoutLog.log_time.desc())
-            if target_id:
-                query = query.filter(TimeoutLog.target_id == target_id)
-            return query.limit(limit).all()
-        except Exception as e:
-            log.error(f"Error getting timeout logs: {e}")
-            self.session.rollback()
-            raise e
+    def get_timeout_logs(self, target_id: int = None, limit: int = 10) -> [TimeoutLog]:
+        if target_id:
+            return self.session.query(TimeoutLog).filter(TimeoutLog.target_id == target_id).order_by(TimeoutLog.log_time.desc()).limit(limit).all()
+        else:
+            return self.session.query(TimeoutLog).order_by(TimeoutLog.log_time.desc()).limit(limit).all()
 
-    def get_name_changes_logs(self, target_id: int = None, limit: int = 10, guild_id: int = None) -> List[
-        NameChangeLog]:
-        try:
-            query = self.session.query(NameChangeLog).order_by(NameChangeLog.log_time.desc())
-            if target_id:
-                query = query.filter(NameChangeLog.target_id == target_id)
-            if guild_id:
-                query = query.filter(NameChangeLog.guild_id == guild_id)
-            return query.limit(limit).all()
-        except Exception as e:
-            log.error(f"Error getting name change logs: {e}")
-            self.session.rollback()
-            raise e
+    def get_name_changes_logs(self, target_id: int = None, limit: int = 10, guild_id: int = None) -> [NameChangeLog]:
+        if target_id and guild_id:
+            return self.session.query(NameChangeLog).filter(NameChangeLog.target_id == target_id,NameChangeLog.guild_id == guild_id).order_by(NameChangeLog.log_time.desc()).limit(limit).all()
+        elif target_id:
+            return self.session.query(NameChangeLog).filter(NameChangeLog.target_id == target_id).order_by(NameChangeLog.log_time.desc()).limit(limit).all()
+        elif guild_id:
+            return self.session.query(NameChangeLog).filter(NameChangeLog.guild_id == guild_id).order_by(NameChangeLog.log_time.desc()).limit(limit).all()
+        else:
+            return self.session.query(NameChangeLog).order_by(NameChangeLog.log_time.desc()).limit(limit).all()
 
-    def get_role_changes_logs(self, target_id: int = None, limit: int = 10) -> List[RoleChangeLog]:
-        try:
-            query = self.session.query(RoleChangeLog).order_by(RoleChangeLog.log_time.desc())
-            if target_id:
-                query = query.filter(RoleChangeLog.target_id == target_id)
-            return query.limit(limit).all()
-        except Exception as e:
-            log.error(f"Error getting role change logs: {e}")
-            self.session.rollback()
-            raise e
+    def get_role_changes_logs(self, target_id: int = None, limit: int = 10) -> [RoleChangeLog]:
+        if target_id:
+            return self.session.query(RoleChangeLog).filter(RoleChangeLog.target_id == target_id).order_by(RoleChangeLog.log_time.desc()).limit(limit).all()
+        else:
+            return self.session.query(RoleChangeLog).order_by(RoleChangeLog.log_time.desc()).limit(limit).all()
 
     def log_ban(self, target_id: int, changed_by_id: int, guild_id: int, reason: str = "No reason provided.") -> BanChangeLog:
         try:
@@ -196,9 +180,8 @@ class AuditLogRepository(BaseRepository[RoleChangeLog]):
             log.error(f"Error logging interaction: {e}")
             self.session.rollback()
 
-    def log_timeout(self, target_id: int, changed_by_id: int, guild_id: int, timed_out_until_before: datetime.datetime,
-                    timed_out_until: datetime.datetime):
-        self.sailor_repository.get_or_create_sailor(target_id)
+    def log_timeout(self, target_id: int, changed_by_id: int, guild_id: int, timed_out_until_before: datetime, timed_out_until: datetime):
+        ensure_sailor_exists(target_id)
         try:
             log_entry = TimeoutLog(
                 target_id=target_id,

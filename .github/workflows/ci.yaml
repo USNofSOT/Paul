@@ -28,12 +28,6 @@ jobs:
       - name: "🧪 Running tests"
         # For example, using `pytest`
         run: uv run pytest tests
-        env:
-          DB_HOST: localhost
-          DB_PORT: 3306
-          DB_NAME: test_db
-          DB_USER: root
-          DB_PASSWORD: password
 #  format:
 #    name: "🧹 Format Checking"
 #    runs-on: ubuntu-latest
