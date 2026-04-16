@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections import defaultdict
 from datetime import UTC, datetime, timedelta
@@ -9,6 +10,7 @@ from discord.ext import commands
 from src.config.main_server import GUILD_ID
 from src.config.notifications import (
     NOTIFICATION_DELIVERY_GRACE_HOURS,
+    NOTIFICATION_DELIVERY_STAGGER_SECONDS,
     NOTIFICATION_MAX_DELIVERY_ATTEMPTS,
     NOTIFICATION_WORKER_BATCH_SIZE,
 )
@@ -190,6 +192,7 @@ class NotificationWorkerService:
             self.event_repository.mark_delivered(event_id)
             delivered_count += 1
             per_ship_counts[event.ship_role_id] += 1
+            await asyncio.sleep(NOTIFICATION_DELIVERY_STAGGER_SECONDS)
 
         return NotificationRunSummary(
             event_count=delivered_count,
