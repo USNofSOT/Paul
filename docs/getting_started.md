@@ -1,63 +1,75 @@
 # Getting Started with Paul
 
-This guide covers the local development setup for Paul, including Python tooling, environment variables, the MySQL
-dependency, and the normal day-to-day commands used while working on the bot.
+This guide covers the local development setup for Paul, including Python tooling, environment variables, the MariaDB
+dependency via Docker, and the normal day-to-day commands used while working on the bot.
 
 ## Prerequisites
 
-- Python 3.14
-- [Astral UV](https://docs.astral.sh/uv/getting-started/installation/)
-- Access to a MySQL database for local development
-- A Discord bot token and any environment-specific values you need for testing
+- **Python 3.13**: The bot is built for the latest Python.
+- **[Astral UV](https://docs.astral.sh/uv/getting-started/installation/)**: For fast, reliable dependency management.
+- **[Docker](https://www.docker.com/get-started)**: To run the local database.
+- **Discord Bot Token**: You'll need a token from
+  the [Discord Developer Portal](https://discord.com/developers/applications).
 
-## 1. Install Python and Dependencies
+---
 
-Install Python 3.14 through `uv` if you do not already have it:
+## 1. Environment Setup
+
+### Install Dependencies
+
+Install the required Python version and sync dependencies:
 
 ```bash
-uv python install 3.14
-```
-
-Create the environment and install project dependencies:
-
-```bash
-uv venv .venv
+uv python install 3.13
 uv sync --group dev --group lint
 ```
 
-The `dev` group installs test dependencies and the `lint` group installs Ruff.
+### Configure Environment Variables
 
-## 2. Configure Environment Variables
+Copy the example environment file and fill in your `DISCORD_TOKEN`:
 
-Copy `.env.example` to `.env` and fill in the values you need for your local setup.
+```bash
+cp .env.example .env
+```
 
-Core values used by the current startup flow include:
+The database values in `.env.example` are pre-configured to work out-of-the-box with the included Docker configuration.
 
-- `DISCORD_TOKEN`
-- `DB_HOST`
-- `DB_NAME`
-- `DB_USER`
-- `DB_PASSWORD`
-- `ENVIRONMENT`
-- `LOGS_PERSISTENCE`
-- `LOGS_MAX_AGE_IN_DAYS`
+| Variable      | Local Value | Description                                      |
+|:--------------|:------------|:-------------------------------------------------|
+| `DB_HOST`     | `localhost` | Points to your local machine.                    |
+| `DB_PORT`     | `3307`      | Matches the port mapped in `docker-compose.yml`. |
+| `DB_NAME`     | `paul_dev`  | The default database created by Docker.          |
+| `ENVIRONMENT` | `DEV`       | Enables development-specific features.           |
 
-The code currently reads `DB_PORT` in `src/data/engine.py`, but the active connection string is still built from host,
-database, user, and password only. For now, prefer a MySQL setup that is reachable through `DB_HOST` without relying on
-a custom port in the DSN.
+---
 
-## 3. Prepare MySQL
+## 2. Database Setup
 
-Paul uses SQLAlchemy plus Alembic migrations against a MySQL database. Before starting the bot:
+### Start MariaDB
 
-- Create or choose a database for local development.
-- Make sure the credentials in `.env` can connect to it.
-- Confirm the database is reachable from your machine before running the app.
+Paul uses MariaDB for persistence. Use Docker to start a local instance:
 
-On startup, Paul will create tables from the SQLAlchemy models and then run migrations, so the database should be
-available before you start the process.
+```bash
+docker compose up -d
+```
 
-## 4. Start the Bot
+This starts a MariaDB 10.11 container named `paul-db-dev` listening on port **3307**.
+
+### Initialize the Schema
+
+Paul's startup flow automatically creates missing tables via SQLAlchemy models. However, you must tell Alembic (the
+migration tool) that the database is current:
+
+```bash
+# Set the current DB state to the latest revision
+alembic stamp head
+```
+
+*Note: Use `alembic upgrade head` for future updates when new migration scripts are added to the repository.*
+
+---
+
+## 3. Running the Bot
 
 Run the application from the repository root:
 
@@ -65,47 +77,29 @@ Run the application from the repository root:
 uv run src/main.py
 ```
 
-The startup sequence in [`src/main.py`](src/main.py) is:
+### Startup Sequence
 
-1. `initialise_logger()`
-2. `create_tables()`
-3. `run_migrations(engine_string)`
-4. `asyncio.run(main())`
-5. `Bot.setup_hook()` loads all extensions discovered from `src.cogs`
+1. **Logging**: Initializes console and file logs.
+2. **Database**: Reflects models and runs auto-migrations.
+3. **Bot**: Connects to Discord and auto-discovers cogs in `src/cogs/`.
 
-If startup succeeds, the bot will connect to Discord and send a startup summary to the configured bot log channel.
+---
 
 ## Daily Workflow
 
-Run the bot:
+| Task          | Command                                   |
+|:--------------|:------------------------------------------|
+| **Run Bot**   | `uv run src/main.py`                      |
+| **Run Tests** | `uv run pytest tests`                     |
+| **Lint**      | `uvx ruff check . --fix`                  |
+| **Format**    | `uvx ruff format .`                       |
+| **DB Health** | Use `/dbhealth` inside Discord (NSC only) |
 
+---
+
+### "Alembic revision conflict"
+
+If the bot fails to start due to migrations, you might need to manually align the version:
 ```bash
-uv run src/main.py
+alembic stamp head
 ```
-
-Run tests:
-
-```bash
-uv run pytest tests
-```
-
-Run the linter:
-
-```bash
-uvx ruff check .
-```
-
-Format code:
-
-```bash
-uvx ruff format .
-```
-
-## Troubleshooting
-
-- If the bot fails before connecting, check the database settings in `.env` first.
-- If Discord startup fails, verify `DISCORD_TOKEN` and the environment-specific bot log configuration in
-  `src/config/main_server.py`.
-- If MySQL is running on a non-default port, note that the current engine string does not yet append `DB_PORT`.
-- If a new cog is not loading, confirm it lives under `src/cogs` and is a valid Python module; extension discovery is
-  automatic.

@@ -1,36 +1,30 @@
 import logging
+from typing import Optional, List
 
-from sqlalchemy.orm import sessionmaker
-
-from src.data import Sailor, ModNotes
-from src.data.engine import engine
+from src.data import ModNotes
+from src.data.repository.common.base_repository import BaseRepository, Session
 from src.utils.time_utils import utc_time_now
 
 log = logging.getLogger(__name__)
-Session = sessionmaker(bind=engine)
-class ModNoteRepository:
-    def __init__(self):
-        self.session = Session()
 
-    def get_session(self):
-        return self.session
 
-    def close_session(self):
-        self.session.close()
+class ModNoteRepository(BaseRepository[ModNotes]):
+    def __init__(self, session: Optional[Session] = None):
+        super().__init__(ModNotes, session)
 
-    def count_modnotes(self, target_id : int, include_hidden : bool = False) -> int:
-        if include_hidden:
-            return self.session.query(ModNotes).filter(ModNotes.target_id == target_id).count()
-        else:
-            return self.session.query(ModNotes).filter(ModNotes.target_id == target_id).filter(ModNotes.hidden == False).count()
+    def count_modnotes(self, target_id: int, include_hidden: bool = False) -> int:
+        query = self.session.query(ModNotes).filter(ModNotes.target_id == target_id)
+        if not include_hidden:
+            query = query.filter(ModNotes.hidden == False)
+        return query.count()
 
-    def get_modnotes(self, target_id : int, limit : int = 10, show_hidden : bool = False) -> [ModNotes]:
-        if show_hidden:
-            return self.session.query(ModNotes).filter(ModNotes.target_id == target_id).order_by(ModNotes.note_time.desc()).limit(limit).all()
-        else:
-            return self.session.query(ModNotes).filter(ModNotes.target_id == target_id).filter(ModNotes.hidden == False).order_by(ModNotes.note_time.desc()).limit(limit).all()
+    def get_modnotes(self, target_id: int, limit: int = 10, show_hidden: bool = False) -> List[ModNotes]:
+        query = self.session.query(ModNotes).filter(ModNotes.target_id == target_id).order_by(ModNotes.note_time.desc())
+        if not show_hidden:
+            query = query.filter(ModNotes.hidden == False)
+        return query.limit(limit).all()
 
-    def create_modnote(self, target_id : int, moderator_id : int, note : str) -> ModNotes | None:
+    def create_modnote(self, target_id: int, moderator_id: int, note: str) -> Optional[ModNotes]:
         try:
             modnote = ModNotes(target_id=target_id,
                                moderator_id=moderator_id,
@@ -44,18 +38,15 @@ class ModNoteRepository:
             log.error(f"Error saving mod note: {e}")
             self.session.rollback()
             raise e
-        
-    def _toggle_modnote(self, id : int, target_id : int, who_hid_id : int, hidden : bool) -> ModNotes | None:
-        # Get sailor and modnote
-        sailor = self.session.query(Sailor).filter(Sailor.discord_id == target_id).first()
-        modnote = self.session.query(ModNotes).filter(ModNotes.id == id).first()
 
-        if sailor is None:
-            raise ValueError(f"Could not find sailor with target ID {target_id}")
+    def _toggle_modnote(self, note_id: int, target_id: int, who_hid_id: int, hidden: bool) -> ModNotes:
+        # Get modnote
+        modnote = self.session.query(ModNotes).filter(ModNotes.id == note_id).first()
+
         if modnote is None:
-            raise ValueError(f"Could not find note with ID {id}")
-        if modnote.target_id != sailor.discord_id:
-            raise ValueError(f"Note {id} is not linked to target {target_id}")
+            raise ValueError(f"Could not find note with ID {note_id}")
+        if modnote.target_id != target_id:
+            raise ValueError(f"Note {note_id} is not linked to target {target_id}")
 
         # Toggle hide status
         modnote.hidden = hidden
@@ -63,24 +54,22 @@ class ModNoteRepository:
         if hidden:
             modnote.who_hid = who_hid_id
             modnote.hide_time = utc_time_now()
-        else:
-            pass #TODO: Consider wiping who_hid and hide_time if the note is un-hidden
+
         self.session.commit()
         return modnote
-        
-    def hide_modnote(self, id : int, target_id : int, who_hid_id : int) -> ModNotes | None:
+
+    def hide_modnote(self, note_id: int, target_id: int, who_hid_id: int) -> ModNotes:
         try:
-            return self._toggle_modnote(id=id, target_id=target_id, who_hid_id=who_hid_id, hidden=True)
+            return self._toggle_modnote(note_id=note_id, target_id=target_id, who_hid_id=who_hid_id, hidden=True)
         except Exception as e:
             log.error(f"Error hiding note: {e}")
             self.session.rollback()
             raise e
-        
-    def unhide_modnote(self, id : int, target_id : int, who_hid_id : int) -> ModNotes | None:
+
+    def unhide_modnote(self, note_id: int, target_id: int, who_hid_id: int) -> ModNotes:
         try:
-            return self._toggle_modnote(id=id, target_id=target_id, who_hid_id=who_hid_id, hidden=False)
+            return self._toggle_modnote(note_id=note_id, target_id=target_id, who_hid_id=who_hid_id, hidden=False)
         except Exception as e:
             log.error(f"Error unhiding note: {e}")
             self.session.rollback()
             raise e
-            

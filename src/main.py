@@ -11,7 +11,7 @@ from src.core import Bot
 from src.data import create_tables
 from src.data.engine import engine_string
 from src.data.migrations.migrate import run_migrations
-from src.utils.logger import initialise_logger
+from src.utils.logger import initialise_logger, register_bot
 
 log = getLogger(__name__)
 
@@ -23,6 +23,7 @@ async def main():
     asyncio.create_task(start_health_server())
 
     async with Bot() as bot:
+        register_bot(bot)
         log.info("Attempting to start up bot")
         await bot.start(TOKEN, reconnect=True)
 
