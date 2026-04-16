@@ -24,6 +24,10 @@ class BaseRepository(Generic[T]):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.teardown()
 
+    def __del__(self):
+        if self.session:
+            self.close_session()
+
     def setup(self) -> None:
         logger.debug("Setting up the repository for %s", self.entity_type.__name__)
         self.session = Session()
@@ -46,6 +50,7 @@ class BaseRepository(Generic[T]):
 
     def close_session(self):
         self.session.close()
+        self.session = None
 
     def find(
         self,
