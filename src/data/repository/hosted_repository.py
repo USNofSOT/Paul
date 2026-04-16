@@ -19,6 +19,12 @@ class HostedRepository:
     def __init__(self):
         self.session = Session()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close_session()
+
     def get_session(self):
         return self.session
 
