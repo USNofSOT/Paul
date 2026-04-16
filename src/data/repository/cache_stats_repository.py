@@ -1,16 +1,15 @@
 import logging
-from typing import Optional
 
 from src.data import CacheStat
-from src.data.repository.common.base_repository import BaseRepository, Session
+from src.data.repository.common.base_repository import BaseRepository
 from src.utils.time_utils import utc_time_now
 
 log = logging.getLogger(__name__)
 
 
-class CacheStatsRepository(BaseRepository[CacheStat]):
-    def __init__(self, session: Optional[Session] = None):
-        super().__init__(CacheStat, session)
+class CacheStatsRepository(BaseRepository):
+    def __init__(self):
+        super().__init__(CacheStat)
 
     def _get_or_create_cache_stat(self, cache_name: str) -> CacheStat:
         cache_stat = (

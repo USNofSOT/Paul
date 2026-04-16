@@ -78,6 +78,8 @@ flowchart LR
     I --> H
 ```
 
-### Documentation
+## Notes
 
-Full setup details and troubleshooting can be found in [Getting Started](docs/getting_started.md).
+- The docs in this repository are developer-focused rather than an end-user command manual.
+- Cogs are auto-discovered from `src.cogs`, so the runtime surface grows with the codebase instead of a hand-maintained
+  extension list.
