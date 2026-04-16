@@ -1,16 +1,17 @@
 import logging
+from typing import Optional
 
 from src.data import CommandCooldownStat
-from src.data.repository.common.base_repository import BaseRepository
+from src.data.repository.common.base_repository import BaseRepository, Session
 from src.utils.time_utils import utc_time_now
 
 log = logging.getLogger(__name__)
 COMMAND_NAME_MAX_LENGTH = 64
 
 
-class CommandCooldownStatsRepository(BaseRepository):
-    def __init__(self):
-        super().__init__(CommandCooldownStat)
+class CommandCooldownStatsRepository(BaseRepository[CommandCooldownStat]):
+    def __init__(self, session: Optional[Session] = None):
+        super().__init__(CommandCooldownStat, session)
 
     def _get_or_create_command_cooldown_stat(
             self,
