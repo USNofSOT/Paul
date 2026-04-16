@@ -1,8 +1,10 @@
 import logging
+import time
 from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import desc, func, update
+from sqlalchemy.exc import IntegrityError, InternalError, OperationalError
 from sqlalchemy.sql.functions import coalesce
 
 from src.data import SubclassType
@@ -286,15 +288,43 @@ class SailorRepository(BaseRepository[Sailor]):
 
 
 def ensure_sailor_exists(target_id: int) -> Sailor | None:
-    with SailorRepository() as repo:
-        try:
-            sailor = Sailor(discord_id=target_id)
-            repo.session.merge(sailor)
-            repo.session.commit()
+    # Use a loop to be more resilient to concurrent operations
+    for attempt in range(3):
+        with SailorRepository() as repo:
+            try:
+                # First check if exists to avoid unnecessary merge/commit
+                sailor = repo.get(target_id)
+                if sailor:
+                    return sailor
+
+                # If not, try to merge it
+                sailor = Sailor(discord_id=target_id)
+                repo.session.merge(sailor)
+                repo.session.commit()
+                return repo.get(target_id)
+            except (IntegrityError, OperationalError, InternalError):
+                # If it failed (likely due to concurrent insert or deadlock), try to get it again in this session
+                repo.session.rollback()
+                try:
+                    sailor = repo.get(target_id)
+                    if sailor:
+                        return sailor
+                except Exception:
+                    pass
+
+                # Small wait before retrying the whole loop
+                time.sleep(0.05 * (attempt + 1))
+            except Exception as e:
+                repo.session.rollback()
+                log.error(f"Unexpected error ensuring sailor exists: {e}", notify_engineer=True)
+                time.sleep(0.05)
+
+    # Final attempt with a fresh session if the loop didn't return
+    try:
+        with SailorRepository() as repo:
             return repo.get(target_id)
-        except Exception as e:
-            log.error(f"Error ensuring sailor exists: {e}")
-            return None
+    except Exception:
+        return None
 
 
 def save_sailor(target_id: int) -> bool:

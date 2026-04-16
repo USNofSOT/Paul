@@ -3,6 +3,7 @@ import time
 from functools import wraps
 from typing import Any, Dict, Generic, List, Optional, Type, TypeVar, Union
 
+# Import PaulLogger to ensure the monkeypatch for notify_engineer is active
 from sqlalchemy.exc import OperationalError, InternalError
 from sqlalchemy.orm import Session, sessionmaker
 
