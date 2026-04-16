@@ -4,32 +4,18 @@ from typing import Any
 
 from data import VoyageType
 from sqlalchemy import Row, delete, update
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql.functions import coalesce, count
 
 from src.data import Sailor
-from src.data.engine import engine
 from src.data.models import Hosted
+from src.data.repository.common.base_repository import BaseRepository
 
 log = logging.getLogger(__name__)
-Session = sessionmaker(bind=engine)
 
 
-class HostedRepository:
+class HostedRepository(BaseRepository[Hosted]):
     def __init__(self):
-        self.session = Session()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close_session()
-
-    def get_session(self):
-        return self.session
-
-    def close_session(self):
-        self.session.close()
+        super().__init__(Hosted)
 
     def get_previous_ship_voyage_count(self, log_id: int) -> int:
         hosted = self.get_host_by_log_id(log_id)
@@ -73,7 +59,7 @@ class HostedRepository:
                 .all()
             )
         except Exception as e:
-            log.error()
+            log.error("Error getting hosted log entries by target IDs and between dates.")
             raise e
 
     def get_hosted_by_role_ids_and_between_dates(
@@ -122,7 +108,7 @@ class HostedRepository:
         self,
         log_id: int,
         target_id: int,
-        log_time: datetime = datetime.now(),
+            log_time: datetime = None,
         ship_role_id: int = 0,
         ship_name: str = None,
         auxiliary_ship_name: str = None,
@@ -157,6 +143,7 @@ class HostedRepository:
         Returns:
             bool: True if the operation was successful, False otherwise.
         """
+        log_time = log_time or datetime.now()
         try:
             # First, check if the log ID already exists
             if self.check_hosted_log_id_exists(log_id):
@@ -243,8 +230,6 @@ class HostedRepository:
         except Exception as e:
             log.error("Error checking if hosted log ID exists.")
             raise e
-        finally:
-            self.session.close()
 
     def get_hosted_by_target_ids_month_count(self, target_ids: list) -> dict:
         """
@@ -255,7 +240,6 @@ class HostedRepository:
         Returns:
             Hosted: Number of hosted log entries for the target IDs
         """
-        self.session = Session()
         try:
             # log_time must be within the last 30 days
             thirty_days_ago = datetime.now() - timedelta(days=30)
@@ -311,7 +295,6 @@ class HostedRepository:
         Returns:
             Voyages: The last hosted log entry for the target IDs
         """
-        self.session = Session()
         try:
             ret = (
                 self.session.query(Hosted.target_id, Hosted.log_time)
@@ -384,14 +367,12 @@ def remove_hosted_entry_by_log_id(log_id: int) -> bool:
     Returns:
         bool: True if the operation was successful, False otherwise.
     """
-    session = Session()
-    try:
-        session.execute(delete(Hosted).where(Hosted.log_id == log_id))
-        session.commit()
-        return True
-    except Exception as e:
-        log.exception("Error removing hosted entry by log ID.")
-        session.rollback()
-        raise e
-    finally:
-        session.close()
+    with HostedRepository() as repo:
+        try:
+            repo.session.execute(delete(Hosted).where(Hosted.log_id == log_id))
+            repo.session.commit()
+            return True
+        except Exception as e:
+            log.exception("Error removing hosted entry by log ID.")
+            repo.session.rollback()
+            raise e

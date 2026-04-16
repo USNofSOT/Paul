@@ -1,33 +1,19 @@
 import logging
 from datetime import datetime
-from typing import Type
 
 from sqlalchemy import desc, func, update
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql.functions import coalesce
 
 from src.data import SubclassType
-from src.data.engine import engine
 from src.data.models import Hosted, Sailor, Voyages
+from src.data.repository.common.base_repository import BaseRepository
 
 log = logging.getLogger(__name__)
-Session = sessionmaker(bind=engine)
 
-class SailorRepository:
+
+class SailorRepository(BaseRepository[Sailor]):
     def __init__(self):
-        self.session = Session()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close_session()
-
-    def get_session(self):
-        return self.session
-
-    def close_session(self):
-        self.session.close()
+        super().__init__(Sailor)
 
     def get_sailor(self, target_id: int) -> Sailor | None:
         try:
@@ -86,12 +72,11 @@ class SailorRepository:
                 })
             )
             self.session.commit()
+            return True
         except Exception as e:
             log.error(f"Error incrementing {column}: {e}")
             self.session.rollback()
             raise e
-        finally:
-            self.session.close()
 
     def update_or_create_sailor_by_discord_id(self, target_id: int, gamertag: str | None = None,
                                               timezone: str | None = None) -> Sailor | None:
@@ -335,12 +320,9 @@ class SailorRepository:
             except Exception as e:
                 log.error(f"Error getting top members by voyage count: {e}")
                 return []  # Return an empty list in case of an error
- 
- 
- 
- ###  ignore the rest of this!!!!  New functions above this line!!!
 
-def ensure_sailor_exists(target_id: int) -> Type[Sailor] | None:
+
+def ensure_sailor_exists(target_id: int) -> Sailor | None:
     """
     Ensure that a Sailor exists in the database
 
@@ -349,16 +331,17 @@ def ensure_sailor_exists(target_id: int) -> Type[Sailor] | None:
     Returns:
         Sailor: The Sailor object that was created or retrieved.
     """
-    session = Session()
-    try:
-        sailor = Sailor(discord_id=target_id)
-        session.merge(sailor) # merge will update or create the sailor object if it doesn't exist
-        session.commit()
-        return session.query(Sailor).filter(Sailor.discord_id == target_id).first() # This will return the updated Sailor object
-    except Exception as e:
-        log.error(f"Error checking if Sailor exists: {e}")
-    finally:
-        session.close()
+    with SailorRepository() as repo:
+        try:
+            sailor = Sailor(discord_id=target_id)
+            repo.session.merge(sailor)  # merge will update or create the sailor object if it doesn't exist
+            repo.session.commit()
+            return repo.session.query(Sailor).filter(
+                Sailor.discord_id == target_id).first()  # This will return the updated Sailor object
+        except Exception as e:
+            log.error(f"Error checking if Sailor exists: {e}")
+            return None
+
 
 def save_sailor(target_id: int) -> bool:
     """
@@ -369,17 +352,16 @@ def save_sailor(target_id: int) -> bool:
     Returns:
         bool: True if the operation was successful, False otherwise.
     """
-    session = Session()
-    try:
-        session.add(Sailor(discord_id=target_id))
-        session.commit()
-        return True
-    except Exception as e:
-        log.error(f"Error adding discord ID: {e}")
-        session.rollback()
-        raise e
-    finally:
-        session.close()
+    with SailorRepository() as repo:
+        try:
+            repo.session.add(Sailor(discord_id=target_id))
+            repo.session.commit()
+            return True
+        except Exception as e:
+            log.error(f"Error adding discord ID: {e}")
+            repo.session.rollback()
+            raise e
+
 
 def get_gamertag_by_discord_id(target_id: int) -> str | None:
     """
@@ -390,15 +372,14 @@ def get_gamertag_by_discord_id(target_id: int) -> str | None:
     Returns:
         str | None: The gamertag of the user, or None if the user is not found or the gamertag is not set.
     """
-    session = Session()
-    try:
-        sailor = session.query(Sailor).filter(Sailor.discord_id == target_id).first()
-        return sailor.gamertag if sailor else None
-    except Exception as e:
-        log.error(f"Error retrieving gamertag: {e}")
-        return None
-    finally:
-        session.close()
+    with SailorRepository() as repo:
+        try:
+            sailor = repo.session.query(Sailor).filter(Sailor.discord_id == target_id).first()
+            return sailor.gamertag if sailor else None
+        except Exception as e:
+            log.error(f"Error retrieving gamertag: {e}")
+            return None
+
 
 def get_timezone_by_discord_id(target_id: int) -> str | None:
     """
@@ -409,15 +390,14 @@ def get_timezone_by_discord_id(target_id: int) -> str | None:
     Returns:
         str | None: The timezone of the user, or None if the user is not found or the timezone is not set.
     """
-    session = Session()
-    try:
-        sailor = session.query(Sailor).filter(Sailor.discord_id == target_id).first()
-        return sailor.timezone if sailor else None
-    except Exception as e:
-        log.error(f"Error retrieving timezone: {e}")
-        return None
-    finally:
-        session.close()
+    with SailorRepository() as repo:
+        try:
+            sailor = repo.session.query(Sailor).filter(Sailor.discord_id == target_id).first()
+            return sailor.timezone if sailor else None
+        except Exception as e:
+            log.error(f"Error retrieving timezone: {e}")
+            return None
+
 
 def decrement_hosted_count_by_discord_id(target_id: int) -> bool:
     """
@@ -430,24 +410,22 @@ def decrement_hosted_count_by_discord_id(target_id: int) -> bool:
     Returns:
         bool: True if the operation was successful, False otherwise.
     """
-    session = Session()
-    try:
-        session.execute(
-            update(Sailor)
-            .where(Sailor.discord_id == target_id)
-            .values({
-                "hosted_count": func.greatest(func.coalesce(Sailor.hosted_count, 0) - 1, 0)
-            })
-        )
-        session.commit()
-        return True
-    except Exception as e:
-        log.error(f"Error decrementing hosted count: {e}")
-        session.rollback()
-        raise e
-    finally:
-        session.close()
-        
+    with SailorRepository() as repo:
+        try:
+            repo.session.execute(
+                update(Sailor)
+                .where(Sailor.discord_id == target_id)
+                .values({
+                    "hosted_count": func.greatest(func.coalesce(Sailor.hosted_count, 0) - 1, 0)
+                })
+            )
+            repo.session.commit()
+            return True
+        except Exception as e:
+            log.error(f"Error decrementing hosted count: {e}")
+            repo.session.rollback()
+            raise e
+
 
 def decrement_voyage_count_by_discord_id(target_id: int) -> bool:
     """
@@ -460,20 +438,18 @@ def decrement_voyage_count_by_discord_id(target_id: int) -> bool:
     Returns:
         bool: True if the operation was successful, False otherwise.
     """
-    session = Session()
-    try:
-        session.execute(
-            update(Sailor)
-            .where(Sailor.discord_id == target_id)
-            .values({
-                "voyage_count": func.greatest(func.coalesce(Sailor.voyage_count, 0) - 1, 0)
-            })
-        )
-        session.commit()
-        return True
-    except Exception as e:
-        log.error(f"Error decrementing voyage count: {e}")
-        session.rollback()
-        raise e
-    finally:
-        session.close()
+    with SailorRepository() as repo:
+        try:
+            repo.session.execute(
+                update(Sailor)
+                .where(Sailor.discord_id == target_id)
+                .values({
+                    "voyage_count": func.greatest(func.coalesce(Sailor.voyage_count, 0) - 1, 0)
+                })
+            )
+            repo.session.commit()
+            return True
+        except Exception as e:
+            log.error(f"Error decrementing voyage count: {e}")
+            repo.session.rollback()
+            raise e

@@ -1,29 +1,16 @@
 import logging
 from typing import Type
 
-from sqlalchemy.orm import sessionmaker
-
-from src.data import engine, ShipSize
+from src.data import ShipSize
+from src.data.repository.common.base_repository import BaseRepository
 from src.utils.time_utils import utc_time_now
 
 log = logging.getLogger(__name__)
-Session = sessionmaker(bind=engine)
 
-class ShipRepository:
+
+class ShipRepository(BaseRepository[ShipSize]):
     def __init__(self):
-        self.session = Session()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close_session()
-
-    def get_session(self):
-        return self.session
-
-    def close_session(self):
-        self.session.close()
+        super().__init__(ShipSize)
 
     def get_ship_sizes(self, ship_role_id: int) -> list[Type[ShipSize]]:
         try:

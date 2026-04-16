@@ -2,8 +2,6 @@ import datetime
 import logging
 from typing import Type
 
-from sqlalchemy.orm import sessionmaker
-
 from src.data import (
     BanChangeLog,
     BotInteractionLog,
@@ -14,28 +12,16 @@ from src.data import (
     RoleChangeType,
     TimeoutLog,
 )
-from src.data.engine import engine
+from src.data.repository.common.base_repository import BaseRepository
 from src.data.repository.sailor_repository import ensure_sailor_exists
 from src.utils.time_utils import utc_time_now
 
 log = logging.getLogger(__name__)
-Session = sessionmaker(bind=engine)
 
-class AuditLogRepository:
+
+class AuditLogRepository(BaseRepository[BotInteractionLog]):
     def __init__(self):
-        self.session = Session()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close_session()
-
-    def get_session(self):
-        return self.session
-
-    def close_session(self):
-        self.session.close()
+        super().__init__(BotInteractionLog)
 
     def get_bans_changes_for_e2_or_above_and_between_dates(self, start_date: datetime, end_date: datetime) -> [BanChangeLog]:
         try:

@@ -1,34 +1,20 @@
 import logging
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Type
 
 from sqlalchemy import delete, update
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql.functions import count
 
 from src.data import Sailor
-from src.data.engine import engine
 from src.data.models import Voyages
+from src.data.repository.common.base_repository import BaseRepository
 
 log = logging.getLogger(__name__)
-Session = sessionmaker(bind=engine)
 
-class VoyageRepository:
+
+class VoyageRepository(BaseRepository[Voyages]):
     def __init__(self):
-        self.session = Session()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close_session()
-
-    def get_session(self):
-        return self.session
-
-    def close_session(self):
-        self.session.close()
+        super().__init__(Voyages)
 
     def get_incommon_voyages(self, target_one: int, target_two: int) -> list[Type[Voyages]]:
         try:
@@ -135,12 +121,10 @@ class VoyageRepository:
         Get count of voyage log entries for a target IDs in last 30 days
 
         Args:
-            month_offset: (int) The number of months to offset the query by (default 0)
             target_ids (list): The discord IDs of the target users
         Returns:
             Voyages: Count of all voyage log entries for the target IDs
         """
-        self.session = Session()
         try:
             # log_time must be within the last 30 days
             thirty_days_ago = datetime.now() - timedelta(days=30)
@@ -164,7 +148,6 @@ class VoyageRepository:
         Returns:
             Voyages: Count of all voyage log entries for the target IDs
         """
-        self.session = Session()
         try:
             # log_time must be within the last 30 days
             thirty_days_ago = datetime.now() - timedelta(days=30)
@@ -188,7 +171,6 @@ class VoyageRepository:
         Returns:
             Voyages: The last voyage log entry for the target IDs
         """
-        self.session = Session()
         try:
             ret = (self.session.query(Voyages.target_id, Voyages.log_time)
                     .filter(Voyages.target_id.in_(target_ids))
@@ -200,6 +182,7 @@ class VoyageRepository:
             log.error(f"Error getting hosted log entries: {e}")
             raise e
 
+
 def remove_voyage_log_entries(log_id: int) -> bool:
     """
     Remove all voyage log entries for a specific log ID
@@ -209,16 +192,14 @@ def remove_voyage_log_entries(log_id: int) -> bool:
     Returns:
         bool: True if the operation was successful, False otherwise.
     """
-    session = Session()
-    try:
-        session.execute(
-            delete(Voyages).where(Voyages.log_id == log_id)
-        )
-        session.commit()
-        return True
-    except Exception as e:
-        log.error(f"Error removing voyage log entries: {e}")
-        session.rollback()
-        raise e
-    finally:
-        session.close()
+    with VoyageRepository() as repo:
+        try:
+            repo.session.execute(
+                delete(Voyages).where(Voyages.log_id == log_id)
+            )
+            repo.session.commit()
+            return True
+        except Exception as e:
+            log.error(f"Error removing voyage log entries: {e}")
+            repo.session.rollback()
+            raise e

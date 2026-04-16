@@ -1,28 +1,15 @@
 import logging
 
-from sqlalchemy.orm import sessionmaker
-
 from src.data import Sailor, ModNotes
-from src.data.engine import engine
+from src.data.repository.common.base_repository import BaseRepository
 from src.utils.time_utils import utc_time_now
 
 log = logging.getLogger(__name__)
-Session = sessionmaker(bind=engine)
-class ModNoteRepository:
+
+
+class ModNoteRepository(BaseRepository[ModNotes]):
     def __init__(self):
-        self.session = Session()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close_session()
-
-    def get_session(self):
-        return self.session
-
-    def close_session(self):
-        self.session.close()
+        super().__init__(ModNotes)
 
     def count_modnotes(self, target_id : int, include_hidden : bool = False) -> int:
         if include_hidden:
@@ -89,4 +76,3 @@ class ModNoteRepository:
             log.error(f"Error unhiding note: {e}")
             self.session.rollback()
             raise e
-            
