@@ -231,7 +231,7 @@ class ShipSize(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     ship_role_id = Column(BIGINT, primary_key=True)
     member_count = Column(Integer, nullable=False)
-    log_time = Column(DATETIME, nullable=False)
+    log_time = Column(DATETIME, nullable=False, index=True)
 
 
 class TrainingRecord(Base):
@@ -271,7 +271,7 @@ class Training(Base):
     log_channel_id = Column(BIGINT, nullable=False)
     training_type = Column(Enum(TraingType), nullable=False)
     training_category = Column(Enum(TrainingCategory), nullable=False)
-    log_time = Column(DATETIME, nullable=False)
+    log_time = Column(DATETIME, nullable=False, index=True)
 
 
 """ AUDIT LOGS
@@ -301,7 +301,7 @@ class AuditLogBare(Base):
     )  # The person who the action was taken on
     guild_id = Column(BIGINT, nullable=False)  # The guild the action was taken in
 
-    log_time = Column(DATETIME, nullable=False)
+    log_time = Column(DATETIME, nullable=False, index=True)
 
 
 class AuditLog(AuditLogBare):
@@ -382,6 +382,8 @@ class BotInteractionLog(AuditLogBare):
     channel_id = Column(BIGINT, nullable=True)
     command_name = Column(VARCHAR(32), nullable=True)
     failed = Column(BOOLEAN, server_default="0")
+    interaction_id = Column(BIGINT, nullable=True, index=True)
+    execution_time_ms = Column(FLOAT, nullable=True)
 
     @property
     def timeout_removed(self) -> bool:
@@ -399,6 +401,20 @@ class BotInteractionLog(AuditLogBare):
         if self.timeout_removed:
             return 0
         return get_time_difference(self.timed_out_until, self.log_time)
+
+
+class HealthSnapshot(Base):
+    __tablename__ = "health_snapshot"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    timestamp = Column(DATETIME, nullable=False, index=True)
+    pool_size = Column(Integer, nullable=False)
+    checked_out = Column(Integer, nullable=False)
+    overflow = Column(Integer, nullable=False)
+    checked_in = Column(Integer, nullable=False)
+    avg_cmd_latency = Column(FLOAT, nullable=True)
+    max_cmd_latency = Column(FLOAT, nullable=True)
+    memory_usage_mb = Column(FLOAT, nullable=False)
 
 
 class SecurityEventType(enum.Enum):

@@ -8,3 +8,4 @@ __pycache__/
 **/__pycache__/
 status_message_id.json
 **/.cache/**
+.worktrees/

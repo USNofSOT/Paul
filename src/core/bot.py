@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import functools
+import time
 from logging import getLogger
 from typing import Optional
 
@@ -41,13 +42,40 @@ def create_low_priority_task(func):
 
     return lambda *args, **kwargs: asyncio.create_task(wrapper(*args, **kwargs), name=f"low_priority_task_{func.__name__}")
 
+
+_cmd_start_times: dict[int, float] = {}
+
+from datetime import datetime, UTC
+
 class Bot(discord.ext.commands.Bot):
     def __init__(self):
         super().__init__(
             command_prefix="!",
             intents=discord.Intents.all(),
         )
+        self.start_time = datetime.now(tz=UTC)
         self._startup_log_sent = False
+
+    async def on_app_command_completion(
+            self,
+            interaction: discord.Interaction,
+            command: app_commands.Command | app_commands.ContextMenu,
+    ) -> None:
+        start = _cmd_start_times.pop(interaction.id, None)
+        if start is None:
+            return
+        elapsed_ms = (time.perf_counter() - start) * 1000
+        interaction_id = interaction.id
+
+        async def _record_after_insert():
+            await asyncio.sleep(0.5)
+            repo = AuditLogRepository()
+            try:
+                repo.record_execution_time(interaction_id, elapsed_ms)
+            finally:
+                repo.close_session()
+
+        asyncio.create_task(_record_after_insert())
 
     async def dispatch_engineer_alert(self, alert: EngineerAlert):
         """Helper to dispatch engineer alerts asynchronously."""
@@ -169,6 +197,21 @@ class Bot(discord.ext.commands.Bot):
             interaction: discord.Interaction,
             error: app_commands.AppCommandError,
     ) -> None:
+        start = _cmd_start_times.pop(interaction.id, None)
+        if start is not None:
+            elapsed_ms = (time.perf_counter() - start) * 1000
+            interaction_id = interaction.id
+
+            async def _record_after_insert():
+                await asyncio.sleep(0.5)
+                repo = AuditLogRepository()
+                try:
+                    repo.record_execution_time(interaction_id, elapsed_ms)
+                finally:
+                    repo.close_session()
+
+            asyncio.create_task(_record_after_insert())
+
         if await handle_app_command_cooldown_error(interaction, error):
             return
         if await handle_app_command_security_error(interaction, error):
@@ -187,6 +230,7 @@ class Bot(discord.ext.commands.Bot):
 
     async def on_interaction(self, interaction: discord.Interaction):
         if interaction.type == discord.InteractionType.application_command:
+            _cmd_start_times[interaction.id] = time.perf_counter()
             audit_log_repository = AuditLogRepository()
             log.info(f"[INTERACTION] [{interaction.id}] Received Interaction:")
             log.info(f"[INTERACTION] [{interaction.id}] > Guild: {interaction.guild or 'None'}")
@@ -201,7 +245,8 @@ class Bot(discord.ext.commands.Bot):
                 channel_id=interaction.channel.id,
                 user_id=interaction.user.id,
                 command_name=str(interaction.data['name']) or 'None',
-                failed=interaction.command_failed
+                failed=interaction.command_failed,
+                interaction_id=interaction.id,
             )
 
 
@@ -279,6 +324,7 @@ class Bot(discord.ext.commands.Bot):
             await self.load_extension(extension)
         apply_configured_cooldowns(self)
         self.tree.on_error = self.on_app_command_error
+        self.tree.on_completion = self.on_app_command_completion
         log.info("All extentions loaded")
         # await self.tree.sync()
         log.info("Tree Synced")
