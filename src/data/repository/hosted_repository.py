@@ -6,9 +6,11 @@ from data import VoyageType
 from sqlalchemy import Row, delete, update
 from sqlalchemy.sql.functions import coalesce, count
 
+from src.config.cache import ONE_HOUR_IN_SECONDS
 from src.data import Sailor
 from src.data.models import Hosted
 from src.data.repository.common.base_repository import BaseRepository
+from src.utils.cache_utils import ttl_cache
 
 log = logging.getLogger(__name__)
 
@@ -308,6 +310,7 @@ class HostedRepository(BaseRepository[Hosted]):
             log.error("Error getting last hosted log entries.")
             raise e
 
+    @ttl_cache(seconds=ONE_HOUR_IN_SECONDS, cache_name="ship_history")
     def retrieve_ship_history(self, ship_name: str) -> list[type[Hosted]]:
         """
         Retrieves the ship history for the given ship name.
@@ -339,6 +342,7 @@ class HostedRepository(BaseRepository[Hosted]):
             log.error("Error retrieving ship history.")
             raise e
 
+    @ttl_cache(seconds=ONE_HOUR_IN_SECONDS, cache_name="ship_name_combinations")
     def retrieve_unique_ship_name_combinations(self) -> list[Row[tuple[Any, Any]]]:
         """
         Retrieves the unique ship name combinations from the Hosted table.
