@@ -1,10 +1,10 @@
 import discord
+from discord import app_commands
 from discord.ext import commands
-from discord import app_commands, Embed
 
-from src.config.ranks_roles import NRC_ROLE, SNCO_AND_UP
 from src.data import Sailor
 from src.data.repository.sailor_repository import SailorRepository
+from src.security import require_any_role, audit_interaction, Role
 from src.utils.embeds import error_embed, default_embed
 
 
@@ -15,7 +15,8 @@ class AddInfo(commands.Cog):
     @app_commands.command(name="addinfo", description="Add Gamertag or Timezone to yourself or another user")
     @app_commands.describe(target="Select the user to add information to")
     @app_commands.describe(gamertag="Enter the user's in-game username")
-    @app_commands.checks.has_any_role(*SNCO_AND_UP, NRC_ROLE)
+    @require_any_role(Role.SNCO, Role.NRC)
+    @audit_interaction
     #@app_commands.describe(timezone="Enter the user's timezone manually (e.g., UTC+2) or leave empty to calculate automatically")
     @app_commands.choices(timezone=[
                                     app_commands.Choice(name="Niue Time, Samoa Standard Time - UTC-11:00 (NUT)", value="UTC-11:00 (NUT)"),

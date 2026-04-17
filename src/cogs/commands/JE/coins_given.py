@@ -1,11 +1,12 @@
 from collections import defaultdict
 
 import discord
-from config import JE_AND_UP
 from data.repository.coin_repository import CoinRepository
 from discord import app_commands
 from discord.ext import commands
 from utils.embeds import error_embed
+
+from src.security import require_any_role, Role
 
 
 async def autocomplete(
@@ -35,9 +36,7 @@ class CoinsGiven(commands.Cog):
     )
     @app_commands.autocomplete(target=autocomplete)
     @app_commands.describe(target="Name of the user who gave out coins")
-    @app_commands.checks.has_any_role(
-        *JE_AND_UP,
-    )
+    @require_any_role(Role.JE)
     async def coins_given(self, interaction: discord.interactions, target: str):
         coin_repository = CoinRepository()
         await interaction.response.defer()

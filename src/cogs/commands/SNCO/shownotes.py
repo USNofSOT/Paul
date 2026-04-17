@@ -2,9 +2,10 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.config.ranks_roles import SNCO_AND_UP, NSC_ROLE, BOA_ROLE
+from src.config.ranks_roles import BOA_ROLE
 from src.data import ModNotes
 from src.data.repository.modnote_repository import ModNoteRepository
+from src.security import require_any_role, Role
 from src.utils.embeds import default_embed
 from src.utils.time_utils import format_time, get_time_difference_past
 
@@ -14,7 +15,7 @@ class ShowNotes(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name="shownotes", description="Show the 25 most recent notes for a user")
-    @app_commands.checks.has_any_role(*SNCO_AND_UP)
+    @require_any_role(Role.SNCO)
     async def view_moderation(self, interaction: discord.interactions, target: discord.Member = None):
         if target is None:
             target = interaction.user

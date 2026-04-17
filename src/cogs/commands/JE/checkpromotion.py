@@ -4,12 +4,13 @@ from discord.ext import commands
 
 from src.config.main_server import GUILD_ID
 from src.config.netc_server import NETC_GUILD_ID
-from src.config.ranks_roles import E2_ROLES, JE_AND_UP, MARINE_ROLE
+from src.config.ranks_roles import E2_ROLES, MARINE_ROLE
 from src.data import Sailor
 from src.data.repository.auditlog_repository import AuditLogRepository
 from src.data.repository.sailor_repository import SailorRepository, ensure_sailor_exists
 from src.data.repository.voyage_repository import VoyageRepository
 from src.data.structs import NavyRank
+from src.security import require_any_role, Role
 from src.utils.embeds import default_embed
 from src.utils.promotion import build_default_promotion_check_service
 from src.utils.promotion.models import PromotionContext
@@ -22,7 +23,7 @@ class CheckPromotion(commands.Cog):
         self.promotion_service = build_default_promotion_check_service()
 
     @app_commands.command(name="checkpromotion", description="Check promotion eligibility")
-    @app_commands.checks.has_any_role(*JE_AND_UP)
+    @require_any_role(Role.JE)
     async def view_moderation(
             self,
             interaction: discord.Interaction,

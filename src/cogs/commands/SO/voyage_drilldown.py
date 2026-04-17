@@ -6,11 +6,11 @@ from discord.ext import commands
 from sqlalchemy import text
 from sqlalchemy.orm import sessionmaker
 
-from src.config import SO_AND_UP
 from src.config.main_server import GUILD_ID
 from src.config.ranks import RANKS
 from src.config.ships import SHIPS
 from src.data import engine
+from src.security import require_any_role, Role
 from src.utils.embeds import default_embed, error_embed, member_embed
 from src.utils.rank_and_promotion_utils import get_current_rank
 from src.utils.ship_utils import get_ship_role_id_by_member
@@ -32,7 +32,7 @@ class VoyageDrilldown(commands.Cog):
         target="Select the user you want to get the voyage record for"
     )
     @app_commands.describe(days="Number of days to look back (default 30)")
-    @app_commands.checks.has_any_role(*SO_AND_UP)
+    @require_any_role(Role.SO)
     async def voyage_drilldown(
         self,
         interaction: discord.interactions,

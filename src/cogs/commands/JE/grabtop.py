@@ -1,13 +1,15 @@
 import discord
-import src.config.subclasses
-from discord.ext import commands
-from discord import app_commands
-from src.config import GUILD_ID
-from src.config.ranks_roles import JE_AND_UP
 from config.subclasses import SUBCLASS_AWARDS
-from src.data.repository.sailor_repository import SailorRepository
+from discord import app_commands
+from discord.ext import commands
+
+from src.config import GUILD_ID
 from src.data.repository.coin_repository import CoinRepository
-from src.utils.leaderboard import create_leaderboard_embed, create_master_embed, create_subclass_leaderboard_embed, create_dual_leaderboard_embed
+from src.data.repository.sailor_repository import SailorRepository
+from src.security import require_any_role, Role
+from src.utils.leaderboard import create_leaderboard_embed, create_master_embed, create_subclass_leaderboard_embed, \
+    create_dual_leaderboard_embed
+
 
 class GrabTop(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -15,7 +17,7 @@ class GrabTop(commands.Cog):
 
     @app_commands.command(name="grabtop", description="Display the top members in various categories")
     @app_commands.describe(category="Select a specific category to display, or leave blank for all")
-    @app_commands.checks.has_any_role(*JE_AND_UP)
+    @require_any_role(Role.JE)
     @app_commands.choices(category=[
     app_commands.Choice(name="Voyages and Hosting", value="voyages_hosting"),
     app_commands.Choice(name="Subclass Points", value="subclass_points"),

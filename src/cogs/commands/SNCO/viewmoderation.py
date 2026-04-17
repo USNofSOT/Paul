@@ -2,14 +2,14 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.config import NSC_ROLE, SPD_NSC_ROLE
-from src.config.main_server import GUILD_OWNER_ID, GUILD_ID
-from src.config.ranks_roles import SNCO_AND_UP, BOA_ROLE
+from src.config.main_server import GUILD_ID
+from src.config.ranks_roles import BOA_ROLE
 from src.data import Subclasses, SubclassType, RoleChangeLog, NameChangeLog, TimeoutLog, ModNotes
 from src.data.repository.auditlog_repository import AuditLogRepository
 from src.data.repository.modnote_repository import ModNoteRepository
 from src.data.repository.subclass_repository import SubclassRepository
 from src.data.structs import SailorCO
+from src.security import require_any_role, Role
 from src.utils.embeds import default_embed
 from src.utils.time_utils import format_time, get_time_difference_past
 
@@ -19,7 +19,7 @@ class ViewModeration(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name="viewmoderation", description="Moderation overview for a user")
-    @app_commands.checks.has_any_role(*SNCO_AND_UP)
+    @require_any_role(Role.SNCO)
     async def view_moderation(self, interaction: discord.interactions, target: discord.Member = None):
         await interaction.response.defer(ephemeral=True)
 

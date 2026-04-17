@@ -1,5 +1,3 @@
-import unittest
-from unittest.mock import MagicMock, patch
 import os
 # Set up project path for imports
 import sys
@@ -20,33 +18,42 @@ class TestSecurityDecorators(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         clear_role_cache()
 
-    async def test_require_any_role_pass(self):
-        # Mock interaction
+    async def test_require_any_role_wrapper_blocks_direct_call(self):
+        # Mock callback
+        async def mock_callback(interaction):
+            return "Executed"
+
+        # Decorate
+        decorated = require_any_role(Role.JE)(mock_callback)
+
         interaction = MagicMock(spec=discord.Interaction)
         interaction.user.id = 123
-        interaction.user.roles = []
+        interaction.command = None
 
-        # User has JO role in DB
-        with patch('src.security.evaluator.UserRoleRepository') as mock_repo_class:
-            mock_repo = mock_repo_class.return_value.__enter__.return_value
-            mock_repo.get_user_roles.return_value = {Role.JO}
+        # Mock resolve_effective_roles to return no roles
+        with patch('src.security.decorators.resolve_effective_roles', return_value=set()):
+            # Our decorator now handles UI interactions by calling the error handler
+            with patch('src.security.error_handler.handle_app_command_security_error',
+                       return_value=True) as mock_handler:
+                result = await decorated(interaction)
+                self.assertIsNone(result)
+                mock_handler.assert_called_once()
 
-            # Create the check
-            check_decorator = require_any_role(Role.JE)
-            # require_any_role returns a combined_check that calls app_commands.check
-            # In discord.py, app_commands.check adds the predicate to the callback's checks
+    async def test_require_any_role_wrapper_allows_authorized_call(self):
+        # Mock callback
+        async def mock_callback(interaction):
+            return "Executed"
 
-            # Since we can't easily run the actual discord.py logic here, 
-            # we'll test the predicate directly.
-            # To get the predicate, we have to look inside what require_any_role returns.
-            # But our implementation returns a function that applies the check.
+        # Decorate
+        decorated = require_any_role(Role.JE)(mock_callback)
 
-            # Let's extract the predicate from our decorators.py if possible or mock it.
-            # Actually, let's just re-implement a small test for the internal predicate logic.
-            from src.security.evaluator import resolve_effective_roles
-            user_roles = resolve_effective_roles(interaction.user)
-            self.assertIn(Role.JO, user_roles)
-            self.assertIn(Role.JE, user_roles)  # Expansion
+        interaction = MagicMock(spec=discord.Interaction)
+        interaction.user.id = 123
+
+        # Mock resolve_effective_roles to return JE
+        with patch('src.security.decorators.resolve_effective_roles', return_value={Role.JE}):
+            result = await decorated(interaction)
+            self.assertEqual(result, "Executed")
 
     async def test_audit_interaction_success(self):
         # Mock command callback

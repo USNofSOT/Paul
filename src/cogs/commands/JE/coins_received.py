@@ -1,11 +1,12 @@
 from collections import defaultdict
 
 import discord
-from config import JE_AND_UP
 from data.repository.coin_repository import CoinRepository
 from discord import app_commands
 from discord.ext import commands
 from utils.embeds import error_embed
+
+from src.security import require_any_role, Role
 
 
 class CoinsReceived(commands.Cog):
@@ -17,9 +18,7 @@ class CoinsReceived(commands.Cog):
         description="Information on coins given by a specific user",
     )
     @app_commands.describe(target="Name of the user who received the coins")
-    @app_commands.checks.has_any_role(
-        *JE_AND_UP,
-    )
+    @require_any_role(Role.JE)
     async def coins_given(
         self, interaction: discord.interactions, target: discord.Member = None
     ):

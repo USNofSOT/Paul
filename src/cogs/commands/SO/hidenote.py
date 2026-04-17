@@ -1,13 +1,13 @@
-import datetime
-import discord
-from discord.ext import commands
-from discord import app_commands
 from logging import getLogger
 
-from src.config import SO_AND_UP
-from src.data import Sailor, ModNotes
-from src.data.repository.sailor_repository import SailorRepository
+import discord
+from discord import app_commands
+from discord.ext import commands
+
+from src.data import ModNotes
 from src.data.repository.modnote_repository import ModNoteRepository
+from src.data.repository.sailor_repository import SailorRepository
+from src.security import require_any_role, audit_interaction, Role
 from src.utils.embeds import error_embed, default_embed
 
 log = getLogger(__name__)
@@ -20,7 +20,8 @@ class HideNote(commands.Cog):
     @app_commands.command(name="hidenote", description="Hide note on a Sailor Record (SO+)")
     @app_commands.describe(target="Select the user to hide the note for")
     @app_commands.describe(noteid="Enter the ID of the note to hide")
-    @app_commands.checks.has_any_role(*SO_AND_UP)
+    @require_any_role(Role.SO)
+    @audit_interaction
     async def hidenote(self, interaction: discord.interactions, target: discord.Member = None, noteid: int = None):
         modnote_repository: ModNoteRepository = ModNoteRepository()
         sailor_repository: SailorRepository = SailorRepository()

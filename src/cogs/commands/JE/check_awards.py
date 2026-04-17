@@ -2,13 +2,12 @@ from logging import getLogger
 from typing import Union
 
 import discord
-from discord.ext import commands
-from discord import app_commands
-
 from config import GUILD_ID, MEDALS_AND_RIBBONS, MAX_MESSAGE_LENGTH
 from data.repository.sailor_repository import SailorRepository
+from discord import app_commands
+from discord.ext import commands
 
-from src.config.ranks_roles import JE_AND_UP
+from src.security import require_any_role, Role
 from src.utils.check_awards import check_sailor
 
 log = getLogger(__name__)
@@ -20,7 +19,7 @@ class CheckAwards(commands.Cog):
 
     @app_commands.command(name="check_awards", description="Check awards eligibility for a target role")
     @app_commands.describe(target="Mention the role to get awards for")
-    @app_commands.checks.has_any_role(*JE_AND_UP)
+    @require_any_role(Role.JE)
     async def check_awards(self, interaction: discord.Interaction, target: Union[discord.Member, discord.Role]):
         await interaction.response.defer(ephemeral=True)
 

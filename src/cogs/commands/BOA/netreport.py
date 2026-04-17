@@ -7,10 +7,11 @@ from discord import app_commands
 from discord.ext import commands
 from matplotlib import pyplot as plt
 
-from src.config import IMAGE_CACHES, NSC_ROLES
-from src.config.ranks_roles import E2_ROLES, DH_ROLES, BOA_ROLE
+from src.config.cache import IMAGE_CACHES
+from src.config.ranks_roles import E2_ROLES, DH_ROLES
 from src.data import RoleChangeType, LeaveChangeLog
 from src.data.repository.auditlog_repository import AuditLogRepository
+from src.security import require_any_role, Role
 from src.utils.embeds import error_embed, default_embed
 from src.utils.image_cache import BinaryImageCache, render_matplotlib_plot_to_png
 
@@ -124,7 +125,7 @@ class NetReport(commands.Cog):
     @app_commands.command(name="netreport", description="Get the growth report of a sailor.")
     @app_commands.describe(year="The year you want to get the growth report for.")
     @app_commands.describe(month="The month you want to get the growth report for.")
-    @app_commands.checks.has_any_role(BOA_ROLE, *NSC_ROLES)
+    @require_any_role(Role.BOA, Role.NSC_ADMINISTRATOR)
     async def netreport(self, interaction: discord.Interaction, year: int = None, month: int = None):
         await interaction.response.defer(ephemeral=False)
 

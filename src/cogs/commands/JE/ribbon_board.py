@@ -6,7 +6,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.config import JE_AND_UP, VT_ROLES, RT_ROLES
+from src.security import require_any_role, Role
 from src.utils.embeds import error_embed
 from src.utils.member.user import get_ribbon_board_embed
 
@@ -19,7 +19,7 @@ class RibbonBoard(commands.Cog):
 
     @app_commands.command(name="ribbonboard", description="Get ribbon board for a member")
     @app_commands.describe(target="Select the user you want to get the ribbon board for")
-    @app_commands.checks.has_any_role(*JE_AND_UP, *VT_ROLES, *RT_ROLES)
+    @require_any_role(Role.JE, Role.VETERAN, Role.RETIRED)
     async def ribbon_board(self, interaction: discord.Interaction, target: Union[discord.Member, discord.Role] = None):
         await interaction.response.defer()
         # If no mention is provided, get the information of the user who used the command

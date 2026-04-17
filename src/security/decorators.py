@@ -28,7 +28,8 @@ class InsufficientLevelError(app_commands.CheckFailure, commands.CheckFailure):
 def require_any_role(*roles: str):
     """
     Decorator to require that the user invoking the command has at least one
-    of the specified roles. Works for both slash and text commands.
+    of the specified roles. Works for both slash and text commands, as well
+    as UI component interactions (buttons, selects).
     """
 
     def predicate(interaction_or_ctx: Union[discord.Interaction, commands.Context]) -> bool:
@@ -39,35 +40,44 @@ def require_any_role(*roles: str):
             return True
         raise InsufficientLevelError(list(roles), list(user_roles))
 
-    # Return a check that works for both systems
-    # For app_commands, it needs to be wrapped in app_commands.check
-    # For commands, it can be used directly with @commands.check
-
-    # We can detect how it's being used by looking at the caller? No, better just provide a single one that works for both
-    # or return an object that implements both protocols.
-
-    # Actually, discord.py handles this if we just use a function that takes either.
-    # But app_commands.check returns a specific type.
-
-    check = commands.check(predicate)
-    app_check = app_commands.check(predicate)
-
-    # Combine them? No, app_commands.check and commands.check are decorators themselves.
-    # The best way is to return the predicate if it's used directly, 
-    # but we usually use the factory.
-
-    # Standard pattern is to return a check that works for both.
     def combined_check(func):
         if isinstance(func, app_commands.Command):
-            return app_check(func)
-        # Regular command or a function that will be converted to one
-        # Apply both for safety
-        f = check(func)
-        try:
-            f = app_check(f)
-        except:
-            pass
-        return f
+            # If it's already a command object, add the check to its list
+            app_commands.check(predicate)(func)
+            return func
+
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs):
+            # Extract interaction or context from args or kwargs
+            interaction_or_ctx = None
+            for arg in args:
+                if isinstance(arg, (discord.Interaction, commands.Context)):
+                    interaction_or_ctx = arg
+                    break
+
+            if not interaction_or_ctx:
+                interaction_or_ctx = kwargs.get('interaction') or kwargs.get('ctx')
+
+            if interaction_or_ctx:
+                try:
+                    predicate(interaction_or_ctx)
+                except InsufficientLevelError as e:
+                    # For UI interactions (buttons/selects) which aren't handled by command trees,
+                    # we handle the error gracefully here.
+                    if isinstance(interaction_or_ctx, discord.Interaction) and not interaction_or_ctx.command:
+                        from .error_handler import handle_app_command_security_error
+                        if await handle_app_command_security_error(interaction_or_ctx, e):
+                            return
+                    raise
+
+            return await func(*args, **kwargs)
+
+        # Apply both command and app_command checks to the wrapper
+        # This ensures the checks are visible to the framework for /help, sync, etc.
+        commands.check(predicate)(wrapper)
+        app_commands.check(predicate)(wrapper)
+
+        return wrapper
 
     return combined_check
 

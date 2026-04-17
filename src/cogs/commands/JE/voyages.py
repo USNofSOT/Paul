@@ -6,11 +6,12 @@ from discord import app_commands
 from discord.ext import commands
 
 from src.config.main_server import GUILD_ID
-from src.config.ranks_roles import NCO_AND_UP_PURE, JE_AND_UP
+from src.config.ranks_roles import NCO_AND_UP_PURE
 from src.data import TopVoyagedTogether, top_voyaged_together, Subclasses, SubclassType, get_ranking, Rankings, Sailor
 from src.data.repository.sailor_repository import SailorRepository
 from src.data.repository.subclass_repository import SubclassRepository
 from src.data.repository.voyage_repository import VoyageRepository
+from src.security import require_any_role, Role
 from src.utils.embeds import default_embed, error_embed
 from src.utils.time_utils import format_time, get_time_difference_past
 
@@ -26,7 +27,7 @@ class Voyages(commands.Cog):
 
     @app_commands.command(name="voyages", description="Get information about the voyages you or a user has been on")
     @app_commands.describe(target="Select the user you want to get information about")
-    @app_commands.checks.has_any_role(*JE_AND_UP)
+    @require_any_role(Role.JE)
     async def voyages(self, interaction: discord.interactions, target: discord.Member = None):
         helm_emoji = "<:Wheel:1256589625993068665>"
         cannoneer_emoji = "<:Cannon:1256589581894025236>"

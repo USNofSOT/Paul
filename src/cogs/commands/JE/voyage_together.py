@@ -1,17 +1,15 @@
 from logging import getLogger
-from typing import Union
 
 import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.config import JE_AND_UP
 from src.config.main_server import GUILD_ID, VOYAGE_LOGS
-from src.config.ranks_roles import SNCO_AND_UP
 from src.data.repository.voyage_repository import VoyageRepository
+from src.security import require_any_role, Role
 from src.utils.discord_utils import get_best_display_name
 from src.utils.embeds import default_embed, error_embed
-from src.utils.time_utils import format_time, get_time_difference, get_time_difference_past
+from src.utils.time_utils import format_time, get_time_difference_past
 
 log = getLogger(__name__)
 
@@ -23,7 +21,7 @@ class VoyageTogether(commands.Cog):
     @app_commands.command(name="voyagetogether", description="Statistics on how often two users have voyaged together")
     @app_commands.describe(target_one="Select the user you want to compare against the other user")
     @app_commands.describe(target_two="Select the user you want to compare against the other user (optional)")
-    @app_commands.checks.has_any_role(*JE_AND_UP)
+    @require_any_role(Role.JE)
     async def voyage_together(self, interaction: discord.interactions, target_one: discord.Member, target_two: discord.Member = None):
         await interaction.response.defer(ephemeral=True)
 

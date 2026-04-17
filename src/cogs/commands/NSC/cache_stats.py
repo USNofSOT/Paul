@@ -7,15 +7,8 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.config import (
-    CACHE_CATEGORY_METADATA,
-    IMAGE_CACHES,
-    NSC_ROLES,
-    group_image_caches_by_category,
-)
-from src.data.repository.cache_stats_repository import CacheStatsRepository
+from src.security import require_any_role, Role, resolve_effective_roles
 from src.utils.embeds import default_embed, error_embed
-from src.utils.image_cache import clear_cached_items, get_cached_item_count
 
 log = getLogger(__name__)
 
@@ -47,7 +40,8 @@ def _empty_cache_stats() -> dict[str, int | float]:
 
 
 def is_nsc_user(member: discord.Member) -> bool:
-    return any(role.id in NSC_ROLES for role in member.roles)
+    user_roles = resolve_effective_roles(member)
+    return Role.NSC_OPERATOR in user_roles
 
 
 def category_title(category: str) -> str:
@@ -529,7 +523,7 @@ class CacheStats(commands.Cog):
         name="cachestats",
         description="View grouped cache stats, one category, or one cache.",
     )
-    @app_commands.checks.has_any_role(*NSC_ROLES)
+    @require_any_role(Role.NSC_OBSERVER)
     @app_commands.describe(
         scope="Optional cache category or specific cache name.",
         hidden="Should only you be able to see the response?",

@@ -6,14 +6,14 @@ import matplotlib.pyplot as plt
 from discord import app_commands
 from discord.ext import commands
 
-from src.config import IMAGE_CACHES, NCO_AND_UP, NCO_AND_UP_PURE, NSC_ROLES
-from src.config.ranks_roles import BOA_ROLE
+from src.config import IMAGE_CACHES
 from src.config.requirements import (
     HOSTING_REQUIREMENT_IN_DAYS,
     VOYAGING_REQUIREMENT_IN_DAYS,
 )
 from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.voyage_repository import VoyageRepository
+from src.security import require_any_role, Role, resolve_effective_roles
 from src.utils.discord_utils import get_best_display_name
 from src.utils.image_cache import BinaryImageCache, render_matplotlib_plot_to_png
 from src.utils.time_utils import get_time_difference_past
@@ -41,7 +41,7 @@ class CrewReport(commands.Cog):
 
     @app_commands.command(name="crewreport", description="Get a report of a squad or a ship from the last 30 days")
     @app_commands.describe(crew="Mention the squad or ship to get a report of")
-    @app_commands.checks.has_any_role(*NCO_AND_UP)
+    @require_any_role(Role.NCO)
     async def crewreport(self, interaction: discord.Interaction, crew:discord.Role):
         await interaction.response.defer(ephemeral=True)
         # Check if squad is present in the role
@@ -50,9 +50,9 @@ class CrewReport(commands.Cog):
             await interaction.followup.send("Please mention a squad or a ship", ephemeral=True)
             return
 
-        member_role_ids = [role.id for role in interaction.user.roles]
+        user_roles = resolve_effective_roles(interaction.user)
         if not crew.name.endswith("Squad") and not crew.name.startswith("USS"):
-            if any(role in member_role_ids for role in [BOA_ROLE, *NSC_ROLES]):
+            if Role.BOA in user_roles or Role.NSC_OBSERVER in user_roles:
                 pass
             else:
                 log.warning("Invalid squad or ship mentioned")
