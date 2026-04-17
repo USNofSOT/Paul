@@ -1,23 +1,34 @@
 import logging
+from unittest.mock import MagicMock
 
-from src.utils.logger import NotifyEngineerHandler, NOTIFICATION_QUEUE
+from src.utils.logger import NotifyEngineerHandler, set_notification_callback
 
 
-def test_notify_engineer_handler_queues_record():
-    # Clear queue
-    while not NOTIFICATION_QUEUE.empty():
-        NOTIFICATION_QUEUE.get()
+def test_notify_engineer_handler_calls_callback():
+    # Setup mock callback
+    callback = MagicMock()
+    set_notification_callback(callback)
 
     handler = NotifyEngineerHandler()
     logger = logging.getLogger("test_notify")
     logger.addHandler(handler)
+    logger.propagate = False  # Prevent logs from leaking to console during test
 
-    # Test with flag
-    logger.error("Test message", extra={"notify_engineer": True})
-    assert NOTIFICATION_QUEUE.qsize() == 1
-    record = NOTIFICATION_QUEUE.get()
-    assert record.getMessage() == "Test message"
+    try:
+        # Test with flag
+        logger.error("Test message", extra={"notify_engineer": True})
 
-    # Test without flag
-    logger.error("No notify message")
-    assert NOTIFICATION_QUEUE.empty()
+        assert callback.called
+        record = callback.call_args[0][0]
+        assert record.getMessage() == "Test message"
+
+        # Reset mock
+        callback.reset_mock()
+
+        # Test without flag
+        logger.error("No notify message")
+        assert not callback.called
+    finally:
+        # Cleanup
+        set_notification_callback(None)
+        logger.removeHandler(handler)

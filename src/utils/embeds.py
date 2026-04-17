@@ -123,7 +123,7 @@ def engineer_alert_embed(
     }
 
     embed = discord.Embed(
-        title=title,
+        title=f"[{severity}] {title}",
         description=description,
         color=color_map.get(severity, discord.Color.blue()),
     )
