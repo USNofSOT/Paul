@@ -4,9 +4,11 @@ from datetime import datetime
 from sqlalchemy import desc, func, update
 from sqlalchemy.sql.functions import coalesce
 
+from src.config.cache import ONE_HOUR_IN_SECONDS
 from src.data import SubclassType
 from src.data.models import Hosted, Sailor, Voyages
 from src.data.repository.common.base_repository import BaseRepository
+from src.utils.cache_utils import ttl_cache
 
 log = logging.getLogger(__name__)
 
@@ -15,6 +17,7 @@ class SailorRepository(BaseRepository[Sailor]):
     def __init__(self):
         super().__init__(Sailor)
 
+    @ttl_cache(seconds=ONE_HOUR_IN_SECONDS, cache_name="sailor_data")
     def get_sailor(self, target_id: int) -> Sailor | None:
         try:
             return self.session.query(Sailor).filter(Sailor.discord_id == target_id).first()
@@ -363,6 +366,7 @@ def save_sailor(target_id: int) -> bool:
             raise e
 
 
+@ttl_cache(seconds=ONE_HOUR_IN_SECONDS, cache_name="sailor_data")
 def get_gamertag_by_discord_id(target_id: int) -> str | None:
     """
     Get the gamertag of a Sailor
@@ -381,6 +385,7 @@ def get_gamertag_by_discord_id(target_id: int) -> str | None:
             return None
 
 
+@ttl_cache(seconds=ONE_HOUR_IN_SECONDS, cache_name="sailor_data")
 def get_timezone_by_discord_id(target_id: int) -> str | None:
     """
     Get the timezone of a Sailor
