@@ -6,8 +6,8 @@ from config.ships import FLEETS_OF_THE_NAVY, SHIP_MAX_SIZE, SHIPS
 from discord import app_commands
 from discord.ext import commands
 
-from src.config.ranks_roles import JO_AND_UP
 from src.data.structs import Ship
+from src.security import require_any_role, audit_interaction, Role
 
 log = getLogger(__name__)
 
@@ -29,7 +29,8 @@ class PlaceRecruit(commands.Cog):
 
     @app_commands.command(name="placerecruit", description="Determine ship placement for a recruit")
     @app_commands.describe(target="Select the user who recruited them")
-    @app_commands.checks.has_any_role(NRC_ROLE, *JO_AND_UP)
+    @require_any_role(Role.NRC, Role.JO)
+    @audit_interaction
     async def placerecruit(self, interaction: discord.Interaction, target: discord.Member | None = None):
         guild = self.bot.get_guild(GUILD_ID)
         ship_roles = {ship.role_id : guild.get_role(ship.role_id) for ship in SHIPS}

@@ -6,6 +6,8 @@ import discord
 from config import BOT_STATUS, GUILD_ID, NSC_ROLES, ENVIRONMENT
 from discord.ext import commands
 
+from src.security import require_any_role, Role
+
 log=logging.getLogger(__name__)
 
 class BotStatus(commands.Cog):
@@ -37,7 +39,7 @@ class BotStatus(commands.Cog):
             json.dump({"message_id": self.status_message_id}, f)
 
     @commands.command(name="botstatus")
-    @commands.has_any_role(*NSC_ROLES)
+    @require_any_role(Role.NSC_ADMINISTRATOR)
     async def set_status(self, ctx, status: int):
         """
         Sets the bot's LOA status and updates the status embed.

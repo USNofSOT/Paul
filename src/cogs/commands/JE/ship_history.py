@@ -1,15 +1,15 @@
 import logging
 
 import discord
-from discord import app_commands
-from discord.ext import commands
-
 from config import GUILD_ID, VOYAGE_LOGS
 from config.emojis import ANCIENT_COINS_EMOJI, DOUBLOONS_EMOJI, GOLD_EMOJI
-from src.config.ranks_roles import JE_AND_UP
+from discord import app_commands
+from discord.ext import commands
 from utils.embeds import error_embed
 from utils.hosted_utils import ShipHistory, get_ship_names
 from utils.ship_utils import convert_to_ordinal
+
+from src.security import require_any_role, Role
 
 log = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ class ShipHistoryCommand(commands.Cog):
     )
     @app_commands.autocomplete(ship=autocomplete_ship)
     @app_commands.describe(ship="Select the ship you want to get information about")
-    @app_commands.checks.has_any_role(*JE_AND_UP)
+    @require_any_role(Role.JE)
     async def ship_history(self, interaction: discord.interactions, ship: str):
         await interaction.response.defer(ephemeral=False)
         if ship is None:

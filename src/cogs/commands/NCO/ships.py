@@ -8,13 +8,13 @@ from discord.app_commands import Choice
 from discord.ext import commands
 from matplotlib import pyplot as plt
 
-from src.config import IMAGE_CACHES, NSC_ROLES
+from src.config import IMAGE_CACHES
 from src.config.main_server import GUILD_ID
-from src.config.ranks_roles import NCO_AND_UP
 from src.config.ships import SHIPS
 from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.ship_repository import ShipRepository
 from src.data.repository.voyage_repository import VoyageRepository
+from src.security import require_any_role, Role
 from src.utils.embeds import error_embed
 from src.utils.image_cache import BinaryImageCache, render_matplotlib_plot_to_png
 
@@ -59,7 +59,7 @@ class Ships(commands.Cog):
         ]
     )
     @app_commands.describe(specific="Optionally provide a specific report to get")
-    @app_commands.checks.has_any_role(*NCO_AND_UP, *NSC_ROLES)
+    @require_any_role(Role.NCO)
     async def ships(self, interaction: discord.Interaction, ship: discord.Role = None, hidden: bool = True, specific: str = None):
         self.top_voyagers = {}
         self.top_hosts = {}

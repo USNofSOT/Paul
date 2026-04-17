@@ -1,12 +1,12 @@
-import discord
-from attr.validators import optional
-from discord.ext import commands
-from discord import app_commands
+from logging import getLogger
 
-from src.config import JO_AND_UP, BOA_ROLE, NCO_AND_UP, BOA_NSC
+import discord
+from discord import app_commands
+from discord.ext import commands
+
 from src.data.repository.coin_repository import CoinRepository
 from src.data.repository.coin_repository import Coins
-from logging import getLogger
+from src.security import require_any_role, audit_interaction, Role
 
 log = getLogger(__name__)
 
@@ -19,6 +19,7 @@ class ConfirmationViewRemCoin(discord.ui.View):
         self.found_coin = found_coin
 
     @discord.ui.button(label="Confirm", style=discord.ButtonStyle.danger)
+    @audit_interaction
     async def confirm_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         coin_repo = CoinRepository()
         try:
@@ -54,7 +55,7 @@ class RemoveCoin(commands.Cog):
         discord.app_commands.Choice(name="Regular Challenge Coin", value="Regular Challenge Coin"),
         discord.app_commands.Choice(name="Commanders Challenge Coin", value="Commanders Challenge Coin")
     ])
-    @app_commands.checks.has_any_role(*JO_AND_UP)
+    @require_any_role(Role.JO)
     async def removecoin(self, interaction: discord.Interaction, target: discord.Member = None, coin_type: str = None):
         # Set the target to the user running the command if not provided
         if target is None:
@@ -100,7 +101,7 @@ class RemoveCoin(commands.Cog):
         discord.app_commands.Choice(name="Regular Challenge Coin", value="Regular Challenge Coin"),
         discord.app_commands.Choice(name="Commanders Challenge Coin", value="Commanders Challenge Coin")
     ])
-    @app_commands.checks.has_any_role(*BOA_NSC)
+    @require_any_role(Role.BOA, Role.NSC_ADMINISTRATOR)
     async def removeanycoin(self, interaction: discord.Interaction, target: discord.Member = None, issuer: discord.Member = None, coin_type: str = None):
         if target is None:
             target = interaction.user

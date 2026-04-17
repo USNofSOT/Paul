@@ -1,12 +1,12 @@
-import datetime
-import discord
-from discord.ext import commands
-from discord import app_commands
 from logging import getLogger
 
-from src.config import SNCO_AND_UP
+import discord
+from discord import app_commands
+from discord.ext import commands
+
 from src.data import ModNotes
 from src.data.repository.modnote_repository import ModNoteRepository
+from src.security import require_any_role, audit_interaction, Role
 from src.utils.embeds import error_embed, default_embed
 
 log = getLogger(__name__)
@@ -19,7 +19,8 @@ class AddNote(commands.Cog):
     @app_commands.command(name="addnote", description="Add a note to a Sailor Record (SNCO+)")
     @app_commands.describe(target="Select the user to add the note to")
     @app_commands.describe(note="Write the note to add to the sailor")
-    @app_commands.checks.has_any_role(*SNCO_AND_UP)
+    @require_any_role(Role.SNCO)
+    @audit_interaction
     async def addnote(self, interaction: discord.interactions, target: discord.Member = None, note: str = None):
         await interaction.response.defer (ephemeral=True)
 

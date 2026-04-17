@@ -14,8 +14,7 @@ from utils.ship_utils import (
     convert_to_ordinal,
 )
 
-from src.config import JE_AND_UP
-from src.utils.embeds import default_embed, error_embed
+from src.security import require_any_role, Role
 
 log = getLogger(__name__)
 
@@ -287,7 +286,7 @@ class Logbook(commands.Cog):
             app_commands.Choice(name="Adventure", value=VoyageType.ADVENTURE.name),
         ]
     )
-    @app_commands.checks.has_any_role(*JE_AND_UP)
+    @require_any_role(Role.JE)
     async def logbook(
         self,
         interaction: discord.Interaction,

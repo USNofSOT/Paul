@@ -2,7 +2,7 @@ import re
 from logging import getLogger
 
 import discord
-from config import MINIMUM_GOLD_REQUIREMENT_FOR_PATROL, VOYAGE_PERMISSIONS
+from config import MINIMUM_GOLD_REQUIREMENT_FOR_PATROL
 from config.emojis import ANCIENT_COINS_EMOJI, DOUBLOONS_EMOJI, GOLD_EMOJI
 from data import VoyageType
 from data.repository.voyage_repository import VoyageRepository
@@ -28,6 +28,7 @@ from src.data import SubclassType
 from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.sailor_repository import ensure_sailor_exists
 from src.data.repository.subclass_repository import SubclassRepository
+from src.security import require_any_role, Role
 from src.utils.discord_utils import get_best_display_name
 from src.utils.embeds import default_embed, error_embed
 
@@ -229,7 +230,7 @@ class AddSubclass(commands.Cog):
     @app_commands.describe(
         log_id="The id of the voyage log to add subclasses from",
     )
-    @app_commands.checks.has_any_role(*NCO_AND_UP, VOYAGE_PERMISSIONS)
+    @require_any_role(Role.NCO, Role.VOYAGE_PERMISSIONS)
     async def addsubclass(self, interaction: discord.Interaction, log_id: str):
         try:
             log.info(

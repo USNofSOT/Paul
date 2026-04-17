@@ -4,8 +4,8 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.config import NSC_ROLES
 from src.data.engine import engine
+from src.security import require_any_role, Role
 from src.utils.embeds import default_embed
 
 
@@ -17,7 +17,7 @@ class DbHealth(commands.Cog):
         name="dbhealth",
         description="View the current health and connection pool status of the database.",
     )
-    @app_commands.checks.has_any_role(*NSC_ROLES)
+    @require_any_role(Role.NSC_ADMINISTRATOR)
     async def dbhealth(self, interaction: discord.Interaction):
         """Displays database connection pool statistics."""
         pool = engine.pool

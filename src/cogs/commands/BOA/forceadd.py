@@ -4,10 +4,10 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.config import BOA_NSC
 from src.data import SubclassType, Sailor
 from src.data.repository.forceadd_repository import save_forceadd
 from src.data.repository.sailor_repository import SailorRepository
+from src.security import require_any_role, Role
 from src.utils.discord_utils import get_best_display_name
 from src.utils.embeds import error_embed, default_embed
 
@@ -83,7 +83,7 @@ class ForceAdd(commands.Cog):
     @app_commands.describe(helm="Add helm subclass points.")
     @app_commands.describe(surgeon="Add surgeon subclass points.")
     @app_commands.describe(grenadier="Add grenadier subclass points.")
-    @app_commands.checks.has_any_role(*BOA_NSC)
+    @require_any_role(Role.BOA, Role.NSC_ADMINISTRATOR)
     async def forceadd(self, interaction: discord.Interaction, target: discord.Member = None, voyages: int = None,
                        hosted: int = None, carpenter: int = None, cannoneer: int = None, flex: int = None,
                        helm: int = None, surgeon: int = None, grenadier: int = None):

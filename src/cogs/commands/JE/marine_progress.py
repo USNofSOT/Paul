@@ -9,15 +9,14 @@ from discord.ext import commands
 from utils.time_utils import format_time, get_time_difference_past
 
 from src.config.awards import COMBAT_MEDALS, MERITORIOUS_COMBAT_ACTION
-from src.config.ranks_roles import JE_AND_UP
 from src.config.subclasses import (
     CANNONEER_SUBCLASSES,
     CARPENTER_SUBCLASSES,
     FLEX_SUBCLASSES,
     HELM_SUBCLASSES,
 )
+from src.security import require_any_role, Role
 from src.utils.embeds import error_embed, member_embed
-from src.utils.rank_and_promotion_utils import get_current_award, has_award_or_higher
 
 log = getLogger(__name__)
 
@@ -47,7 +46,7 @@ class MarineProgress(commands.Cog):
         "towards becoming a Marine.",
     )
     @app_commands.describe(target="Select the user you want to get information about")
-    @app_commands.checks.has_any_role(*JE_AND_UP)
+    @require_any_role(Role.JE)
     async def progress(
         self, interaction: discord.Interaction, target: discord.Member = None
     ):

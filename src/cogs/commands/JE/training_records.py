@@ -6,14 +6,14 @@ from src.cogs.commands.JE.progress import handle_award_progress
 from src.config.awards import TRAINING_MEDALS
 from src.config.main_server import GUILD_ID
 from src.config.netc_server import (
-    HIGH_COMMAND_OF_NETC_ROLES,
     NETC_ACTIVE_CURRICULUMS,
     NETC_GUILD_ID,
     NETC_LEGACY_CURRICULUMS,
 )
-from src.config.ranks_roles import JE_AND_UP, NETC_ROLE, NRC_ROLE
+from src.config.ranks_roles import NETC_ROLE, NRC_ROLE
 from src.data import TrainingRecord
 from src.data.repository.training_records_repository import TrainingRecordsRepository
+from src.security import require_any_role, Role
 from src.utils.embeds import default_embed
 from src.utils.time_utils import format_time, get_time_difference_past
 
@@ -83,7 +83,7 @@ class TrainingRecords(commands.Cog):
         description="Get information about a members training records",
     )
     @app_commands.describe(target="Select the user you want to get information about")
-    @app_commands.checks.has_any_role(*JE_AND_UP, *HIGH_COMMAND_OF_NETC_ROLES)
+    @require_any_role(Role.JE, Role.NETC_HIGH_COMMAND)
     async def training_records(
         self, interaction: discord.interactions, target: discord.Member = None
     ):

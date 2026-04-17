@@ -18,6 +18,10 @@ from src.core.command_cooldowns import (
 )
 from src.data import BotInteractionType
 from src.data.repository.auditlog_repository import AuditLogRepository
+from src.security.error_handler import (
+    handle_app_command_security_error,
+    handle_text_command_security_error,
+)
 from src.utils.discord_utils import EngineerAlertField, send_engineer_log
 from src.utils.embeds import AlertSeverity
 
@@ -145,6 +149,9 @@ class Bot(discord.ext.commands.Bot):
         if await handle_text_command_cooldown_error(context, error):
             return
 
+        if await handle_text_command_security_error(context, error):
+            return
+
         log.error(
             "Command error in %s: %s",
             context.command,
@@ -163,6 +170,8 @@ class Bot(discord.ext.commands.Bot):
             error: app_commands.AppCommandError,
     ) -> None:
         if await handle_app_command_cooldown_error(interaction, error):
+            return
+        if await handle_app_command_security_error(interaction, error):
             return
 
         log.error(

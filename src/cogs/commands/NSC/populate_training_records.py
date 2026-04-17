@@ -1,9 +1,8 @@
 from logging import getLogger
 
-import discord.ext.commands
 from discord.ext import commands
 
-from src.config import NSC_ROLES
+from src.security import require_any_role, audit_interaction, Role
 from src.utils.training_utils import populate_nrc_training_records, populate_netc_training_records, \
     populate_st_training_records
 
@@ -14,7 +13,8 @@ class PopulateTrainingRecords(commands.Cog):
         self.bot = bot
 
     @commands.command(name="populate_training_records")
-    @commands.has_any_role(*NSC_ROLES)
+    @require_any_role(Role.NSC_ADMINISTRATOR)
+    @audit_interaction
     async def populate_voyages(self, context, amount: int = 50, nrc: bool = True, netc: bool = True, st: bool = True,):
         if amount == -1:
             max_voyages = None

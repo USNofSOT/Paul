@@ -2,7 +2,8 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.config.ranks_roles import JE_AND_UP, USMC_ROLE
+from src.config.ranks_roles import USMC_ROLE
+from src.security import require_any_role, Role
 from src.utils.embeds import marine_embed
 
 MARINE_COMMANDANT_DISCORD_ID = 280045686798417921
@@ -17,7 +18,7 @@ class MarineCommittee(commands.Cog):
         name="marinecommittee",
         description="View the Marine Committee members.",
     )
-    @app_commands.checks.has_any_role(*JE_AND_UP)
+    @require_any_role(Role.JE)
     async def marineCommittee(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=False)
 

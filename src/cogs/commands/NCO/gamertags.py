@@ -5,8 +5,8 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.config.ranks_roles import BOA_ROLE, NCO_AND_UP
 from src.data.repository.sailor_repository import SailorRepository
+from src.security import require_any_role, Role
 from src.utils.embeds import error_embed, default_embed
 
 log = logging.getLogger(__name__)
@@ -17,7 +17,7 @@ class Gamertags(commands.Cog):
 
     @app_commands.command(name="gamertags", description="Get the gamertags of all users in the voice channel of the executing user")
     @app_commands.describe(target="Select a role to get the gamertags of all users in the voice channel of the executing user")
-    @app_commands.checks.has_any_role(*NCO_AND_UP)
+    @require_any_role(Role.NCO)
     async def gamertags(self, interaction: discord.Interaction, target: discord.Role = None):
         """
         Get the gamertags of all users in the voice channel of the executing user.

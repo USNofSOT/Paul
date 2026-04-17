@@ -7,14 +7,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.config import COMMAND_COOLDOWNS, NSC_ROLES, get_command_cooldown_config
-from src.core.command_cooldowns import (
-    normalize_command_name,
-    sanitize_cooldown_text,
-)
-from src.data.repository.command_cooldown_stats_repository import (
-    CommandCooldownStatsRepository,
-)
+from src.security import require_any_role, Role, resolve_effective_roles
 from src.utils.embeds import default_embed, error_embed
 
 log = getLogger(__name__)
@@ -33,7 +26,8 @@ def _empty_cooldown_stats(command_name: str) -> dict[str, Any]:
 
 
 def is_nsc_user(member: discord.Member) -> bool:
-    return any(role.id in NSC_ROLES for role in member.roles)
+    user_roles = resolve_effective_roles(member)
+    return Role.NSC_OPERATOR in user_roles
 
 
 def fetch_stored_cooldown_stats() -> dict[str, dict[str, Any]]:
@@ -374,7 +368,7 @@ class CooldownStats(commands.Cog):
         name="cooldownstats",
         description="View configured cooldowns and tracked cooldown hits.",
     )
-    @app_commands.checks.has_any_role(*NSC_ROLES)
+    @require_any_role(Role.NSC_OBSERVER)
     @app_commands.describe(
         scope="Optional command name to inspect.",
         hidden="Should only you be able to see the response?",

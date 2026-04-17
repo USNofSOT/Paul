@@ -7,22 +7,10 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.config import IMAGE_CACHES
+from src.config.cache import IMAGE_CACHES
 from src.config.pocket_watch import POCKET_WATCH_DEFAULT_DAYS
-from src.config.ranks_roles import JE_AND_UP, NCO_AND_UP
-from src.data.repository.hosted_repository import HostedRepository
-from src.data.repository.sailor_repository import SailorRepository
-from src.data.repository.voyage_repository import VoyageRepository
-from src.utils.embeds import default_embed, error_embed
+from src.security import require_any_role, Role, resolve_effective_roles
 from src.utils.image_cache import BinaryImageCache
-from src.utils.pocket_watch import (
-    DEFAULT_POCKET_WATCH_THRESHOLDS,
-    PocketWatchError,
-    PocketWatchInsufficientDataError,
-    analyze_pocket_watch_activity,
-    render_pocket_watch_chart,
-    validate_days,
-)
 
 log = logging.getLogger(__name__)
 
@@ -110,8 +98,8 @@ def _can_view_other_target(member: discord.abc.User | discord.Member) -> bool:
     if not isinstance(member, discord.Member):
         return False
 
-    member_role_ids = {role.id for role in member.roles}
-    return any(role_id in member_role_ids for role_id in NCO_AND_UP)
+    user_roles = resolve_effective_roles(member)
+    return Role.NCO in user_roles
 
 
 class PocketWatch(commands.Cog):
@@ -126,7 +114,7 @@ class PocketWatch(commands.Cog):
         target="The sailor to analyze. Defaults to yourself.",
         days=f"Time window in days. Defaults to {POCKET_WATCH_DEFAULT_DAYS}.",
     )
-    @app_commands.checks.has_any_role(*JE_AND_UP)
+    @require_any_role(Role.JE)
     async def pocket_watch(
             self,
             interaction: discord.Interaction,

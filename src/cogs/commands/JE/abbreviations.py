@@ -5,11 +5,11 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.config.abbreviations import ABBREVIATION_CATEGORIES, RANK_ABBREVIATIONS, MISC_ABBREVIATIONS, \
+from src.config.abbreviations import ABBREVIATION_CATEGORIES, MISC_ABBREVIATIONS, \
     NAVY_ENLISTED_RANKS_ABBREVIATIONS, MARINE_ENLISTED_RANKS_ABBREVIATIONS, NAVY_OFFICER_RANKS_ABBREVIATIONS, \
     MARINE_OFFICER_RANKS_ABBREVIATIONS, SPD_ABBREVIATIONS
-from src.config.ranks_roles import JE_AND_UP
 from src.data.structs import Abbreviation, RankAbbreviation
+from src.security import require_any_role, Role
 from src.utils.embeds import error_embed, default_embed
 
 log = logging.getLogger(__name__)
@@ -44,7 +44,7 @@ class Abbreviation(commands.Cog):
 
     @app_commands.command(name="abbreviations", description="Get the meaning of a abbreviation.")
     @app_commands.autocomplete(abbreviation=abbreviation_autocomplete)
-    @app_commands.checks.has_any_role(*JE_AND_UP)
+    @require_any_role(Role.JE)
     async def abbreviations(self, interaction: discord.Interaction, abbreviation: str = None):
         # If abbreviation is given, return the meaning of the abbreviation
         if abbreviation:

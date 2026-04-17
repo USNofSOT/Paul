@@ -4,9 +4,9 @@ import discord
 from discord.ext import commands
 
 from src.config.main_server import BC_BOA
-from src.config.ranks_roles import BOA_ROLE
 from src.data import ModNotes
 from src.data.repository.modnote_repository import ModNoteRepository
+from src.security import require_any_role, Role
 
 log = getLogger(__name__)
 
@@ -15,7 +15,7 @@ class DumpNotes(commands.Cog):
         self.bot = bot
 
     @commands.command(name="dumpnotes")
-    @commands.has_role(BOA_ROLE)
+    @require_any_role(Role.BOA)
     async def dump_notes(self, ctx: commands.Context):
         if ctx.channel.id != BC_BOA:
             await ctx.channel.send(

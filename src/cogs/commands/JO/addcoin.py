@@ -1,12 +1,11 @@
-from asyncio import timeout
+from logging import getLogger
 
 import discord
-from discord.ext import commands
 from discord import app_commands
+from discord.ext import commands
 
-from src.config import JO_AND_UP
 from src.data.repository.coin_repository import CoinRepository
-from logging import getLogger
+from src.security import require_any_role, audit_interaction, Role
 
 log = getLogger(__name__)
 
@@ -18,7 +17,8 @@ class AddCoin(commands.Cog):
 
     @app_commands.command(name="addcoin", description="Add coins to a user")
     @app_commands.describe(target="Select the user you want to add coins to")
-    @app_commands.checks.has_any_role(*JO_AND_UP)
+    @require_any_role(Role.JO)
+    @audit_interaction
     async def addcoin(self, interaction: discord.Interaction, target: discord.Member):
         # If target is None, set target to the author of the interaction
         if target is None:

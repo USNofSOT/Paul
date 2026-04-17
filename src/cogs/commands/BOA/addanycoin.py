@@ -1,12 +1,11 @@
-from asyncio import timeout
+from logging import getLogger
 
 import discord
-from discord.ext import commands
 from discord import app_commands
+from discord.ext import commands
 
-from src.config import BOA_NSC
 from src.data.repository.coin_repository import CoinRepository
-from logging import getLogger
+from src.security import require_any_role, Role
 
 log = getLogger(__name__)
 
@@ -22,8 +21,8 @@ class AddAnyCoin(commands.Cog):
     @app_commands.choices(coin_type=[
                                 app_commands.Choice(name="Regular Challenge Coin", value="Regular Challenge Coin"),  # Added value
                                 app_commands.Choice(name="Commanders Challenge Coin", value="Commanders Challenge Coin")  # Added value
-                            ]) 
-    @app_commands.checks.has_any_role(*BOA_NSC)
+                            ])
+    @require_any_role(Role.BOA, Role.NSC_ADMINISTRATOR)
     async def addanycoin(self, interaction: discord.Interaction, target: discord.Member, coin_name: str, coin_type: str): 
         
         # Extract display name (last word as in original logic)
