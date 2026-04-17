@@ -26,6 +26,7 @@ MINUTES_PER_HOUR = 60
 HOURS_PER_DAY = 24
 DAYS_PER_MONTH = 30
 
+THIRTY_MINUTES_IN_SECONDS = SECONDS_PER_MINUTE * 30
 ONE_HOUR_IN_SECONDS = SECONDS_PER_MINUTE * MINUTES_PER_HOUR
 TWO_HOURS_IN_SECONDS = ONE_HOUR_IN_SECONDS * 2
 THREE_HOURS_IN_SECONDS = ONE_HOUR_IN_SECONDS * 3
@@ -163,8 +164,8 @@ IMAGE_CACHES = {
         category=REPORTS_CACHE_CATEGORY,
         directory=".cache/health/latency",
         default_filename="latency_chart.png",
-        max_items=XLARGE_IMAGE_CACHE_MAX_ITEMS,
-        ttl_seconds=ONE_HOUR_IN_SECONDS,
+        max_items=LARGE_IMAGE_CACHE_MAX_ITEMS,
+        ttl_seconds=THIRTY_MINUTES_IN_SECONDS,
         version=1,
         auto_cleanup_trigger_ratio=None,
     ),
@@ -173,8 +174,8 @@ IMAGE_CACHES = {
         category=REPORTS_CACHE_CATEGORY,
         directory=".cache/health/connections",
         default_filename="connections_chart.png",
-        max_items=XLARGE_IMAGE_CACHE_MAX_ITEMS,
-        ttl_seconds=ONE_HOUR_IN_SECONDS,
+        max_items=LARGE_IMAGE_CACHE_MAX_ITEMS,
+        ttl_seconds=THIRTY_MINUTES_IN_SECONDS,
         version=1,
         auto_cleanup_trigger_ratio=None,
     ),
@@ -183,8 +184,8 @@ IMAGE_CACHES = {
         category=REPORTS_CACHE_CATEGORY,
         directory=".cache/health/pool",
         default_filename="pool_chart.png",
-        max_items=XLARGE_IMAGE_CACHE_MAX_ITEMS,
-        ttl_seconds=ONE_HOUR_IN_SECONDS,
+        max_items=LARGE_IMAGE_CACHE_MAX_ITEMS,
+        ttl_seconds=THIRTY_MINUTES_IN_SECONDS,
         version=1,
         auto_cleanup_trigger_ratio=None,
     ),
@@ -193,8 +194,8 @@ IMAGE_CACHES = {
         category=REPORTS_CACHE_CATEGORY,
         directory=".cache/health/memory",
         default_filename="memory_chart.png",
-        max_items=XLARGE_IMAGE_CACHE_MAX_ITEMS,
-        ttl_seconds=ONE_HOUR_IN_SECONDS,
+        max_items=LARGE_IMAGE_CACHE_MAX_ITEMS,
+        ttl_seconds=THIRTY_MINUTES_IN_SECONDS,
         version=1,
         auto_cleanup_trigger_ratio=None,
     ),

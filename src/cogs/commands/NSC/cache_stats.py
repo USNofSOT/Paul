@@ -7,17 +7,17 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.security import require_any_role, Role, resolve_effective_roles
 from src.config import (
     CACHE_CATEGORY_METADATA,
     IMAGE_CACHES,
     MEMORY_CACHES,
-    NSC_ROLES,
     group_image_caches_by_category,
     group_memory_caches_by_category,
 )
 from src.data.repository.cache_stats_repository import CacheStatsRepository
+from src.security import require_any_role, Role, resolve_effective_roles
 from src.utils.embeds import default_embed, error_embed
+from src.utils.image_cache import clear_cached_items, get_cached_item_count
 
 log = getLogger(__name__)
 
