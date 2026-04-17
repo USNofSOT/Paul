@@ -54,6 +54,17 @@ def _apply_chart_styling(ax, title: str, ylabel: str, snapshots: list | None = N
         ax.set_xlabel("Metrics", fontsize=11, fontweight="semibold")
 
 
+def _get_ip_counts(rows: list[dict]) -> dict[str, int]:
+    """Extract and mask IP counts from database process list rows."""
+    ip_counts: dict[str, int] = {}
+    for row in rows:
+        host_raw = row.get("Host") or ""
+        host = host_raw.rsplit(":", 1)[0] if host_raw else "unknown"
+        masked = mask_ip(host) if host else "unknown"
+        ip_counts[masked] = ip_counts.get(masked, 0) + 1
+    return ip_counts
+
+
 def _build_latency_chart(snapshots: list[HealthSnapshot]) -> bytes:
     def plotter():
         fig, ax = plt.subplots(figsize=(10, 6))
@@ -93,12 +104,7 @@ def _build_latency_chart(snapshots: list[HealthSnapshot]) -> bytes:
 
 
 def _build_connections_chart(rows: list[dict]) -> bytes:
-    ip_counts: dict[str, int] = {}
-    for row in rows:
-        host_raw = row.get("Host") or ""
-        host = host_raw.rsplit(":", 1)[0] if host_raw else "unknown"
-        masked = mask_ip(host) if host else "unknown"
-        ip_counts[masked] = ip_counts.get(masked, 0) + 1
+    ip_counts = _get_ip_counts(rows)
 
     def plotter():
         fig, ax = plt.subplots(figsize=(10, 6))
@@ -274,23 +280,12 @@ def _build_performance_embed(snapshot: HealthSnapshot | None) -> discord.Embed:
     return embed
 
 
-def _build_connections_embed() -> discord.Embed:
+def _build_connections_embed(rows: list[dict]) -> discord.Embed:
     embed = default_embed(
         title="🔌 Active Connections",
         description="Current processes from `SHOW PROCESSLIST`.",
     )
-    repo = SystemRepository()
-    try:
-        rows = repo.get_process_list()
-    finally:
-        repo.close_session()
-
-    ip_counts: dict[str, int] = {}
-    for row in rows:
-        host_raw = row.get("Host") or ""
-        host = host_raw.rsplit(":", 1)[0] if host_raw else ""
-        masked = mask_ip(host) if host else "unknown"
-        ip_counts[masked] = ip_counts.get(masked, 0) + 1
+    ip_counts = _get_ip_counts(rows)
 
     if not ip_counts:
         embed.add_field(
@@ -414,10 +409,10 @@ class _HealthView(discord.ui.View):
                 finally:
                     system_repo.close_session()
 
-                embed = await asyncio.to_thread(_build_connections_embed)
+                embed = await asyncio.to_thread(_build_connections_embed, rows)
                 chart_data = await asyncio.to_thread(
                     HEALTH_CONNECTIONS_CACHE.get_or_create_bytes,
-                    {"rows": rows},
+                    {"ip_counts": _get_ip_counts(rows)},
                     lambda: _build_connections_chart(rows),
                 )
                 file = HEALTH_CONNECTIONS_CACHE.to_discord_file(chart_data)
@@ -450,8 +445,7 @@ class _HealthView(discord.ui.View):
                     HEALTH_MEMORY_CACHE.get_or_create_bytes,
                     {
                         "history_ids": [s.id for s in history],
-                        "curr": current_memory,
-                        "uptime": uptime_str,
+                        "curr": round(current_memory, 1),
                     },
                     lambda: _build_memory_chart(history, current_memory),
                 )

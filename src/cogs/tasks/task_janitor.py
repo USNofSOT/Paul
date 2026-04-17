@@ -21,6 +21,10 @@ JANITOR_TARGETS = {
     "ship_voyages_trend": IMAGE_CACHES["ship_voyages_trend"],
     "ship_hosted_trend": IMAGE_CACHES["ship_hosted_trend"],
     "ship_size_trend": IMAGE_CACHES["ship_size_trend"],
+    "health_latency_chart": IMAGE_CACHES["health_latency_chart"],
+    "health_connections_chart": IMAGE_CACHES["health_connections_chart"],
+    "health_pool_chart": IMAGE_CACHES["health_pool_chart"],
+    "health_memory_chart": IMAGE_CACHES["health_memory_chart"],
 }
 
 
