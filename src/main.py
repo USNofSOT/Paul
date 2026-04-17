@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import asyncio
+import os
+import threading
 from logging import getLogger
 
 import discord
+import uvicorn
 
-from src.api import start_health_server
+from src.api.main import app as fastapi_app
 from src.config.main_server import TOKEN
 from src.core import Bot
 from src.data import create_tables
@@ -16,11 +19,20 @@ from src.utils.logger import initialise_logger
 log = getLogger(__name__)
 
 
+def _run_api() -> None:
+    uvicorn.run(
+        fastapi_app,
+        host="0.0.0.0",
+        port=int(os.getenv("PORT", 8080)),
+        log_level="warning",
+    )
+
+
 async def main():
     discord.utils.setup_logging()
 
     # Start the health check web server
-    asyncio.create_task(start_health_server())
+    threading.Thread(target=_run_api, daemon=True, name="fastapi").start()
 
     async with Bot() as bot:
         log.info("Attempting to start up bot")
