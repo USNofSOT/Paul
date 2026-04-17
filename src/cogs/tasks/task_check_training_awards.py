@@ -17,7 +17,6 @@ from data import TrainingRecord
 from data.repository.training_records_repository import TrainingRecordsRepository
 from discord.ext import commands, tasks
 from utils.check_awards import check_training
-from utils.discord_utils import alert_engineers
 
 from src.config.task_timing import CHECK_TRAINING_AWARDS_TASK_TIME
 
@@ -96,12 +95,7 @@ class AutoCheckAwardsTraining(commands.Cog):
                 await netc_channel.send(f"**Pending Training Awards for NETC Department (<@&{CO_OF_NETC_ROLE}>)**\n{netc_str}")
 
         except Exception as e:
-            log.error(f"Error in AutoCheckAwards: {e}", exc_info=True)
-            await alert_engineers(
-                self.bot,
-                f"Error in AutoCheckAwards: {e}",
-                exception=e
-            )
+            log.error(f"Error in AutoCheckTrainingAwards: {e}", exc_info=True, extra={"notify_engineer": True})
         finally:
             training_repository.close_session()
 

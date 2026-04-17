@@ -36,7 +36,7 @@ class AutoTrackShipSize(commands.Cog):
                 else:
                     log.info(f"Ship size for {role.name} is still {current_ship_size}")
         except Exception as e:
-            log.error(f"Error tracking ship")
+            log.error(f"Error tracking ship: {e}", extra={"notify_engineer": True})
         finally:
             ship_repository.close_session()
 

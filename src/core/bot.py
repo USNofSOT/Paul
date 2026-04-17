@@ -45,6 +45,15 @@ class Bot(discord.ext.commands.Bot):
         )
         self._startup_log_sent = False
 
+    async def dispatch_engineer_alert(self, alert: EngineerAlert):
+        """Helper to dispatch engineer alerts asynchronously."""
+        from src.utils.discord_utils import send_engineer_alert
+        try:
+            await send_engineer_alert(self, alert)
+        except Exception as e:
+            # Avoid recursion by using standard print
+            print(f"Failed to dispatch engineer alert: {e}")
+
     async def on_ready(self) -> None:
         guild = self.get_guild(GUILD_ID)
         log.info("logged in as %s", self.user)
@@ -54,6 +63,13 @@ class Bot(discord.ext.commands.Bot):
             f"{guild.name} ({guild.id})" if guild is not None else f"Unavailable ({GUILD_ID})",
             get_bot_log_channel_id(),
         )
+
+        # Process any logs that occurred before the bot was ready
+        if hasattr(self, "_early_logs") and self._early_logs:
+            for alert in self._early_logs:
+                self.loop.create_task(self.dispatch_engineer_alert(alert))
+            self._early_logs.clear()
+
         if self._startup_log_sent:
             return
 
@@ -129,6 +145,18 @@ class Bot(discord.ext.commands.Bot):
         if await handle_text_command_cooldown_error(context, error):
             return
 
+        log.error(
+            "Command error in %s: %s",
+            context.command,
+            error,
+            extra={
+                "notify_engineer": True,
+                "user_id": context.author.id,
+                "command_name": context.command.name if context.command else "Unknown",
+                "channel_id": context.channel.id if context.channel else None
+            }
+        )
+
     async def on_app_command_error(
             self,
             interaction: discord.Interaction,
@@ -136,6 +164,17 @@ class Bot(discord.ext.commands.Bot):
     ) -> None:
         if await handle_app_command_cooldown_error(interaction, error):
             return
+
+        log.error(
+            "App command error: %s",
+            error,
+            extra={
+                "notify_engineer": True,
+                "user_id": interaction.user.id,
+                "command_name": interaction.command.name if interaction.command else "Unknown",
+                "channel_id": interaction.channel.id if interaction.channel else None
+            }
+        )
 
     async def on_interaction(self, interaction: discord.Interaction):
         if interaction.type == discord.InteractionType.application_command:
@@ -158,6 +197,73 @@ class Bot(discord.ext.commands.Bot):
 
 
     async def setup_hook(self):
+        # Register the notification callback for instant engineer alerts
+        import logging
+        import traceback
+        from src.utils.logger import set_notification_callback
+        from src.utils.discord_utils import EngineerAlert, AlertSeverity
+
+        self._early_logs = []
+
+        def notification_callback(record: logging.LogRecord):
+            # Map logging levels to AlertSeverity
+            severity_map = {
+                logging.DEBUG: AlertSeverity.INFO,
+                logging.INFO: AlertSeverity.INFO,
+                logging.WARNING: AlertSeverity.WARNING,
+                logging.ERROR: AlertSeverity.ERROR,
+                logging.CRITICAL: AlertSeverity.CRITICAL,
+            }
+            severity = severity_map.get(record.levelno, AlertSeverity.ERROR)
+
+            # Extract exception and stack trace
+            exc_info = record.exc_info
+            stack_trace = None
+            exception = None
+            if exc_info:
+                exception = exc_info[1]
+                stack_trace = "".join(traceback.format_exception(*exc_info))
+
+            # Extract human context from 'extra' fields
+            fields = []
+            user_id = getattr(record, "user_id", None)
+            if user_id:
+                from src.utils.discord_utils import get_best_display_name
+                user_display = get_best_display_name(self, user_id)
+                fields.append(EngineerAlertField("User", f"{user_display} (<@{user_id}>)"))
+
+            command_name = getattr(record, "command_name", None)
+            if command_name:
+                fields.append(EngineerAlertField("Command", f"`/{command_name}`"))
+
+            channel_id = getattr(record, "channel_id", None)
+            if channel_id:
+                fields.append(EngineerAlertField("Channel", f"<#{channel_id}>"))
+
+            from datetime import datetime
+            log_time = datetime.fromtimestamp(record.created).strftime('%Y-%m-%d %H:%M:%S')
+
+            alert = EngineerAlert(
+                severity=severity,
+                title=f"Log {record.levelname}: {record.name}",
+                description=record.getMessage(),
+                logger_name=record.name,
+                exception=exception,
+                stack_trace=stack_trace,
+                fields=tuple(fields),
+                notify_engineers=True,
+                log_time=log_time,
+            )
+
+            if self.is_ready():
+                self.loop.create_task(
+                    self.dispatch_engineer_alert(alert)
+                )
+            else:
+                self._early_logs.append(alert)
+
+        set_notification_callback(notification_callback)
+
         log.info(f"Loading {len(EXTENSIONS)} extensions")
         for extension in EXTENSIONS:
             log.info(f"Loading {extension}")

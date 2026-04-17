@@ -89,7 +89,7 @@ class BaseRepository(Generic[T]):
         except Exception as e:
             self.session.rollback()
             logger.error(
-                "Error finding entities of type %s: %s", self.entity_type.__name__, e
+                "Error finding entities of type %s: %s", self.entity_type.__name__, e, extra={"notify_engineer": True}
             )
             raise e
 
@@ -117,6 +117,7 @@ class BaseRepository(Generic[T]):
                 self.entity_type.__name__,
                 entity_id,
                 e,
+                extra={"notify_engineer": True}
             )
             raise e
 
@@ -169,7 +170,7 @@ class BaseRepository(Generic[T]):
         except Exception as e:
             self.session.rollback()
             logger.error(
-                "Error removing entity of type %s: %s", self.entity_type.__name__, e
+                "Error removing entity of type %s: %s", self.entity_type.__name__, e, extra={"notify_engineer": True}
             )
             raise e
 
@@ -191,6 +192,7 @@ class BaseRepository(Generic[T]):
                 "Error creating multiple entities of type %s: %s",
                 self.entity_type.__name__,
                 e,
+                extra={"notify_engineer": True}
             )
             raise e
 
@@ -209,7 +211,7 @@ class BaseRepository(Generic[T]):
         except Exception as e:
             self.session.rollback()
             logger.error(
-                "Error creating entity of type %s: %s", self.entity_type.__name__, e
+                "Error creating entity of type %s: %s", self.entity_type.__name__, e, extra={"notify_engineer": True}
             )
             raise e
 
@@ -232,6 +234,7 @@ class BaseRepository(Generic[T]):
                 "Error updating multiple entities of type %s: %s",
                 self.entity_type.__name__,
                 e,
+                extra={"notify_engineer": True}
             )
             raise e
 
@@ -250,6 +253,6 @@ class BaseRepository(Generic[T]):
         except Exception as e:
             self.session.rollback()
             logger.error(
-                "Error updating entity of type %s: %s", self.entity_type.__name__, e
+                "Error updating entity of type %s: %s", self.entity_type.__name__, e, extra={"notify_engineer": True}
             )
             raise e

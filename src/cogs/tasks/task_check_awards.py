@@ -11,7 +11,6 @@ from src.config.ships import SHIPS
 from src.config.task_timing import CHECK_AWARDS_TASK_TIME
 from src.data.repository.sailor_repository import SailorRepository
 from src.utils.check_awards import check_sailor
-from src.utils.discord_utils import alert_engineers
 
 log = getLogger(__name__)
 
@@ -101,10 +100,7 @@ class AutoCheckAwards(commands.Cog):
                 await channel.send(msg_str)
 
         except Exception as e:
-            log.error(f"Error in AutoCheckAwards: {e}", exc_info=True)
-            await alert_engineers(
-                self.bot, f"Error in AutoCheckAwards: {e}", exception=e
-            )
+            log.error(f"Error in AutoCheckAwards: {e}", exc_info=True, extra={"notify_engineer": True})
             pass
         finally:
             sailor_repo.close_session()

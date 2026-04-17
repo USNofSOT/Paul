@@ -111,28 +111,42 @@ def engineer_alert_embed(
         exception: Exception = None,
         fields: tuple[tuple[str, str], ...] = (),
         footer: bool = True,
+        logger_name: str = None,
+        stack_trace: str = None,
+        log_time: str = None,
 ) -> discord.Embed:
     color_map = {
         AlertSeverity.INFO: discord.Color.blue(),
-        AlertSeverity.WARNING: discord.Color.orange(),
+        AlertSeverity.WARNING: discord.Color.gold(),
         AlertSeverity.ERROR: discord.Color.red(),
         AlertSeverity.CRITICAL: discord.Color.dark_red(),
     }
+
     embed = discord.Embed(
-        title=f"[{severity.value}] {title}",
+        title=f"[{severity}] {title}",
         description=description,
-        color=color_map[severity],
+        color=color_map.get(severity, discord.Color.blue()),
     )
-    embed.set_author(name="Paul Engineer Alerts")
+
+    if logger_name:
+        embed.set_author(name=f"Engineer Alert | {logger_name}")
+    else:
+        embed.set_author(name="Engineer Alert")
 
     for field_name, field_value in fields:
         embed.add_field(name=field_name, value=field_value, inline=False)
 
     if exception:
-        embed.add_field(name="Error Type", value=exception.__class__.__name__)
-        embed.add_field(name="Error Message", value=str(exception), inline=False)
+        embed.add_field(name="Exception", value=f"`{exception.__class__.__name__}`", inline=False)
+        # Only add message if it's different from the description
+        if str(exception) and str(exception) != description:
+            embed.add_field(name="Exception Detail", value=f"```\n{str(exception)}\n```", inline=False)
 
     if footer:
-        embed.set_footer(text="Engineer alert stream")
+        from src.config.main_server import ENVIRONMENT
+        footer_text = f"Env: {ENVIRONMENT}"
+        if log_time:
+            footer_text += f" | Log Time: {log_time}"
+        embed.set_footer(text=footer_text)
 
     return embed

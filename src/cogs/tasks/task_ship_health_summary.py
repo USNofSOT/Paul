@@ -13,7 +13,6 @@ from src.config.task_timing import (
 )
 from src.data.repository.ship_health_summary_repository import ShipHealthSummaryRepository
 from src.notifications.service_factory import NotificationServiceFactory
-from src.utils.discord_utils import alert_engineers
 
 log = getLogger(__name__)
 
@@ -53,12 +52,8 @@ class ShipHealthSummaryTask(commands.Cog):
                 run_summary.skipped_count,
             )
         except Exception as exc:
-            log.error("Error sending weekly ship health summaries.", exc_info=True)
-            await alert_engineers(
-                self.bot,
-                "Error sending weekly ship health summaries.",
-                exception=exc,
-            )
+            log.error("Error sending weekly ship health summaries: %s", exc, exc_info=True,
+                      extra={"notify_engineer": True})
         finally:
             repository.close_session()
 
