@@ -55,10 +55,9 @@ subclass_map = {
     **{alias: SubclassType.HELM for alias in HELM_SYNONYMS},
 }
 
-subclass_repository = SubclassRepository()
 
-
-def current_entries_embed(bot: commands.Bot, log_id: int, description: str = None) -> discord.Embed:
+def current_entries_embed(bot: commands.Bot, log_id: int, subclass_repository: SubclassRepository,
+                          description: str = None) -> discord.Embed:
     """
     Generate an embed message containing all current subclass entries for
     a specific voyage log.
@@ -109,6 +108,7 @@ class ConfirmView(discord.ui.View):
         missing_users: [int],
         author_id: int,
         log_id: str,
+            subclass_repository: SubclassRepository,
     ):
         self.interaction = interaction
         self.bot = bot
@@ -116,6 +116,7 @@ class ConfirmView(discord.ui.View):
         self.missing_users = missing_users
         self.log_id = log_id
         self.updates = updates
+        self.subclass_repository = subclass_repository
         super().__init__(timeout=None)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.gray)
@@ -145,12 +146,12 @@ class ConfirmView(discord.ui.View):
 
             for discord_id in self.missing_users:
                 ensure_sailor_exists(discord_id)
-                subclass_repository.delete_subclasses_for_target_in_log(discord_id, self.log_id)
+                self.subclass_repository.delete_subclasses_for_target_in_log(discord_id, self.log_id)
 
             for discord_id, main_subclass, is_surgeon, grenadier_points in self.updates:
                 # ensure the sailor exists in the database
                 ensure_sailor_exists(discord_id)
-                subclass_repository.delete_subclasses_for_target_in_log(discord_id, self.log_id)
+                self.subclass_repository.delete_subclasses_for_target_in_log(discord_id, self.log_id)
 
                 hosted_repository = HostedRepository()
                 host = hosted_repository.get_host_by_log_id(self.log_id)
@@ -163,14 +164,14 @@ class ConfirmView(discord.ui.View):
 
                 try:
                     log.info("[%s] [Confirm] Adding subclasses for %s", self.log_id, discord_id)
-                    subclass_repository.save_subclass(
+                    self.subclass_repository.save_subclass(
                         self.author_id, self.log_id, discord_id, main_subclass
                     )
                     if is_surgeon:
                         log.info(
                             "[%s] [Confirm] Adding Surgeon subclass for %s", self.log_id, discord_id
                         )
-                        subclass_repository.save_subclass(
+                        self.subclass_repository.save_subclass(
                             self.author_id, self.log_id, discord_id, SubclassType.SURGEON
                         )
                     if grenadier_points > 0:
@@ -180,7 +181,7 @@ class ConfirmView(discord.ui.View):
                             grenadier_points,
                             discord_id,
                         )
-                        subclass_repository.save_subclass(
+                        self.subclass_repository.save_subclass(
                             self.author_id,
                             self.log_id,
                             discord_id,
@@ -197,7 +198,7 @@ class ConfirmView(discord.ui.View):
                         ephemeral=True,
                     )
 
-            result_embed = current_entries_embed(self.bot, int(self.log_id))
+            result_embed = current_entries_embed(self.bot, int(self.log_id), self.subclass_repository)
 
             await interaction.delete_original_response()
             await self.interaction.edit_original_response(embed=result_embed, view=None)
@@ -214,7 +215,7 @@ class ConfirmView(discord.ui.View):
                 ephemeral=True,
             )
         finally:
-            subclass_repository.close_session()
+            self.subclass_repository.close_session()
 
 
 class AddSubclass(commands.Cog):
@@ -275,6 +276,8 @@ class AddSubclass(commands.Cog):
                 return await interaction.followup.send(
                     embed=error_embed(description="You can only add subclasses to your own logs")
                 )
+
+            subclass_repository = SubclassRepository()
 
             to_be_processed_lines = []
             # Go over each line in the log message
@@ -481,6 +484,7 @@ class AddSubclass(commands.Cog):
                     embed=current_entries_embed(
                         self.bot,
                         int(log_id),
+                        subclass_repository,
                         description=f"All entries ({len(duplicates)}) were duplicates. "
                         f"Displaying current entries.",
                     )
@@ -491,6 +495,7 @@ class AddSubclass(commands.Cog):
                     embed=current_entries_embed(
                         self.bot,
                         int(log_id),
+                        subclass_repository,
                         description="No updates had to be made. Displaying current entries.",
                     )
                 )
@@ -659,7 +664,7 @@ class AddSubclass(commands.Cog):
 
             await interaction.followup.send(
                 embeds=[embed_misc_voyage_info, embed],
-                view=ConfirmView(interaction, self.bot, updates, missing_users, author_id, log_id),
+                view=ConfirmView(interaction, self.bot, updates, missing_users, author_id, log_id, subclass_repository),
             )
         except Exception as e:
             log.exception("Error occurred in addsubclass command: %s", e)
