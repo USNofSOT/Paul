@@ -1,6 +1,6 @@
 from discord.ext import commands
 
-from src.config import NSC_ROLES
+from src.security import require_any_role, audit_interaction, Role
 
 
 class CommandSync(commands.Cog):
@@ -8,7 +8,8 @@ class CommandSync(commands.Cog):
         self.bot = bot
 
     @commands.command(name="commandsync")
-    @commands.has_any_role(*NSC_ROLES)
+    @require_any_role(Role.NSC_OPERATOR)
+    @audit_interaction
     async def commandsync(self, ctx):
         """Syncs the application commands."""
         await self.bot.tree.sync()

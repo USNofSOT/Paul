@@ -15,7 +15,7 @@ from sqlalchemy.dialects.mysql import TINYTEXT
 from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
 from sqlalchemy.sql.sqltypes import BOOLEAN, DATETIME, TEXT, Enum
 
-from src.utils.time_utils import get_time_difference
+from src.utils.time_utils import get_time_difference, utc_time_now
 from .engine import engine
 
 log = logging.getLogger(__name__)
@@ -399,6 +399,30 @@ class BotInteractionLog(AuditLogBare):
         if self.timeout_removed:
             return 0
         return get_time_difference(self.timed_out_until, self.log_time)
+
+
+class SecurityEventType(enum.Enum):
+    SUCCESS = "SUCCESS"
+    FAILURE = "FAILURE"
+
+
+class UserRole(Base):
+    __tablename__ = "user_roles"
+
+    discord_id = mapped_column(BIGINT, ForeignKey("sailor.discord_id"), primary_key=True)
+    role_name = Column(VARCHAR(64), primary_key=True)
+
+
+class SecurityInteractionAuditLog(Base):
+    __tablename__ = "security_interaction_audit_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    discord_id = Column(BIGINT, nullable=False)
+    command_name = Column(VARCHAR(128), nullable=False)
+    event_type = Column(Enum(SecurityEventType), nullable=False)
+    details = Column(TEXT, nullable=True)
+    args = Column(TEXT, nullable=True)
+    created_at = Column(DATETIME, nullable=False, default=utc_time_now)
 
 
 class CacheStat(Base):

@@ -7,7 +7,6 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.config import NSC_ROLES
 from src.config.notifications import NOTIFICATION_ROLLOUT
 from src.data.repository.notification_event_repository import NotificationEventRepository
 from src.data.repository.sailor_repository import SailorRepository
@@ -18,6 +17,7 @@ from src.notifications.admin.reporting import (
     build_notification_recent_events_embed,
 )
 from src.notifications.service_factory import NotificationServiceFactory
+from src.security import require_any_role, audit_interaction, Role
 from src.utils.embeds import error_embed
 
 log = getLogger(__name__)
@@ -36,7 +36,8 @@ class NotificationOps(commands.Cog):
         description="Inspect and operate command inactivity notifications.",
     )
     @app_commands.guild_only()
-    @app_commands.checks.has_any_role(*NSC_ROLES)
+    @require_any_role(Role.NSC_OBSERVER)
+    @audit_interaction
     @app_commands.checks.cooldown(1, 10.0)
     @app_commands.describe(
         action="Which notification operation to run.",

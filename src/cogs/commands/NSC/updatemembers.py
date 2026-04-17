@@ -1,9 +1,14 @@
-import discord, asyncio
-from discord.ext import commands
-from discord import app_commands
-from src.data.repository.sailor_repository import SailorRepository
 from logging import getLogger
+
+import asyncio
+import discord
 from config import BOA_ROLE, NSC_ROLE
+from discord import app_commands
+from discord.ext import commands
+
+from src.data.repository.sailor_repository import SailorRepository
+from src.security import require_any_role, audit_interaction, Role
+
 log = getLogger(__name__)
 
 
@@ -13,7 +18,8 @@ class UpdateMembers(commands.Cog):
         self.sailor_repository = SailorRepository()
 
     @app_commands.command(name="updatemembers", description="Update the Sailorinfo table with current server members")
-    @commands.has_any_role(NSC_ROLE)
+    @require_any_role(Role.NSC_OPERATOR)
+    @audit_interaction
     async def updatemembers(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)  # Defer the response for potentially long operation
 
