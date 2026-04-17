@@ -152,7 +152,8 @@ class AuditLogRepository(BaseRepository[BotInteractionLog]):
             log.error(f"Error logging name change: {e}")
             self.session.rollback()
 
-    def log_interaction(self, interaction_type: BotInteractionType, guild_id: int, channel_id: int, user_id: int, command_name: str, failed: bool = False) -> BotInteractionLog:
+    def log_interaction(self, interaction_type: BotInteractionType, guild_id: int, channel_id: int, user_id: int,
+                        command_name: str, failed: bool = False, interaction_id: int = None) -> BotInteractionLog:
         try:
             log_entry = BotInteractionLog(
                 interaction_type=interaction_type,
@@ -161,6 +162,7 @@ class AuditLogRepository(BaseRepository[BotInteractionLog]):
                 target_id=user_id,
                 command_name=command_name,
                 failed=failed,
+                interaction_id=interaction_id,
                 log_time=utc_time_now()
             )
 
@@ -170,6 +172,16 @@ class AuditLogRepository(BaseRepository[BotInteractionLog]):
             return log_entry
         except Exception as e:
             log.error(f"Error logging interaction: {e}")
+            self.session.rollback()
+
+    def record_execution_time(self, interaction_id: int, elapsed_ms: float) -> None:
+        try:
+            self.session.query(BotInteractionLog).filter(
+                BotInteractionLog.interaction_id == interaction_id
+            ).update({"execution_time_ms": elapsed_ms})
+            self.session.commit()
+        except Exception as e:
+            log.error("Error recording execution time for interaction %s: %s", interaction_id, e)
             self.session.rollback()
 
     def log_timeout(self, target_id: int, changed_by_id: int, guild_id: int, timed_out_until_before: datetime, timed_out_until: datetime):
