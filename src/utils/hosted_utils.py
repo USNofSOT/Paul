@@ -1,10 +1,12 @@
 from dataclasses import dataclass, field
-from functools import lru_cache
 from logging import getLogger
 from typing import Type
 
 from data import Hosted, VoyageType
 from data.repository.hosted_repository import HostedRepository
+
+from src.config.cache import ONE_HOUR_IN_SECONDS
+from src.utils.cache_utils import ttl_cache
 
 log = getLogger(__name__)
 
@@ -121,7 +123,7 @@ class ShipName:
     auxiliary_ship_names: list[str] = field(default_factory=list)
 
 
-@lru_cache(maxsize=32)
+@ttl_cache(seconds=ONE_HOUR_IN_SECONDS, maxsize=32, cache_name="unique_ship_names")
 def _get_unique_ship_names() -> list[ShipName]:
     result = []
     hosted_repository = HostedRepository()

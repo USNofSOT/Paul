@@ -41,6 +41,8 @@ MEDIUM_IMAGE_CACHE_MAX_ITEMS = 64
 LARGE_IMAGE_CACHE_MAX_ITEMS = 512
 XLARGE_IMAGE_CACHE_MAX_ITEMS = 2048
 
+DEFAULT_MEMORY_CACHE_MAX_ITEMS = 128
+
 
 @dataclass(frozen=True)
 class ImageCacheConfig:
@@ -53,6 +55,14 @@ class ImageCacheConfig:
     version: int = 1
     extension: str = ".png"
     auto_cleanup_trigger_ratio: float | None = 1.1
+
+
+@dataclass(frozen=True)
+class MemoryCacheConfig:
+    name: str
+    category: str
+    ttl_seconds: int
+    max_items: int = DEFAULT_MEMORY_CACHE_MAX_ITEMS
 
 
 IMAGE_CACHE_JANITOR_INTERVAL_HOURS = 6
@@ -150,10 +160,41 @@ IMAGE_CACHES = {
     ),
 }
 
+MEMORY_CACHES = {
+    "unique_ship_names": MemoryCacheConfig(
+        name="unique_ship_names",
+        category=SHIPS_CACHE_CATEGORY,
+        ttl_seconds=ONE_HOUR_IN_SECONDS,
+    ),
+    "ship_name_combinations": MemoryCacheConfig(
+        name="ship_name_combinations",
+        category=SHIPS_CACHE_CATEGORY,
+        ttl_seconds=ONE_HOUR_IN_SECONDS,
+    ),
+    "ship_history": MemoryCacheConfig(
+        name="ship_history",
+        category=SHIPS_CACHE_CATEGORY,
+        ttl_seconds=ONE_HOUR_IN_SECONDS,
+    ),
+    "sailor_data": MemoryCacheConfig(
+        name="sailor_data",
+        category=REPORTS_CACHE_CATEGORY,
+        ttl_seconds=ONE_HOUR_IN_SECONDS,
+    ),
+}
+
 
 def group_image_caches_by_category() -> dict[str, dict[str, ImageCacheConfig]]:
     grouped_caches: dict[str, dict[str, ImageCacheConfig]] = {}
     for cache_name, cache_config in IMAGE_CACHES.items():
+        grouped_caches.setdefault(cache_config.category, {})
+        grouped_caches[cache_config.category][cache_name] = cache_config
+    return grouped_caches
+
+
+def group_memory_caches_by_category() -> dict[str, dict[str, MemoryCacheConfig]]:
+    grouped_caches: dict[str, dict[str, MemoryCacheConfig]] = {}
+    for cache_name, cache_config in MEMORY_CACHES.items():
         grouped_caches.setdefault(cache_config.category, {})
         grouped_caches[cache_config.category][cache_name] = cache_config
     return grouped_caches
