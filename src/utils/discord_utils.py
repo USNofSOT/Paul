@@ -31,6 +31,9 @@ class EngineerAlert:
     notify_engineers: bool = True
     guild_id: int = GUILD_ID
     channel_id: int = field(default_factory=get_bot_log_channel_id)
+    logger_name: str | None = None
+    stack_trace: str | None = None
+    log_time: str | None = None
 
 
 class EngineerAlertDispatcher(Protocol):
@@ -45,6 +48,9 @@ class DiscordEngineerAlertDispatcher:
             description=alert.description,
             exception=alert.exception,
             fields=tuple((field.label, field.value) for field in alert.fields),
+            logger_name=alert.logger_name,
+            stack_trace=alert.stack_trace,
+            log_time=alert.log_time,
         )
         embed.timestamp = datetime.now(UTC)
 

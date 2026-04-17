@@ -4,6 +4,7 @@ import os
 import time
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
+from typing import Callable, Optional
 
 LOGS_DIR = './logs'
 
@@ -14,8 +15,30 @@ LOGS_MAX_AGE_IN_DAYS : int = int(os.getenv('LOGS_MAX_AGE_IN_DAYS', 7))
 
 log = logging.getLogger(__name__)
 
+# Callback function to handle notifications instantly
+_NOTIFICATION_CALLBACK: Optional[Callable[[logging.LogRecord], None]] = None
+
+
+def set_notification_callback(callback: Callable[[logging.LogRecord], None]):
+    """Set the callback function for engineer notifications."""
+    global _NOTIFICATION_CALLBACK
+    _NOTIFICATION_CALLBACK = callback
+
+
+class NotifyEngineerHandler(logging.Handler):
+    def emit(self, record: logging.LogRecord):
+        if getattr(record, 'notify_engineer', False) and _NOTIFICATION_CALLBACK:
+            try:
+                _NOTIFICATION_CALLBACK(record)
+            except Exception as e:
+                # Use standard print or a separate logger to avoid recursion
+                print(f"Error in NotifyEngineerHandler callback: {e}")
 
 def initialise_logger():
+    # Register the NotifyEngineerHandler first so it catches all subsequent logs
+    notify_handler = NotifyEngineerHandler()
+    logging.getLogger().addHandler(notify_handler)
+    
     log.info('Initialising logger')
     if not os.path.exists(LOGS_DIR):
         log.info(f'Logs directory not found, creating directory: {LOGS_DIR}')

@@ -8,6 +8,15 @@ from discord import app_commands
 from discord.ext import commands
 
 from src.security import require_any_role, Role, resolve_effective_roles
+from src.config import (
+    CACHE_CATEGORY_METADATA,
+    IMAGE_CACHES,
+    MEMORY_CACHES,
+    NSC_ROLES,
+    group_image_caches_by_category,
+    group_memory_caches_by_category,
+)
+from src.data.repository.cache_stats_repository import CacheStatsRepository
 from src.utils.embeds import default_embed, error_embed
 
 log = getLogger(__name__)
@@ -91,30 +100,45 @@ def build_cache_snapshot(
     return {
         "name": cache_config.name,
         "category": cache_config.category,
-        "directory": cache_config.directory,
-        "extension": cache_config.extension,
-        "version": cache_config.version,
+        "directory": getattr(cache_config, "directory", "In-Memory"),
+        "extension": getattr(cache_config, "extension", "N/A"),
+        "version": getattr(cache_config, "version", 1),
         "ttl": format_cache_ttl(cache_config.ttl_seconds),
         "max_items": cache_config.max_items,
-        "cached_items": get_cached_item_count(cache_config),
+        "cached_items": (
+            get_cached_item_count(cache_config)
+            if hasattr(cache_config, "directory")
+            else "N/A"
+        ),
         **stats,
     }
 
 
 def build_cache_snapshots() -> dict[str, dict[str, Any]]:
     stored_stats = fetch_stored_cache_stats()
+    all_configs = {**IMAGE_CACHES, **MEMORY_CACHES}
     return {
         cache_name: build_cache_snapshot(
             cache_config,
             stored_stats.get(cache_name, _empty_cache_stats()),
         )
-        for cache_name, cache_config in IMAGE_CACHES.items()
+        for cache_name, cache_config in all_configs.items()
     }
 
 
 def build_overview_embeds() -> list[discord.Embed]:
     snapshots = build_cache_snapshots()
-    grouped_caches = group_image_caches_by_category()
+    grouped_image_caches = group_image_caches_by_category()
+    grouped_memory_caches = group_memory_caches_by_category()
+
+    # Merge groupings
+    grouped_caches = {}
+    all_categories = set(grouped_image_caches.keys()) | set(grouped_memory_caches.keys())
+    for cat in all_categories:
+        grouped_caches[cat] = {
+            **grouped_image_caches.get(cat, {}),
+            **grouped_memory_caches.get(cat, {}),
+        }
 
     total_items = 0
     total_requests = 0
@@ -137,7 +161,11 @@ def build_overview_embeds() -> list[discord.Embed]:
             {"label": category.title(), "emoji": "📦"},
         )
 
-        category_items = sum(item["cached_items"] for item in category_snapshots)
+        category_items = sum(
+            item["cached_items"]
+            for item in category_snapshots
+            if isinstance(item["cached_items"], int)
+        )
         category_capacity = sum(item["max_items"] for item in category_snapshots)
         category_requests = sum(item["request_count"] for item in category_snapshots)
         category_hits = sum(item["cache_hit_count"] for item in category_snapshots)
@@ -216,19 +244,29 @@ def build_overview_embeds() -> list[discord.Embed]:
 
 
 def build_category_embeds(category: str) -> list[discord.Embed]:
-    grouped_caches = group_image_caches_by_category()
+    grouped_image_caches = group_image_caches_by_category()
+    grouped_memory_caches = group_memory_caches_by_category()
     snapshots = build_cache_snapshots()
-    category_snapshots = [snapshots[name] for name in grouped_caches[category]]
+
+    # Merge category members
+    image_members = grouped_image_caches.get(category, {})
+    memory_members = grouped_memory_caches.get(category, {})
+    all_members = list(image_members.keys()) + list(memory_members.keys())
+
+    category_snapshots = [snapshots[name] for name in all_members]
 
     summary_embed = default_embed(
         title=f"{category_title(category)} Cache Group",
         description="Grouped report for this cache category.",
     )
     for item in category_snapshots:
+        # Determine if it's in-memory or on-disk for the display
+        items_str = f"Items: **{item['cached_items']}/{item['max_items']}**\n" if item[
+                                                                                      'cached_items'] != "N/A" else f"Max Items: **{item['max_items']}**\n"
         summary_embed.add_field(
             name=item["name"],
             value=(
-                f"Items: **{item['cached_items']}/{item['max_items']}**\n"
+                f"{items_str}"
                 f"TTL: **{item['ttl']}**\n"
                 f"Requests: **{item['request_count']}**\n"
                 f"Hit rate: **{item['cached_percent']:.2f}%**"
@@ -241,17 +279,24 @@ def build_category_embeds(category: str) -> list[discord.Embed]:
         description="Cleanup activity for this category.",
     )
     for item in category_snapshots:
-        janitor_embed.add_field(
-            name=item["name"],
-            value=(
-                f"Runs: **{item['janitor_run_count']}**\n"
-                f"Removed total: **"
-                f"{item['janitor_removed_expired_count']}/"
-                f"{item['janitor_removed_overflow_count']}**\n"
-                f"Last remaining: **{item['janitor_last_remaining_items']}**"
-            ),
-            inline=True,
-        )
+        if item.get("janitor_run_count") is not None and item["janitor_run_count"] > 0:
+            janitor_embed.add_field(
+                name=item["name"],
+                value=(
+                    f"Runs: **{item['janitor_run_count']}**\n"
+                    f"Removed total: **"
+                    f"{item['janitor_removed_expired_count']}/"
+                    f"{item['janitor_removed_overflow_count']}**\n"
+                    f"Last remaining: **{item['janitor_last_remaining_items']}**"
+                ),
+                inline=True,
+            )
+        else:
+            janitor_embed.add_field(
+                name=item["name"],
+                value="*No janitor activity (In-Memory)*",
+                inline=True,
+            )
 
     return [summary_embed, janitor_embed]
 
@@ -263,6 +308,7 @@ def build_single_cache_embeds(cache_name: str) -> list[discord.Embed]:
         title=f"Cache Report: {cache_name}",
         description=(
             f"{category_title(item['category'])}\n"
+            f"Type: **{'In-Memory' if item['directory'] == 'In-Memory' else 'On-Disk'}**\n"
             f"Directory: `{item['directory']}`"
         ),
     )
@@ -276,13 +322,19 @@ def build_single_cache_embeds(cache_name: str) -> list[discord.Embed]:
         ),
         inline=True,
     )
+
+    retention_value = (
+        f"Items: **{item['cached_items']}/{item['max_items']}**\n"
+        f"TTL: **{item['ttl']}**\n"
+        f"Extension: **{item['extension']}**"
+    ) if item['cached_items'] != "N/A" else (
+        f"Max Items: **{item['max_items']}**\n"
+        f"TTL: **{item['ttl']}**"
+    )
+
     overview_embed.add_field(
         name="Retention",
-        value=(
-            f"Items: **{item['cached_items']}/{item['max_items']}**\n"
-            f"TTL: **{item['ttl']}**\n"
-            f"Extension: **{item['extension']}**"
-        ),
+        value=retention_value,
         inline=True,
     )
     overview_embed.add_field(
@@ -291,29 +343,32 @@ def build_single_cache_embeds(cache_name: str) -> list[discord.Embed]:
         inline=True,
     )
 
-    janitor_embed = default_embed(
-        title=f"Janitor Report: {cache_name}",
-        description="Cleanup history for this cache.",
-    )
-    janitor_embed.add_field(
-        name="Totals",
-        value=(
-            f"Runs: **{item['janitor_run_count']}**\n"
-            f"Expired removed: **{item['janitor_removed_expired_count']}**\n"
-            f"Overflow removed: **{item['janitor_removed_overflow_count']}**"
-        ),
-        inline=True,
-    )
-    janitor_embed.add_field(
-        name="Last Run",
-        value=(
-            f"Expired removed: **{item['janitor_last_removed_expired']}**\n"
-            f"Overflow removed: **{item['janitor_last_removed_overflow']}**\n"
-            f"Remaining items: **{item['janitor_last_remaining_items']}**"
-        ),
-        inline=True,
-    )
-    return [overview_embed, janitor_embed]
+    if item['directory'] != "In-Memory":
+        janitor_embed = default_embed(
+            title=f"Janitor Report: {cache_name}",
+            description="Cleanup history for this cache.",
+        )
+        janitor_embed.add_field(
+            name="Totals",
+            value=(
+                f"Runs: **{item['janitor_run_count']}**\n"
+                f"Expired removed: **{item['janitor_removed_expired_count']}**\n"
+                f"Overflow removed: **{item['janitor_removed_overflow_count']}**"
+            ),
+            inline=True,
+        )
+        janitor_embed.add_field(
+            name="Last Run",
+            value=(
+                f"Expired removed: **{item['janitor_last_removed_expired']}**\n"
+                f"Overflow removed: **{item['janitor_last_removed_overflow']}**\n"
+                f"Remaining items: **{item['janitor_last_remaining_items']}**"
+            ),
+            inline=True,
+        )
+        return [overview_embed, janitor_embed]
+
+    return [overview_embed]
 
 
 def build_cache_report_embeds(scope: str | None) -> list[discord.Embed]:
@@ -321,11 +376,13 @@ def build_cache_report_embeds(scope: str | None) -> list[discord.Embed]:
         return build_overview_embeds()
 
     scope_key = scope.lower()
-    if scope_key in IMAGE_CACHES:
+    all_configs = {**IMAGE_CACHES, **MEMORY_CACHES}
+    if scope_key in all_configs:
         return build_single_cache_embeds(scope_key)
 
-    grouped_caches = group_image_caches_by_category()
-    if scope_key in grouped_caches:
+    grouped_image_caches = group_image_caches_by_category()
+    grouped_memory_caches = group_memory_caches_by_category()
+    if scope_key in grouped_image_caches or scope_key in grouped_memory_caches:
         return build_category_embeds(scope_key)
 
     raise KeyError(scope)
@@ -567,9 +624,14 @@ class CacheStats(commands.Cog):
             current: str,
     ) -> list[app_commands.Choice[str]]:
         del interaction
+        grouped_image_caches = group_image_caches_by_category()
+        grouped_memory_caches = group_memory_caches_by_category()
+        all_categories = set(grouped_image_caches.keys()) | set(grouped_memory_caches.keys())
+
         options = [
-            *CACHE_CATEGORY_METADATA.keys(),
+            *all_categories,
             *IMAGE_CACHES.keys(),
+            *MEMORY_CACHES.keys(),
         ]
         current_lower = current.lower()
         matching_options = [
