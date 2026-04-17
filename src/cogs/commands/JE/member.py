@@ -6,6 +6,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from src.config.ranks_roles import JE_AND_UP
 from src.security import require_any_role, Role
 from src.utils.embeds import error_embed
 from src.utils.member.user import get_member_embed
