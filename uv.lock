@@ -598,20 +598,6 @@ wheels = [
 ]
 
 [[package]]
-name = "mysql-connector-python"
-version = "9.6.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/6f/6e/c89babc7de3df01467d159854414659c885152579903a8220c8db02a3835/mysql_connector_python-9.6.0.tar.gz", hash = "sha256:c453bb55347174d87504b534246fb10c589daf5d057515bf615627198a3c7ef1", size = 12254999 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/2f/58/9521aa678708ec6cebfd40524c14c3d151e4f29e3774e6086aa0a30d203b/mysql_connector_python-9.6.0-cp313-cp313-macosx_14_0_arm64.whl", hash = "sha256:e86e45a7b540ca09af8a18ecfa761e0cdeccfdb62818331614ec030ae44bfd26", size = 17585837 },
-    { url = "https://files.pythonhosted.org/packages/39/8d/b108f9bcce9780f6a1f91decb2af54defdaf845e237ddc42f2b4578f1cd7/mysql_connector_python-9.6.0-cp313-cp313-macosx_14_0_x86_64.whl", hash = "sha256:8d3e9252384e1b7f95b07020664f2673d9c29c5e95eeda2e048b3331e190b9d4", size = 18452844 },
-    { url = "https://files.pythonhosted.org/packages/d6/28/735cd93d16e76dc2feb4abb3f1229a1d9475af34d80c26712fec6abe1d70/mysql_connector_python-9.6.0-cp313-cp313-manylinux_2_28_aarch64.whl", hash = "sha256:0fa18ead33cb699ea92005695077cef09aa494eebf51164ee30c891c3eaea90c", size = 34169374 },
-    { url = "https://files.pythonhosted.org/packages/42/07/069983799cf4050c68f61a494f94b06f095fee6026ab0dd863a14de30867/mysql_connector_python-9.6.0-cp313-cp313-manylinux_2_28_x86_64.whl", hash = "sha256:a26490cb029bf7b18a1d2093101105b3526a1036b51ad01553d30138f5beb8d2", size = 34543019 },
-    { url = "https://files.pythonhosted.org/packages/32/00/fbeb7d666ab8153f719e620bac5abfbc74640e8ec511612493110a75fe66/mysql_connector_python-9.6.0-cp313-cp313-win_amd64.whl", hash = "sha256:3460ed976e1b88b7284335d9397a3c519dff56d71580ca1f76ff1c0c7714c813", size = 16515701 },
-    { url = "https://files.pythonhosted.org/packages/15/dd/b3250826c29cee7816de4409a2fe5e469a68b9a89f6bfaa5eed74f05532c/mysql_connector_python-9.6.0-py2.py3-none-any.whl", hash = "sha256:44b0fb57207ebc6ae05b5b21b7968a9ed33b29187fe87b38951bad2a334d75d5", size = 480527 },
-]
-
-[[package]]
 name = "nodeenv"
 version = "1.10.0"
 source = { registry = "https://pypi.org/simple" }
@@ -676,8 +662,6 @@ dependencies = [
     { name = "discord-py" },
     { name = "fastapi" },
     { name = "matplotlib" },
-    { name = "mysql-connector-python" },
-    { name = "pre-commit" },
     { name = "psutil" },
     { name = "pymysql" },
     { name = "python-dotenv" },
@@ -690,6 +674,7 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "parameterized" },
+    { name = "pre-commit" },
     { name = "pytest" },
     { name = "pytest-mock" },
 ]
@@ -701,22 +686,21 @@ lint = [
 requires-dist = [
     { name = "alembic", specifier = "==1.18.4" },
     { name = "discord-py", specifier = "==2.7.1" },
-    { name = "fastapi", specifier = ">=0.115" },
+    { name = "fastapi", specifier = "==0.136.0" },
     { name = "matplotlib", specifier = "==3.10.8" },
-    { name = "mysql-connector-python", specifier = "==9.6.0" },
-    { name = "pre-commit", specifier = "==4.5.1" },
-    { name = "psutil", specifier = ">=6.0" },
+    { name = "psutil", specifier = "==7.2.2" },
     { name = "pymysql", specifier = "==1.1.2" },
     { name = "python-dotenv", specifier = "==1.2.2" },
     { name = "requests", specifier = "==2.33.1" },
-    { name = "slowapi", specifier = ">=0.1.9" },
+    { name = "slowapi", specifier = "==0.1.9" },
     { name = "sqlalchemy", specifier = "==2.0.49" },
-    { name = "uvicorn", specifier = ">=0.32" },
+    { name = "uvicorn", specifier = "==0.44.0" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "parameterized", specifier = "==0.9.0" },
+    { name = "pre-commit", specifier = "==4.5.1" },
     { name = "pytest", specifier = "==9.0.3" },
     { name = "pytest-mock", specifier = "==3.15.1" },
 ]
