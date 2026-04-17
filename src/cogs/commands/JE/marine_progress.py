@@ -17,6 +17,7 @@ from src.config.subclasses import (
 )
 from src.security import require_any_role, Role
 from src.utils.embeds import error_embed, member_embed
+from src.utils.rank_and_promotion_utils import get_current_award, has_award_or_higher
 
 log = getLogger(__name__)
 
