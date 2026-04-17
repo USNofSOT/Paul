@@ -24,7 +24,7 @@ def _run_api() -> None:
         fastapi_app,
         host="0.0.0.0",
         port=int(os.getenv("PORT", 8080)),
-        log_level="warning",
+        log_level="error",
     )
 
 
