@@ -18,7 +18,6 @@ from src.notifications.service_factory import NotificationServiceFactory
 from src.utils.discord_utils import (
     AlertSeverity,
     EngineerAlertField,
-    alert_engineers,
     send_engineer_log,
 )
 
@@ -87,12 +86,8 @@ class ScheduleCommandNotifications(commands.Cog):
                     fields=tuple(fields),
                 )
         except Exception as exc:
-            log.error("Error scheduling command inactivity notifications.", exc_info=True)
-            await alert_engineers(
-                self.bot,
-                "Error scheduling command inactivity notifications.",
-                exception=exc,
-            )
+            log.error("Error scheduling command inactivity notifications: %s", exc, exc_info=True,
+                      extra={"notify_engineer": True})
         finally:
             event_repository.close_session()
             sailor_repository.close_session()

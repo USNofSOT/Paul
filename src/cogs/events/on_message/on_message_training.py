@@ -3,7 +3,6 @@ from logging import getLogger
 from discord.ext import commands
 
 from src.config.training import ALL_TRAINING_RECORDS_CHANNELS
-from src.utils.discord_utils import EngineerAlertField, alert_engineers
 from src.utils.training_utils import process_training_record
 
 log = getLogger(__name__)
@@ -30,21 +29,10 @@ class OnMessageTraining(commands.Cog):
                 else:
                     log.info(f"[TRAINING] Training record {message.id} skipped.")
             except Exception as e:
-                log.error(f"[TRAINING] Error saving training record: {e}")
-                channel_mention = getattr(message_channel, "mention", f"<#{channel_id}>")
-                author_mention = getattr(author, "mention", f"`{getattr(author, 'id', 'unknown')}`")
-                await alert_engineers(
-                    self.bot,
-                    f"Error saving training record in {channel_mention} for {author_mention}",
-                    e,
-                    title="Training Record Save Failed",
-                    fields=(
-                        EngineerAlertField("Channel", channel_mention),
-                        EngineerAlertField("Author", author_mention),
-                        EngineerAlertField(
-                            "Message ID", f"`{getattr(message, 'id', 'unknown')}`"
-                        ),
-                    ),
+                log.error(
+                    f"[TRAINING] Error saving training record in {channel_id} for {getattr(author, 'id', 'unknown')}: {e}",
+                    exc_info=True,
+                    extra={"notify_engineer": True}
                 )
 
 async def setup(bot: commands.Bot):

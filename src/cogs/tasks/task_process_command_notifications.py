@@ -17,7 +17,6 @@ from src.notifications.service_factory import NotificationServiceFactory
 from src.utils.discord_utils import (
     AlertSeverity,
     EngineerAlertField,
-    alert_engineers,
     send_engineer_log,
 )
 
@@ -68,12 +67,8 @@ class ProcessCommandNotifications(commands.Cog):
                     fields=tuple(fields),
                 )
         except Exception as exc:
-            log.error("Error processing command inactivity notifications.", exc_info=True)
-            await alert_engineers(
-                self.bot,
-                "Error processing command inactivity notifications.",
-                exception=exc,
-            )
+            log.error("Error processing command inactivity notifications: %s", exc, exc_info=True,
+                      extra={"notify_engineer": True})
         finally:
             event_repository.close_session()
             sailor_repository.close_session()
