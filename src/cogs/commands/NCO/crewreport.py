@@ -7,6 +7,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from src.config import IMAGE_CACHES
+from src.config.ranks_roles import NCO_AND_UP_PURE
 from src.config.requirements import (
     HOSTING_REQUIREMENT_IN_DAYS,
     VOYAGING_REQUIREMENT_IN_DAYS,
