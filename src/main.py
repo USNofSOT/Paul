@@ -5,7 +5,6 @@ import os
 import threading
 from logging import getLogger
 
-import discord
 import uvicorn
 
 from src.api.main import app as fastapi_app
@@ -29,8 +28,6 @@ def _run_api() -> None:
 
 
 async def main():
-    discord.utils.setup_logging()
-
     # Start the health check web server
     threading.Thread(target=_run_api, daemon=True, name="fastapi").start()
 
