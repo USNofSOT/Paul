@@ -5,11 +5,9 @@ from typing import Type
 from sqlalchemy import delete, update
 from sqlalchemy.sql.functions import count
 
-from src.config.cache import ONE_HOUR_IN_SECONDS
 from src.data import Sailor
 from src.data.models import Voyages
 from src.data.repository.common.base_repository import BaseRepository
-from src.utils.cache_utils import ttl_cache
 
 log = logging.getLogger(__name__)
 
@@ -35,7 +33,6 @@ class VoyageRepository(BaseRepository[Voyages]):
             log.error(f"Error getting incommon voyage log entries: {e}")
             raise e
 
-    @ttl_cache(seconds=ONE_HOUR_IN_SECONDS, cache_name="sailor_data")
     def get_voyages_by_log_id(self, log_id: int) -> list[Type[Voyages]]:
         try:
             return self.session.query(Voyages).filter(Voyages.log_id == log_id).all()
@@ -43,7 +40,6 @@ class VoyageRepository(BaseRepository[Voyages]):
             log.error(f"Error getting voyage log entries: {e}")
             raise e
 
-    @ttl_cache(seconds=ONE_HOUR_IN_SECONDS, cache_name="sailor_data")
     def get_most_recent_voyage(self, target_id: int) -> Type[Voyages] | None:
         try:
             return self.session.query(Voyages).filter(Voyages.target_id == target_id).order_by(Voyages.log_time.desc()).first()

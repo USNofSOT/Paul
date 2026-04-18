@@ -213,11 +213,6 @@ MEMORY_CACHES = {
         category=SHIPS_CACHE_CATEGORY,
         ttl_seconds=ONE_HOUR_IN_SECONDS,
     ),
-    "sailor_data": MemoryCacheConfig(
-        name="sailor_data",
-        category=REPORTS_CACHE_CATEGORY,
-        ttl_seconds=ONE_HOUR_IN_SECONDS,
-    ),
 }
 
 
