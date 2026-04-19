@@ -9,8 +9,14 @@ from discord.ext import commands
 
 from src.config.cache import IMAGE_CACHES
 from src.config.pocket_watch import POCKET_WATCH_DEFAULT_DAYS
+from src.data.repository.hosted_repository import HostedRepository
+from src.data.repository.sailor_repository import SailorRepository
+from src.data.repository.voyage_repository import VoyageRepository
 from src.security import require_any_role, Role, resolve_effective_roles
+from src.utils.embeds import default_embed, error_embed
 from src.utils.image_cache import BinaryImageCache
+from src.utils.pocket_watch import DEFAULT_POCKET_WATCH_THRESHOLDS, validate_days, analyze_pocket_watch_activity, \
+    render_pocket_watch_chart, PocketWatchInsufficientDataError, PocketWatchError
 
 log = logging.getLogger(__name__)
 
