@@ -287,7 +287,7 @@ class AddSubclass(commands.Cog):
                 if not line:
                     continue
 
-                if "<@" in line and "log" not in line.lower():
+                if "<@" in line and not re.search(r"\blog\b", line.lower()):
                     to_be_processed_lines.append(line)
                     log.debug("[%s] Found line to be processed: %s", log_id, line)
 
@@ -322,7 +322,7 @@ class AddSubclass(commands.Cog):
                 # Check for main subclasses
                 main_subclass = None
                 for alias, subclass in subclass_map.items():
-                    if alias in process_line.lower():
+                    if re.search(rf"\b{re.escape(alias)}\b", process_line.lower()):
                         log.info("[%s] Found main subclass %s for %s", log_id, subclass, discord_id)
                         main_subclass = subclass
                         break
@@ -359,14 +359,17 @@ class AddSubclass(commands.Cog):
 
                 # Check if the user is Surgeon
                 surgeon = False
-                if any(alias in process_line.lower() for alias in SURGEON_SYNONYMS):
+                if any(
+                        re.search(rf"\b{re.escape(alias)}\b", process_line.lower())
+                        for alias in SURGEON_SYNONYMS
+                ):
                     log.info("Adding Surgeon subclass to %s", discord_id)
                     surgeon = True
 
                 # Check how many times any Grenadier synonym is found in the line
                 grenadier = 0
                 for alias in GRENADIER_SYNONYMS:
-                    grenadier += process_line.lower().count(alias.lower())
+                    grenadier += len(re.findall(rf"\b{re.escape(alias)}\b", process_line.lower()))
                 log.info(
                     "[%s] Found %s amount of Grenadier subclasses for %s",
                     log_id,
