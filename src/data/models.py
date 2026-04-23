@@ -384,6 +384,8 @@ class BotInteractionLog(AuditLogBare):
     failed = Column(BOOLEAN, server_default="0")
     interaction_id = Column(BIGINT, nullable=True, index=True)
     execution_time_ms = Column(FLOAT, nullable=True)
+    args = Column(TEXT, nullable=True)
+    error_message = Column(TEXT, nullable=True)
 
     @property
     def timeout_removed(self) -> bool:
