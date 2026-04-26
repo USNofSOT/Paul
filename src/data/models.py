@@ -234,6 +234,21 @@ class ShipSize(Base):
     log_time = Column(DATETIME, nullable=False, index=True)
 
 
+class RoleType(enum.Enum):
+    RANK = "Rank"
+    SHIP = "Ship"
+
+
+class RoleSize(Base):
+    __tablename__ = "role_size"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    role_id = Column(BIGINT, primary_key=True)
+    role_type = Column(Enum(RoleType), nullable=False)
+    member_count = Column(Integer, nullable=False)
+    log_time = Column(DATETIME, nullable=False, index=True)
+
+
 class TrainingRecord(Base):
     __tablename__ = "training_records"
 
