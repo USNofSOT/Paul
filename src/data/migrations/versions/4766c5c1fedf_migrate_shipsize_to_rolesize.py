@@ -1,7 +1,7 @@
 """migrate_shipsize_to_rolesize
 
 Revision ID: 4766c5c1fedf
-Revises: d68983d58bc8
+Revises: 3d330f671fdb
 Create Date: 2026-04-26 22:12:48.223036
 
 """
@@ -13,7 +13,7 @@ from sqlalchemy.dialects import mysql
 
 # revision identifiers, used by Alembic.
 revision: str = '4766c5c1fedf'
-down_revision: Union[str, None] = 'd68983d58bc8'
+down_revision: Union[str, None] = '3d330f671fdb'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
