@@ -1,6 +1,5 @@
-import discord
+from src.config.main_server import VOYAGE_LOGS
 from src.utils.embeds import error_embed
-from src.config import VOYAGE_LOGS
 
 async def get_recent_user_log_id(bot, user_id):
     # get the voyage logs channel, if none found then stop
@@ -10,14 +9,13 @@ async def get_recent_user_log_id(bot, user_id):
 
     # loops to find the most recent log by the command user, skips any done by anyone else
     async for message in logs_channel.history(limit=25):
-        if message.author.id != user_id:
-            continue
-        return str(message.id)
+        if message.author.id == user_id:
+            return str(message.id)
 
     # if no matching message is found then return none
     return None
 
-# src/utils/addsubclass_utils.py
+
 
 async def resolve_log_id(bot, interaction, log_id):
     # if no input is provided, check for log from user in voyage log channel
@@ -37,28 +35,14 @@ async def resolve_log_id(bot, interaction, log_id):
         original_input = log_id
         log_id = log_id.strip()
 
-        # Raw numeric ID
-        if log_id.isdigit():
-            pass
-
         # Discord message link
-        elif "discord.com/channels/" in log_id or "discordapp.com/channels/" in log_id:
+        if "discord.com/channels/" in log_id or "discordapp.com/channels/" in log_id:
             log_id = log_id.split("/")[-1].split("?")[0]
 
-            if not log_id.isdigit():
-                await interaction.followup.send(
-                    embed=error_embed(
-                        description=f"Invalid Discord message ID. Please provide a valid message ID. Input: `{original_input}`"
-                    ),
-                    ephemeral=True,
-                )
-                return None
-
-        # Invalid input
-        else:
+        if not log_id.isdigit():
             await interaction.followup.send(
                 embed=error_embed(
-                    description=f"Invalid Discord message ID. Please provide a valid message ID. Input: `{original_input}`"
+                    description="Invalid Discord message ID. Please provide a valid message ID."
                 ),
                 ephemeral=True,
             )
