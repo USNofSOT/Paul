@@ -9,7 +9,7 @@ from data.repository.voyage_repository import VoyageRepository
 from discord import Colour, app_commands
 from discord.ext import commands
 from utils.ship_utils import convert_to_ordinal
-
+from utils.addsubclass_utils import get_recent_user_log_id, resolve_log_id
 
 from src.config import (
     CANNONEER_SYNONYMS,
@@ -48,22 +48,6 @@ def retrieve_discord_id_from_process_line(line: str) -> int or None:
     pattern = r"<@!?(\d+)>"
     match = re.search(pattern, line)
     return int(match.group(1)) if match else None
-
-
-async def get_recent_user_log_id(bot, user_id):
-    # get the voyage logs channel, if none found then stop
-    logs_channel = bot.get_channel(VOYAGE_LOGS)
-    if logs_channel is None:
-        return None
-
-    # loops to find the most recent log by the command user, skips any done by anyone else
-    async for message in logs_channel.history(limit=25):
-        if message.author.id != user_id:
-            continue
-        return str(message.id)
-
-    # if no matching message is found then return none
-    return None
 
 subclass_map = {
     **{alias: SubclassType.CANNONEER for alias in CANNONEER_SYNONYMS},
@@ -253,46 +237,9 @@ class AddSubclass(commands.Cog):
             )
             await interaction.response.defer(ephemeral=True)
 
-            # Normalize the user input for log_id
-
+            log_id = await resolve_log_id(self.bot,interaction,log_id)
             if log_id is None:
-                log_id = await get_recent_user_log_id(self.bot, interaction.user.id)
-
-                if log_id is None:
-                    return await interaction.followup.send(
-                        embed=error_embed(
-                            description="No recent voyage log by you found in last 25 logs. Please provide a log ID."
-                        ),
-                        ephemeral=True,
-                    )
-            else:
-                original_input = log_id
-                log_id = log_id.strip()
-                if log_id.isdigit():
-                    # If the ID is already a proper message ID, keep as is
-                    pass
-
-                elif "discord.com/channels/" in log_id or "discordapp.com/channels/" in log_id:
-                    # Discord links copied from messages are always sent in the format discord.com/guildid(serverid)/channelid/messageid
-                    # by extracting only the message id, we can allow the use of discord links as well
-                    log_id = log_id.split("/")[-1].split("?")[0]
-
-                    if not log_id.isdigit():
-                        return await interaction.followup.send(
-                            embed=error_embed(
-                                description="Invalid Discord message ID. Please provide a valid message ID.",
-                            ),
-                            ephemeral=True,
-                        )
-
-                else:
-                    # If the input is not a message ID or proper link
-                    return await interaction.followup.send(
-                        embed=error_embed(
-                            description="Invalid Discord message ID. Please provide a valid message ID."
-                        ),
-                        ephemeral=True,
-                    )
+                return None
 
             # Prepare the embed message
             embed = default_embed(
