@@ -12,7 +12,7 @@ from src.config import IMAGE_CACHES
 from src.config.main_server import GUILD_ID
 from src.config.ships import SHIPS
 from src.data.repository.hosted_repository import HostedRepository
-from src.data.repository.ship_repository import ShipRepository
+from src.data.repository.role_repository import RoleRepository
 from src.data.repository.voyage_repository import VoyageRepository
 from src.security import require_any_role, Role
 from src.utils.embeds import error_embed
@@ -451,7 +451,7 @@ class Ships(commands.Cog):
         return embed, discord_file
 
     async def trend_ship_size(self, interaction: discord.Interaction):
-        ship_repository = ShipRepository()
+        role_repository = RoleRepository()
         embed = discord.Embed(
             title="Ship Size",
             color=discord.Color.orange(),
@@ -465,7 +465,7 @@ class Ships(commands.Cog):
         for ship in self.ships:
             role = self.bot.get_guild(GUILD_ID).get_role(ship)
             x_dates, y_members = [], []
-            ship_sizes = ship_repository.get_ship_sizes(role.id)
+            ship_sizes = role_repository.get_role_sizes(role.id)
 
             for day in range(days):
                 date = reference_day - timedelta(days=day)
@@ -526,7 +526,7 @@ class Ships(commands.Cog):
             url=f"attachment://{SHIP_SIZE_TREND_CACHE.config.default_filename}"
         )
 
-        ship_repository.close_session()
+        role_repository.close_session()
         return embed, discord_file
 
     @ships.error

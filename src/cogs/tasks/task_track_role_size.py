@@ -4,6 +4,7 @@ from discord.ext import commands, tasks
 
 from src.config.main_server import GUILD_ID
 from src.config.ranks import RANKS
+from src.config.ships import SHIPS
 from src.config.task_timing import TRACK_ROLE_SIZE_TASK_TIME
 from src.data.models import RoleType
 from src.data.repository.role_repository import RoleRepository
@@ -28,26 +29,30 @@ class AutoTrackRoleSize(commands.Cog):
                 log.error("Could not find guild for tracking role sizes.")
                 return
 
+            def track_role(role_id: int, role_type: RoleType, logging_name: str) -> None:
+                db_current_role_size = role_repository.get_most_recent_role_size(role_id)
+                db_current_size = db_current_role_size.member_count if db_current_role_size else 0
+
+                role = guild.get_role(role_id)
+                if role is None:
+                    log.warning(f"Role {role_id} for {logging_name} not found in guild.")
+                    return
+
+                current_size = len(role.members)
+
+                if db_current_size != current_size:
+                    role_repository.save_role_size(role_id, current_size, role_type)
+                    log.info(f"Updated size for {role.name} from {db_current_size} to {current_size}")
+                else:
+                    log.info(f"Size for {role.name} is still {current_size}")
+
             for rank in RANKS:
                 for role_id in rank.role_ids:
-                    db_current_role_size = role_repository.get_most_recent_role_size(role_id)
-                    if db_current_role_size is None:
-                        db_current_size = 0
-                    else:
-                        db_current_size = db_current_role_size.member_count
+                    track_role(role_id, RoleType.RANK, rank.name)
 
-                    role = guild.get_role(role_id)
-                    if role is None:
-                        log.warning(f"Role {role_id} for rank {rank.name} not found in guild.")
-                        continue
-
-                    current_size = len(role.members)
-
-                    if db_current_size != current_size:
-                        role_repository.save_role_size(role_id, current_size, RoleType.RANK)
-                        log.info(f"Updated role size for {role.name} from {db_current_size} to {current_size}")
-                    else:
-                        log.info(f"Role size for {role.name} is still {current_size}")
+            for ship in SHIPS:
+                track_role(ship.role_id, RoleType.SHIP, ship.name)
+        
         except Exception as e:
             log.error(f"Error tracking role size: {e}", extra={"notify_engineer": True})
         finally:

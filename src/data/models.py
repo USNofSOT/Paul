@@ -225,15 +225,6 @@ class Sailor(Base):
         return f"[Sailor] {self.gamertag} ({self.discord_id})"
 
 
-class ShipSize(Base):
-    __tablename__ = "ship_size"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    ship_role_id = Column(BIGINT, primary_key=True)
-    member_count = Column(Integer, nullable=False)
-    log_time = Column(DATETIME, nullable=False, index=True)
-
-
 class RoleType(enum.Enum):
     RANK = "Rank"
     SHIP = "Ship"
