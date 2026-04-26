@@ -8,6 +8,7 @@ from data import VoyageType
 from data.repository.voyage_repository import VoyageRepository
 from discord import Colour, app_commands
 from discord.ext import commands
+from utils.addsubclass_utils import get_recent_user_log_id, resolve_log_id
 from utils.ship_utils import convert_to_ordinal
 
 from src.config import (
@@ -47,7 +48,6 @@ def retrieve_discord_id_from_process_line(line: str) -> int or None:
     pattern = r"<@!?(\d+)>"
     match = re.search(pattern, line)
     return int(match.group(1)) if match else None
-
 
 subclass_map = {
     **{alias: SubclassType.CANNONEER for alias in CANNONEER_SYNONYMS},
@@ -193,7 +193,7 @@ class ConfirmView(discord.ui.View):
                     log.error("Error adding subclass: %s", e)
                     return await interaction.followup.send(
                         embed=error_embed(
-                            description="An error occurred adding subclasses into the databasse",
+                            description="An error occurred adding subclasses into the database",
                             exception=e,
                         ),
                         ephemeral=True,
@@ -222,21 +222,24 @@ class ConfirmView(discord.ui.View):
 class AddSubclass(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
-
     @app_commands.command(
         name="addsubclass",
-        description="Add subclasses to Sailors based on a voyage log",
+        description="Adds subclasses to Sailors based on a voyage log",
     )
     @app_commands.describe(
         log_id="The id of the voyage log to add subclasses from",
     )
     @require_any_role(Role.NCO, Role.VOYAGE_PERMISSIONS)
-    async def addsubclass(self, interaction: discord.Interaction, log_id: str):
+    async def addsubclass(self, interaction: discord.Interaction, log_id: str = None):
         try:
             log.info(
                 "--> [%s] addsubclass command received for log by %s", log_id, interaction.user.id
             )
             await interaction.response.defer(ephemeral=True)
+
+            log_id = await resolve_log_id(self.bot,interaction,log_id)
+            if log_id is None:
+                return None
 
             # Prepare the embed message
             embed = default_embed(
@@ -514,7 +517,7 @@ class AddSubclass(commands.Cog):
 
             embed_misc_voyage_info.add_field(
                 name="Log Link",
-                value=f"https://discord.com/channels/{GUILD_ID}/{VOYAGE_LOGS}/{log_id}",
+                value=f"https://discord.com/channels/{GUILD_ID}/{VOYAGE_LOGS}/{log_id} <t:{int(log_message.created_at.timestamp())}:R>",
                 inline=False,
             )
             hosted_repository = HostedRepository()
