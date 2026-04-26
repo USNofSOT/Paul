@@ -280,7 +280,7 @@ class AddSubclass(commands.Cog):
                     if not log_id.isdigit():
                         return await interaction.followup.send(
                             embed=error_embed(
-                                description=f"Invalid Discord message ID. Please provide a valid message ID. Input: `{original_input}`",
+                                description="Invalid Discord message ID. Please provide a valid message ID.",
                             ),
                             ephemeral=True,
                         )
@@ -289,7 +289,7 @@ class AddSubclass(commands.Cog):
                     # If the input is not a message ID or proper link
                     return await interaction.followup.send(
                         embed=error_embed(
-                            description=f"Invalid Discord message ID. Please provide a valid message ID. Input: `{original_input}`"
+                            description="Invalid Discord message ID. Please provide a valid message ID."
                         ),
                         ephemeral=True,
                     )
