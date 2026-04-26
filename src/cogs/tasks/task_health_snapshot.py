@@ -39,6 +39,14 @@ class HealthSnapshotTask(commands.Cog):
         try:
             # Look back exactly 5 minutes for latency window
             avg_ms, max_ms = repo.get_latency_window(minutes=HEALTH_SNAPSHOT_INTERVAL_MINUTES)
+
+            # Collect additional metrics
+            discord_latency = round(self.bot.latency * 1000, 2) if self.bot.latency else None
+            bot_cpu = round(_PROCESS.cpu_percent(interval=None), 2)
+            sys_cpu = round(psutil.cpu_percent(interval=None), 2)
+            sys_mem_mb = round(psutil.virtual_memory().total / (1024 * 1024), 2)
+            users = len(self.bot.users)
+
             snapshot = HealthSnapshot(
                 timestamp=utc_time_now(),
                 pool_size=pool.size(),
@@ -48,6 +56,11 @@ class HealthSnapshotTask(commands.Cog):
                 avg_cmd_latency=avg_ms,
                 max_cmd_latency=max_ms,
                 memory_usage_mb=round(_PROCESS.memory_info().rss / (1024 * 1024), 2),
+                discord_latency_ms=discord_latency,
+                bot_cpu_usage_percent=bot_cpu,
+                system_cpu_usage_percent=sys_cpu,
+                system_total_memory_mb=sys_mem_mb,
+                user_count=users,
             )
             repo.insert_snapshot(snapshot)
         except Exception:

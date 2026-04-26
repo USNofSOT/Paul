@@ -390,6 +390,8 @@ class BotInteractionLog(AuditLogBare):
     failed = Column(BOOLEAN, server_default="0")
     interaction_id = Column(BIGINT, nullable=True, index=True)
     execution_time_ms = Column(FLOAT, nullable=True)
+    args = Column(TEXT, nullable=True)
+    error_message = Column(TEXT, nullable=True)
 
     @property
     def timeout_removed(self) -> bool:
@@ -421,6 +423,11 @@ class HealthSnapshot(Base):
     avg_cmd_latency = Column(FLOAT, nullable=True)
     max_cmd_latency = Column(FLOAT, nullable=True)
     memory_usage_mb = Column(FLOAT, nullable=False)
+    discord_latency_ms = Column(FLOAT, nullable=True)
+    bot_cpu_usage_percent = Column(FLOAT, nullable=True)
+    system_cpu_usage_percent = Column(FLOAT, nullable=True)
+    system_total_memory_mb = Column(FLOAT, nullable=True)
+    user_count = Column(Integer, nullable=True)
 
 
 class SecurityEventType(enum.Enum):
