@@ -141,6 +141,15 @@ IMAGE_CACHES = {
         ttl_seconds=TWO_HOURS_IN_SECONDS,
         version=1,
     ),
+    "rank_size_trend": ImageCacheConfig(
+        name="rank_size_trend",
+        category=REPORTS_CACHE_CATEGORY,
+        directory=".cache/reports/rank_size_trend",
+        default_filename="rank_size_trend.png",
+        max_items=MEDIUM_IMAGE_CACHE_MAX_ITEMS,
+        ttl_seconds=TWO_HOURS_IN_SECONDS,
+        version=1,
+    ),
     "ship_health_summary_chart": ImageCacheConfig(
         name="ship_health_summary_chart",
         category=SHIPS_CACHE_CATEGORY,
