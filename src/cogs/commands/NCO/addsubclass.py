@@ -62,7 +62,7 @@ async def get_recent_user_log_id(bot, user_id):
             continue
         return str(message.id)
 
-    # if no matching message is found then returne none
+    # if no matching message is found then return none
     return None
 
 subclass_map = {
