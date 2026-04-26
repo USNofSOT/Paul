@@ -57,7 +57,7 @@ async def get_recent_user_log_id(bot, user_id):
         return None
 
     # loops to find the most recent log by the command user, skips any done by anyone else
-    async for message in logs_channel.history(limit=50):
+    async for message in logs_channel.history(limit=25):
         if message.author.id != user_id:
             continue
         return str(message.id)
