@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from sqlalchemy import update
 from sqlalchemy.dialects.mysql import insert
 
@@ -41,4 +42,15 @@ class PingTrackingRepository(BaseRepository[RolePingLog]):
         except Exception as e:
             self.session.rollback()
             log.error(f"Error marking ping logs as deleted for message {message_id}: {e}", extra={"notify_engineer": True})
+            raise e
+
+    def get_active_ping_logs_since(self, since: datetime) -> list[RolePingLog]:
+        try:
+            return self.session.query(RolePingLog).filter(
+                RolePingLog.created_at >= since,
+                RolePingLog.is_deleted == False
+            ).all()
+        except Exception as e:
+            self.session.rollback()
+            log.error(f"Error fetching ping logs since {since}: {e}", extra={"notify_engineer": True})
             raise e

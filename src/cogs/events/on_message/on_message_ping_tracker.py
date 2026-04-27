@@ -49,7 +49,6 @@ class OnMessagePingTracker(commands.Cog):
 
         pings_data = [
             {
-                "id": str(uuid.uuid4()),
                 "user_id": member.id,
                 "channel_id": message.channel.id,
                 "message_id": message.id,
