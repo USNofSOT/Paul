@@ -50,25 +50,63 @@ class RanksFilterSelect(discord.ui.Select):
         selected_filter = self.values[0]
         view: RanksView = self.view
         view.filter_group = selected_filter
+        view.single_rank = None  # Reset single rank when group filter changes
 
-        embed, discord_file = await view.cog.trend_rank_size(interaction, view.weeks, view.filter_group)
+        embed, discord_file = await view.cog.trend_rank_size(interaction, view.weeks, view.filter_group,
+                                                             view.single_rank)
         view.update_select()
 
         # Safely edit ephemeral message via interaction webhook to avoid discord message=None bugs
         await interaction.edit_original_response(embed=embed, attachments=[discord_file], view=view)
 
 
+class RankSingleSelect(discord.ui.Select):
+    def __init__(self, current_single: str | None):
+        options = [
+            discord.SelectOption(
+                label="— All (use group filter above) —",
+                value="__all__",
+                default=current_single is None
+            )
+        ]
+        for rank in RANKS:
+            if rank.name == "Dungeon Master":
+                continue
+            options.append(
+                discord.SelectOption(
+                    label=rank.name,
+                    description=rank.identifier,
+                    value=rank.identifier,
+                    default=current_single == rank.identifier
+                )
+            )
+        super().__init__(placeholder="Zoom into a single rank...", min_values=1, max_values=1, options=options[:25])
+
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        selected = self.values[0]
+        view: RanksView = self.view
+        view.single_rank = None if selected == "__all__" else selected
+
+        embed, discord_file = await view.cog.trend_rank_size(interaction, view.weeks, view.filter_group,
+                                                             view.single_rank)
+        view.update_select()
+        await interaction.edit_original_response(embed=embed, attachments=[discord_file], view=view)
+
+
 class RanksView(discord.ui.View):
-    def __init__(self, cog: 'Ranks', filter_group: str, weeks: int):
+    def __init__(self, cog: 'Ranks', filter_group: str, weeks: int, single_rank: str | None = None):
         super().__init__(timeout=180)
         self.cog = cog
         self.filter_group = filter_group
         self.weeks = weeks
+        self.single_rank = single_rank
         self.update_select()
 
     def update_select(self):
         self.clear_items()
         self.add_item(RanksFilterSelect(self.filter_group))
+        self.add_item(RankSingleSelect(self.single_rank))
 
 
 class Ranks(commands.Cog):
@@ -78,7 +116,7 @@ class Ranks(commands.Cog):
     @app_commands.command(name="ranks", description="Get a report of rank sizes over time")
     @app_commands.describe(weeks="Number of weeks to show trend for (default 12)")
     @app_commands.describe(hidden="Should only you be able to see the response?")
-    @require_any_role(Role.BOA, Role.NSC_OBSERVER, Role.NSC_OPERATOR, Role.NSC_ADMINISTRATOR)
+    @require_any_role(Role.BOA, Role.NSC_ADMINISTRATOR)
     async def ranks(self, interaction: discord.Interaction, weeks: int = 12, hidden: bool = True):
         try:
             await interaction.response.defer(ephemeral=hidden)
@@ -88,8 +126,9 @@ class Ranks(commands.Cog):
                                                 ephemeral=True)
                 return
 
-            embed, discord_file = await self.trend_rank_size(interaction, weeks, filter_group="active")
-            view = RanksView(self, filter_group="active", weeks=weeks)
+            embed, discord_file = await self.trend_rank_size(interaction, weeks, filter_group="active",
+                                                             single_rank=None)
+            view = RanksView(self, filter_group="active", weeks=weeks, single_rank=None)
             await interaction.followup.send(embed=embed, file=discord_file, view=view)
 
         except Exception as e:
@@ -97,7 +136,8 @@ class Ranks(commands.Cog):
             await interaction.followup.send(embed=error_embed("Error generating the ranks trend report."),
                                             ephemeral=True)
 
-    async def trend_rank_size(self, interaction: discord.Interaction, weeks: int, filter_group: str):
+    async def trend_rank_size(self, interaction: discord.Interaction, weeks: int, filter_group: str,
+                              single_rank: str | None = None):
         role_repository = RoleRepository()
         embed = discord.Embed(
             title="Rank Size Trend",
@@ -113,20 +153,25 @@ class Ranks(commands.Cog):
         table_lines = []
 
         for rank in RANKS:
-            if filter_group == "active" and rank.name in inactive_rank_names:
-                continue
-            elif filter_group == "e3_up" and rank.index < 3:
-                continue
-            elif filter_group == "nco_up" and rank.index < 4:
-                continue
-            elif filter_group == "snco_up" and rank.index < 6:
-                continue
-            elif filter_group == "officer" and rank.index < 9:
-                continue
+            # If a single rank is selected, only show that one
+            if single_rank is not None:
+                if rank.identifier != single_rank:
+                    continue
+            else:
+                if filter_group == "active" and rank.name in inactive_rank_names:
+                    continue
+                elif filter_group == "e3_up" and rank.index < 3:
+                    continue
+                elif filter_group == "nco_up" and rank.index < 4:
+                    continue
+                elif filter_group == "snco_up" and rank.index < 6:
+                    continue
+                elif filter_group == "officer" and rank.index < 9:
+                    continue
 
-            # Extra filter to explicitly hide Dungeon Master from up-filters
-            if filter_group != "all" and rank.name == "Dungeon Master":
-                continue
+                # Extra filter to explicitly hide Dungeon Master from up-filters
+                if filter_group != "all" and rank.name == "Dungeon Master":
+                    continue
 
             x_dates = []
             y_members = []
@@ -211,6 +256,7 @@ class Ranks(commands.Cog):
             {
                 "weeks": weeks,
                 "filter_group": filter_group,
+                "single_rank": single_rank,
                 "reference_week": reference_week.isoformat(),
                 "series": [
                     {
