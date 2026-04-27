@@ -91,6 +91,16 @@ MEDIA_ROLE = 1083502355506540624  # Media Department
 SPD_ROLES = [NETC_ROLE, NSC_ROLE, NRC_ROLE, SCHEDULING_ROLE, LOGISTICS_ROLE, MEDIA_ROLE]
 
 ###############################################################################
+# LFG Roles
+###############################################################################
+LF_PATROL_ROLE = 934089640439328778
+LF_SKIRMISH_ROLE = 1085910656018038785
+LF_ADVENTURE_ROLE = 1095660634332463124
+LF_CONVOY_ROLE = 934089790310191135
+LF_INSIDER_ROLE = 1459264614461345835
+LF_UNOFFICIAL_ROLE = 967495696011886673
+
+###############################################################################
 # Permissions
 ###############################################################################
 # PERMISSIONS these are list with integers values, every integer value corresponds with a role\
