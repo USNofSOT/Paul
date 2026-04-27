@@ -544,6 +544,25 @@ class NotificationEvent(Base):
     updated_at = Column(DATETIME, nullable=False)
 
 
+class RolePingLog(Base):
+    __tablename__ = "role_ping_logs"
+    __table_args__ = (
+        UniqueConstraint("message_id", "ping_role_id", name="uq_role_ping_log_message_role"),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(BIGINT, nullable=False, index=True)
+    channel_id = Column(BIGINT, nullable=False, index=True)
+    message_id = Column(BIGINT, nullable=False, index=True)
+    ping_role_id = Column(BIGINT, nullable=False, index=True)
+    ping_type = Column(VARCHAR(64), nullable=False, index=True)
+    highest_rank_role_id = Column(BIGINT, nullable=True, index=True)
+    ship_role_id = Column(BIGINT, nullable=True, index=True)
+    has_vp_permission = Column(BOOLEAN, nullable=False)
+    is_deleted = Column(BOOLEAN, nullable=False, default=False)
+    created_at = Column(DATETIME, nullable=False, index=True, default=utc_time_now)
+
+
 # Nifty function to create all tables
 def create_tables():
     try:
