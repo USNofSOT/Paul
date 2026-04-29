@@ -281,7 +281,7 @@ class SailorRepository(BaseRepository[Sailor]):
             return []  # Return an empty list in case of an error
 
 
-    def get_top_members_by_hosting_count(self, limit,member_list):
+    def get_top_members_by_hosting_count(self, limit, member_list):
         """
         Gets the top members by hosting count.
 

@@ -6,9 +6,10 @@ from discord.ext import commands
 from src.config import GUILD_ID
 from src.data.repository.coin_repository import CoinRepository
 from src.data.repository.sailor_repository import SailorRepository
+from src.data.repository.hosted_repository import HostedRepository
 from src.security import require_any_role, Role
 from src.utils.leaderboard import create_leaderboard_embed, create_master_embed, create_subclass_leaderboard_embed, \
-    create_dual_leaderboard_embed
+    create_dual_leaderboard_embed, create_triple_leaderboard_embed
 
 
 class GrabTop(commands.Cog):
@@ -41,6 +42,7 @@ class GrabTop(commands.Cog):
         await interaction.response.defer(ephemeral=False)
 
         sailor_repo = SailorRepository()
+        hosted_repo = HostedRepository()
         coin_repo = CoinRepository()
         guild = self.bot.get_guild(GUILD_ID)
         id_list_of_members = [member.id for member in guild.members]
@@ -49,6 +51,7 @@ class GrabTop(commands.Cog):
             # Get the top members for each category
             top_voyage_count = sailor_repo.get_top_members_by_voyage_count(limit, id_list_of_members)  # Top voyage count
             top_hosting_count = sailor_repo.get_top_members_by_hosting_count(limit, id_list_of_members)  # Top hosting count
+            top_vp_count = hosted_repo.get_top_members_by_public_service_count(limit, id_list_of_members) # Top public service count
             
             top_carpenter = sailor_repo.get_top_members_by_subclass("carpenter", limit, id_list_of_members)  # Top carpenter points
             top_flex = sailor_repo.get_top_members_by_subclass("flex", limit, id_list_of_members)  # Top flex points
@@ -70,7 +73,7 @@ class GrabTop(commands.Cog):
             # Create embeds for each category
             embeds = []
             if category is None or category == "voyages_hosting":
-                embeds.append(create_dual_leaderboard_embed(self.bot, GUILD_ID, top_voyage_count, "Top Voyage Count", top_hosting_count, "Top Hosting Count"))
+                embeds.append(create_triple_leaderboard_embed(self.bot, GUILD_ID, top_voyage_count, "Top Voyage Count", top_hosting_count, "Top Hosting Count", top_vp_count, "Top Public Service Count"))
             if category is None or category == "subclass_points":
                 embeds.append(create_subclass_leaderboard_embed(self.bot, GUILD_ID, top_helm, top_flex, top_cannoneer, top_carpenter, top_field_surgeon, top_grenadier))
             if category is None or category == "coins":
