@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from data import VoyageType
-from sqlalchemy import Row, delete, update
+from sqlalchemy import Row, delete, update, desc
 from sqlalchemy.sql.functions import coalesce, count
 
 from src.config.cache import ONE_HOUR_IN_SECONDS
@@ -206,6 +206,27 @@ class HostedRepository(BaseRepository[Hosted]):
         except Exception as e:
             log.error("Error getting hosted data in voyage planning by member ID.")
             raise e
+
+    def get_top_members_by_public_service_count(self, limit, member_list):
+
+        try:
+            results = (
+            self.session.query(Hosted.target_id, count(Hosted.target_id))
+            .filter(
+                Hosted.voyage_planning_message_id.isnot(None),
+                Hosted.target_id.in_(member_list)
+                )
+            .group_by(Hosted.target_id)
+            .order_by(desc(count(Hosted.target_id)))
+            .limit(limit)
+            .all()
+            )
+
+            return results
+        except Exception as e:
+            log.error(f"Error getting top members by public service count: {e}")
+            return []  # Return an empty list in case of an error
+
 
     def get_host_by_log_id(self, log_id: int) -> Hosted | None:
         try:
