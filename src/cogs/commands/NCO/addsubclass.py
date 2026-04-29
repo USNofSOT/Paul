@@ -8,8 +8,8 @@ from data import VoyageType
 from data.repository.voyage_repository import VoyageRepository
 from discord import Colour, app_commands
 from discord.ext import commands
-from utils.ship_utils import convert_to_ordinal
 from utils.addsubclass_utils import get_recent_user_log_id, resolve_log_id
+from utils.ship_utils import convert_to_ordinal
 
 from src.config import (
     CANNONEER_SYNONYMS,
@@ -517,7 +517,7 @@ class AddSubclass(commands.Cog):
 
             embed_misc_voyage_info.add_field(
                 name="Log Link",
-                value=f"https://discord.com/channels/{GUILD_ID}/{VOYAGE_LOGS}/{log_id}",
+                value=f"https://discord.com/channels/{GUILD_ID}/{VOYAGE_LOGS}/{log_id} <t:{int(log_message.created_at.timestamp())}:R>",
                 inline=False,
             )
             hosted_repository = HostedRepository()

@@ -338,16 +338,39 @@ def _build_system_embed(
     embed = default_embed(
         title="🖥️ System Resources", description="Live process and memory stats."
     )
-    embed.add_field(name="Memory (RSS)", value=f"{memory_mb:.1f} MB", inline=True)
+
+    # Current Stats
     embed.add_field(name="Uptime", value=f"{h}h {m}m {s}s", inline=True)
 
+    # Snapshot Metrics (Last 5 min average/point-in-time)
     if snapshot:
+        # Memory with % of total
+        if snapshot.system_total_memory_mb:
+            mem_percent = (snapshot.memory_usage_mb / snapshot.system_total_memory_mb) * 100
+            mem_val = f"{snapshot.memory_usage_mb:.1f} / {snapshot.system_total_memory_mb:.1f} MB ({mem_percent:.1f}%)"
+        else:
+            mem_val = f"{snapshot.memory_usage_mb:.1f} MB"
+
+        embed.add_field(name="Bot Memory", value=mem_val, inline=True)
+
+        # CPU
+        bot_cpu = f"{snapshot.bot_cpu_usage_percent:.1f}%" if snapshot.bot_cpu_usage_percent is not None else "—"
+        sys_cpu = f"{snapshot.system_cpu_usage_percent:.1f}%" if snapshot.system_cpu_usage_percent is not None else "—"
+        embed.add_field(name="CPU (Bot / Sys)", value=f"{bot_cpu} / {sys_cpu}", inline=True)
+
+        # Latency & Users
+        latency = f"{snapshot.discord_latency_ms:.1f} ms" if snapshot.discord_latency_ms is not None else "—"
+        embed.add_field(name="Discord Latency", value=latency, inline=True)
+
+        users = f"{snapshot.user_count:,}" if snapshot.user_count is not None else "—"
+        embed.add_field(name="Total Users", value=users, inline=True)
+
         now = datetime.now(tz=UTC).replace(tzinfo=None)
         age_s = int((now - snapshot.timestamp).total_seconds())
-        embed.add_field(
-            name="Snapshot Memory", value=f"{snapshot.memory_usage_mb} MB", inline=True
-        )
         embed.add_field(name="Last Snapshot", value=f"{age_s}s ago", inline=True)
+    else:
+        embed.add_field(name="Memory (RSS)", value=f"{memory_mb:.1f} MB", inline=True)
+        embed.add_field(name="Snapshot Data", value="No snapshots available.", inline=True)
 
     return embed
 

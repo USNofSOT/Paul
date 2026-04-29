@@ -225,11 +225,17 @@ class Sailor(Base):
         return f"[Sailor] {self.gamertag} ({self.discord_id})"
 
 
-class ShipSize(Base):
-    __tablename__ = "ship_size"
+class RoleType(enum.Enum):
+    RANK = "Rank"
+    SHIP = "Ship"
+
+
+class RoleSize(Base):
+    __tablename__ = "role_size"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    ship_role_id = Column(BIGINT, primary_key=True)
+    role_id = Column(BIGINT, primary_key=True)
+    role_type = Column(Enum(RoleType), nullable=False)
     member_count = Column(Integer, nullable=False)
     log_time = Column(DATETIME, nullable=False, index=True)
 
@@ -384,6 +390,8 @@ class BotInteractionLog(AuditLogBare):
     failed = Column(BOOLEAN, server_default="0")
     interaction_id = Column(BIGINT, nullable=True, index=True)
     execution_time_ms = Column(FLOAT, nullable=True)
+    args = Column(TEXT, nullable=True)
+    error_message = Column(TEXT, nullable=True)
 
     @property
     def timeout_removed(self) -> bool:
@@ -415,6 +423,11 @@ class HealthSnapshot(Base):
     avg_cmd_latency = Column(FLOAT, nullable=True)
     max_cmd_latency = Column(FLOAT, nullable=True)
     memory_usage_mb = Column(FLOAT, nullable=False)
+    discord_latency_ms = Column(FLOAT, nullable=True)
+    bot_cpu_usage_percent = Column(FLOAT, nullable=True)
+    system_cpu_usage_percent = Column(FLOAT, nullable=True)
+    system_total_memory_mb = Column(FLOAT, nullable=True)
+    user_count = Column(Integer, nullable=True)
 
 
 class SecurityEventType(enum.Enum):
@@ -529,6 +542,25 @@ class NotificationEvent(Base):
     delivered_at = Column(DATETIME, nullable=True)
     created_at = Column(DATETIME, nullable=False)
     updated_at = Column(DATETIME, nullable=False)
+
+
+class RolePingLog(Base):
+    __tablename__ = "role_ping_logs"
+    __table_args__ = (
+        UniqueConstraint("message_id", "ping_role_id", name="uq_role_ping_log_message_role"),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(BIGINT, nullable=False, index=True)
+    channel_id = Column(BIGINT, nullable=False, index=True)
+    message_id = Column(BIGINT, nullable=False, index=True)
+    ping_role_id = Column(BIGINT, nullable=False, index=True)
+    ping_type = Column(VARCHAR(64), nullable=False, index=True)
+    highest_rank_role_id = Column(BIGINT, nullable=True, index=True)
+    ship_role_id = Column(BIGINT, nullable=True, index=True)
+    has_vp_permission = Column(BOOLEAN, nullable=False)
+    is_deleted = Column(BOOLEAN, nullable=False, default=False)
+    created_at = Column(DATETIME, nullable=False, index=True, default=utc_time_now)
 
 
 # Nifty function to create all tables
