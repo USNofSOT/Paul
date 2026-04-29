@@ -166,3 +166,68 @@ def create_dual_leaderboard_embed(bot, guild_id, data1, title1, data2, title2):
     embed.add_field(name=title2, value="\n".join(field_values_2), inline=True)
 
     return embed
+
+def create_triple_leaderboard_embed(bot, guild_id, data1, title1, data2, title2, data3, title3):
+    """
+    Creates a leaderboard embed with two sets of data in two columns.
+
+    Args:
+        bot: The bot instance.
+        guild_id: The ID of the guild.
+        data1: The first leaderboard data (list of tuples).
+        title1: The title of the first leaderboard.
+        data2: The second leaderboard data (list of tuples).
+        title2: The title of the second leaderboard.
+        data3: The third leaderboard data (list of tuples).
+        title 3: The title of the third leaderboard.
+
+    Returns:
+        A discord.Embed object.
+    """
+    embed = discord.Embed(title=f"__{title1} and {title2} and {title3}__")
+    guild = bot.get_guild(guild_id)
+
+    # Determine the maximum number of entries to display
+    max_entries = max(len(data1), len(data2), len(data3))
+
+    # Create empty lists to store the formatted field values
+    field_values_1 = []
+    field_values_2 = []
+    field_values_3 = []
+
+    for rank in range(1, max_entries + 1):
+        # Get data for the current rank from both lists
+        member_id_1, value1 = data1[rank - 1] if rank <= len(data1) else (None, None)
+        member_id_2, value2 = data2[rank - 1] if rank <= len(data2) else (None, None)
+        member_id_3, value3 = data3[rank - 1] if rank <= len(data2) else (None, None)
+        # Fetch member objects
+        member_1 = guild.get_member(member_id_1) if member_id_1 else None
+        member_2 = guild.get_member(member_id_2) if member_id_2 else None
+        member_3 = guild.get_member(member_id_3) if member_id_3 else None
+        # Construct field values
+        field_value_1 = (
+            f"{rank}. {member_1.display_name or member_1.name}: {value1}"
+            if member_1
+            else f"{rank}."
+        )
+        field_value_2 = (
+            f"{rank}. {member_2.display_name or member_2.name}: {value2}"
+            if member_2
+            else f"{rank}."
+        )
+        field_value_3 = (
+            f"{rank}. {member_3.display_name or member_3.name}: {value3}"
+            if member_3
+            else f"{rank}."
+        )
+
+        # Add field values to the lists
+        field_values_1.append(field_value_1)
+        field_values_2.append(field_value_2)
+        field_values_3.append(field_value_3)
+
+    # Add fields to the embed with the formatted values
+    embed.add_field(name=title1, value="\n".join(field_values_1), inline=True)
+    embed.add_field(name=title2, value="\n".join(field_values_2), inline=True)
+    embed.add_field(name=title3, value="\n".join(field_values_3), inline=True)
+    return embed
