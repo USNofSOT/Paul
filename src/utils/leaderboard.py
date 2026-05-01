@@ -162,8 +162,8 @@ def create_dual_leaderboard_embed(bot, guild_id, data1, title1, data2, title2):
         field_values_2.append(field_value_2)
 
     # Add fields to the embed with the formatted values
-    embed.add_field(name=title1, value="\n".join(field_values_1), inline=True)
-    embed.add_field(name=title2, value="\n".join(field_values_2), inline=True)
+    embed.add_field(name=title1, value="\n".join(field_values_1) or "None", inline=True)
+    embed.add_field(name=title2, value="\n".join(field_values_2) or "None", inline=True)
 
     return embed
 
@@ -199,7 +199,7 @@ def create_triple_leaderboard_embed(bot, guild_id, data1, title1, data2, title2,
         # Get data for the current rank from both lists
         member_id_1, value1 = data1[rank - 1] if rank <= len(data1) else (None, None)
         member_id_2, value2 = data2[rank - 1] if rank <= len(data2) else (None, None)
-        member_id_3, value3 = data3[rank - 1] if rank <= len(data2) else (None, None)
+        member_id_3, value3 = data3[rank - 1] if rank <= len(data3) else (None, None)
         # Fetch member objects
         member_1 = guild.get_member(member_id_1) if member_id_1 else None
         member_2 = guild.get_member(member_id_2) if member_id_2 else None
@@ -227,7 +227,7 @@ def create_triple_leaderboard_embed(bot, guild_id, data1, title1, data2, title2,
         field_values_3.append(field_value_3)
 
     # Add fields to the embed with the formatted values
-    embed.add_field(name=title1, value="\n".join(field_values_1), inline=True)
-    embed.add_field(name=title2, value="\n".join(field_values_2), inline=True)
-    embed.add_field(name=title3, value="\n".join(field_values_3), inline=True)
+    embed.add_field(name=title1, value="\n".join(field_values_1) or "None", inline=True)
+    embed.add_field(name=title2, value="\n".join(field_values_2) or "None", inline=True)
+    embed.add_field(name=title3, value="\n".join(field_values_3) or "None", inline=True)
     return embed

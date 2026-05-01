@@ -66,6 +66,7 @@ COMMAND_COOLDOWNS = {
     "ribbonboard": command_cooldown(15),
     "ship_history": command_cooldown(8),
     "ships": command_cooldown(20),
+    "streak": command_cooldown(8),
     "shownotes": command_cooldown(5),
     "trainingrecords": command_cooldown(8),
     "updatemembers": command_cooldown(30),

@@ -126,179 +126,100 @@ def build_cache_snapshots() -> dict[str, dict[str, Any]]:
     }
 
 
-def build_overview_embeds() -> list[discord.Embed]:
+def build_cache_report_embeds(scope: str | None) -> list[discord.Embed]:
     snapshots = build_cache_snapshots()
-    grouped_image_caches = group_image_caches_by_category()
-    grouped_memory_caches = group_memory_caches_by_category()
 
-    # Merge groupings
-    grouped_caches = {}
-    all_categories = set(grouped_image_caches.keys()) | set(grouped_memory_caches.keys())
-    for cat in all_categories:
-        grouped_caches[cat] = {
-            **grouped_image_caches.get(cat, {}),
-            **grouped_memory_caches.get(cat, {}),
-        }
+    if scope:
+        scope_key = scope.lower()
+        if scope_key in snapshots:
+            return build_single_cache_embeds(scope_key)
 
+        # Check if it's a category
+        grouped_image_caches = group_image_caches_by_category()
+        grouped_memory_caches = group_memory_caches_by_category()
+        if scope_key in grouped_image_caches or scope_key in grouped_memory_caches:
+            # For category scope, we still do the 6-per-page logic but filtered
+            image_members = grouped_image_caches.get(scope_key, {})
+            memory_members = grouped_memory_caches.get(scope_key, {})
+            all_members = list(image_members.keys()) + list(memory_members.keys())
+            return _build_paginated_embeds([snapshots[name] for name in all_members],
+                                           title_prefix=f"{category_title(scope_key)} ")
+
+    # Global scope (all caches)
+    return _build_paginated_embeds(list(snapshots.values()))
+
+
+def _build_paginated_embeds(cache_list: list[dict[str, Any]], title_prefix: str = "") -> list[discord.Embed]:
+    # Sort by name for consistency
+    cache_list.sort(key=lambda x: x["name"])
+    
     total_items = 0
     total_requests = 0
     total_hits = 0
     total_misses = 0
-    total_janitor_runs = 0
-    total_removed_expired = 0
-    total_removed_overflow = 0
 
+    # 1. Build Overview Summary
     summary_embed = default_embed(
-        title="Cache Overview",
-        description="A grouped report for all cache categories.",
+        title=f"{title_prefix}Cache Overview",
+        description="Global traffic and retention report.",
     )
 
-    detail_embeds: list[discord.Embed] = []
-    for category, caches in grouped_caches.items():
-        category_snapshots = [snapshots[name] for name in caches]
-        metadata = CACHE_CATEGORY_METADATA.get(
-            category,
-            {"label": category.title(), "emoji": "📦"},
-        )
-
-        category_items = sum(
-            item["cached_items"]
-            for item in category_snapshots
-            if isinstance(item["cached_items"], int)
-        )
-        category_capacity = sum(item["max_items"] for item in category_snapshots)
-        category_requests = sum(item["request_count"] for item in category_snapshots)
-        category_hits = sum(item["cache_hit_count"] for item in category_snapshots)
-        category_misses = sum(item["cache_miss_count"] for item in category_snapshots)
-        category_janitor_runs = sum(
-            item["janitor_run_count"] for item in category_snapshots
-        )
-        category_hit_rate = (
-            round((category_hits / category_requests) * 100, 2)
-            if category_requests
-            else 0
-        )
-
-        summary_embed.add_field(
-            name=f"{metadata['emoji']} {metadata['label']}",
-            value=(
-                f"Items: **{category_items}/{category_capacity}**\n"
-                f"Requests: **{category_requests}**\n"
-                f"Hit rate: **{category_hit_rate:.2f}%**\n"
-                f"Hits/Misses: **{category_hits}/{category_misses}**\n"
-                f"Janitor runs: **{category_janitor_runs}**"
-            ),
-            inline=True,
-        )
-
-        category_embed = default_embed(
-            title=f"{metadata['emoji']} {metadata['label']} Caches",
-            description="Per-cache detail for this category.",
-        )
-        for item in category_snapshots:
-            category_embed.add_field(
-                name=item["name"],
-                value=(
-                    f"Items: **{item['cached_items']}/{item['max_items']}**\n"
-                    f"TTL: **{item['ttl']}**\n"
-                    f"Requests: **{item['request_count']}**\n"
-                    f"Hit rate: **{item['cached_percent']:.2f}%**\n"
-                    f"Janitor runs: **{item['janitor_run_count']}**"
-                ),
-                inline=True,
-            )
-        detail_embeds.append(category_embed)
-
-        total_items += category_items
-        total_requests += category_requests
-        total_hits += category_hits
-        total_misses += category_misses
-        total_janitor_runs += category_janitor_runs
-        total_removed_expired += sum(
-            item["janitor_removed_expired_count"] for item in category_snapshots
-        )
-        total_removed_overflow += sum(
-            item["janitor_removed_overflow_count"] for item in category_snapshots
-        )
+    # Calculate totals first
+    for item in cache_list:
+        total_requests += item["request_count"]
+        total_hits += item["cache_hit_count"]
+        total_misses += item["cache_miss_count"]
+        if isinstance(item["cached_items"], int):
+            total_items += item["cached_items"]
 
     overall_hit_rate = (
         round((total_hits / total_requests) * 100, 2)
         if total_requests
         else 0
     )
+
     summary_embed.add_field(
-        name="Summary",
+        name="Global Totals",
         value=(
-            f"Cached items: **{total_items}**\n"
+            f"Total Caches: **{len(cache_list)}**\n"
+            f"Cached Items: **{total_items}**\n"
             f"Requests: **{total_requests}**\n"
-            f"Hits/Misses: **{total_hits}/{total_misses}**\n"
-            f"Overall hit rate: **{overall_hit_rate:.2f}%**\n"
-            f"Janitor runs: **{total_janitor_runs}**\n"
-            f"Removed expired/overflow: **"
-            f"{total_removed_expired}/{total_removed_overflow}**"
+            f"Hits / Misses: **{total_hits} / {total_misses}**\n"
+            f"Overall Hit Rate: **{overall_hit_rate:.2f}%**"
         ),
         inline=False,
     )
 
-    return [summary_embed, *detail_embeds]
+    # 2. Build Paginated Details (9 per page)
+    detail_embeds: list[discord.Embed] = []
+    PAGE_SIZE = 9
+    for i in range(0, len(cache_list), PAGE_SIZE):
+        page_items = cache_list[i: i + PAGE_SIZE]
+        page_num = (i // PAGE_SIZE) + 1
 
-
-def build_category_embeds(category: str) -> list[discord.Embed]:
-    grouped_image_caches = group_image_caches_by_category()
-    grouped_memory_caches = group_memory_caches_by_category()
-    snapshots = build_cache_snapshots()
-
-    # Merge category members
-    image_members = grouped_image_caches.get(category, {})
-    memory_members = grouped_memory_caches.get(category, {})
-    all_members = list(image_members.keys()) + list(memory_members.keys())
-
-    category_snapshots = [snapshots[name] for name in all_members]
-
-    summary_embed = default_embed(
-        title=f"{category_title(category)} Cache Group",
-        description="Grouped report for this cache category.",
-    )
-    for item in category_snapshots:
-        # Determine if it's in-memory or on-disk for the display
-        items_str = f"Items: **{item['cached_items']}/{item['max_items']}**\n" if item[
-                                                                                      'cached_items'] != "N/A" else f"Max Items: **{item['max_items']}**\n"
-        summary_embed.add_field(
-            name=item["name"],
-            value=(
-                f"{items_str}"
-                f"TTL: **{item['ttl']}**\n"
-                f"Requests: **{item['request_count']}**\n"
-                f"Hit rate: **{item['cached_percent']:.2f}%**"
-            ),
-            inline=True,
+        embed = default_embed(
+            title=f"{title_prefix}Cache Details (Page {page_num})",
+            description="Per-cache performance metrics.",
         )
 
-    janitor_embed = default_embed(
-        title=f"{category_title(category)} Janitor History",
-        description="Cleanup activity for this category.",
-    )
-    for item in category_snapshots:
-        if item.get("janitor_run_count") is not None and item["janitor_run_count"] > 0:
-            janitor_embed.add_field(
-                name=item["name"],
+        for item in page_items:
+            items_str = (
+                f"Items: **{item['cached_items']}/{item['max_items']}**"
+                if item['cached_items'] != "N/A"
+                else f"Max: **{item['max_items']}**"
+            )
+            embed.add_field(
+                name=f"{item['name']}",
                 value=(
-                    f"Runs: **{item['janitor_run_count']}**\n"
-                    f"Removed total: **"
-                    f"{item['janitor_removed_expired_count']}/"
-                    f"{item['janitor_removed_overflow_count']}**\n"
-                    f"Last remaining: **{item['janitor_last_remaining_items']}**"
+                    f"Traffic: **{item['cache_hit_count']} / {item['cache_miss_count']}**\n"
+                    f"Hit Rate: **{item['cached_percent']:.2f}%**\n"
+                    f"{items_str} • TTL: **{item['ttl']}**"
                 ),
                 inline=True,
             )
-        else:
-            janitor_embed.add_field(
-                name=item["name"],
-                value="*No janitor activity (In-Memory)*",
-                inline=True,
-            )
+        detail_embeds.append(embed)
 
-    return [summary_embed, janitor_embed]
+    return [summary_embed, *detail_embeds]
 
 
 def build_single_cache_embeds(cache_name: str) -> list[discord.Embed]:
@@ -316,9 +237,8 @@ def build_single_cache_embeds(cache_name: str) -> list[discord.Embed]:
         name="Traffic",
         value=(
             f"Requests: **{item['request_count']}**\n"
-            f"Hit rate: **{item['cached_percent']:.2f}%**\n"
-            f"Hits/Misses: **{item['cache_hit_count']}/"
-            f"{item['cache_miss_count']}**"
+            f"Hits / Misses: **{item['cache_hit_count']} / {item['cache_miss_count']}**\n"
+            f"Hit Rate: **{item['cached_percent']:.2f}%**"
         ),
         inline=True,
     )
@@ -338,18 +258,18 @@ def build_single_cache_embeds(cache_name: str) -> list[discord.Embed]:
         inline=True,
     )
     overview_embed.add_field(
-        name="Version",
-        value=f"Cache version: **{item['version']}**",
+        name="Configuration",
+        value=f"Version: **{item['version']}**\nNamespace: `{item['name']}`",
         inline=True,
     )
 
     if item['directory'] != "In-Memory":
         janitor_embed = default_embed(
             title=f"Janitor Report: {cache_name}",
-            description="Cleanup history for this cache.",
+            description="Cleanup history for this persistent cache.",
         )
         janitor_embed.add_field(
-            name="Totals",
+            name="Cumulative Totals",
             value=(
                 f"Runs: **{item['janitor_run_count']}**\n"
                 f"Expired removed: **{item['janitor_removed_expired_count']}**\n"
@@ -358,7 +278,7 @@ def build_single_cache_embeds(cache_name: str) -> list[discord.Embed]:
             inline=True,
         )
         janitor_embed.add_field(
-            name="Last Run",
+            name="Last Run Result",
             value=(
                 f"Expired removed: **{item['janitor_last_removed_expired']}**\n"
                 f"Overflow removed: **{item['janitor_last_removed_overflow']}**\n"
@@ -369,23 +289,6 @@ def build_single_cache_embeds(cache_name: str) -> list[discord.Embed]:
         return [overview_embed, janitor_embed]
 
     return [overview_embed]
-
-
-def build_cache_report_embeds(scope: str | None) -> list[discord.Embed]:
-    if scope is None:
-        return build_overview_embeds()
-
-    scope_key = scope.lower()
-    all_configs = {**IMAGE_CACHES, **MEMORY_CACHES}
-    if scope_key in all_configs:
-        return build_single_cache_embeds(scope_key)
-
-    grouped_image_caches = group_image_caches_by_category()
-    grouped_memory_caches = group_memory_caches_by_category()
-    if scope_key in grouped_image_caches or scope_key in grouped_memory_caches:
-        return build_category_embeds(scope_key)
-
-    raise KeyError(scope)
 
 
 class ConfirmClearCacheStatsView(discord.ui.View):
@@ -557,19 +460,46 @@ class CacheStatsControls(discord.ui.Select):
 
 
 class CacheStatsReportView(discord.ui.View):
-    def __init__(self, scope: str | None):
+    def __init__(self, scope: str | None, embeds: list[discord.Embed]):
         super().__init__(timeout=300)
         self.scope = scope
+        self.embeds = embeds
+        self.current_page = 0
         self.message: discord.Message | None = None
+
         self.add_item(CacheStatsControls(self))
+        self._update_button_states()
+
+    def _update_button_states(self):
+        self.prev_page.disabled = self.current_page == 0
+        self.next_page.disabled = self.current_page == len(self.embeds) - 1
+
+    async def _update_message(self, interaction: discord.Interaction):
+        self._update_button_states()
+        embed = self.embeds[self.current_page]
+        embed.set_footer(text=f"Page {self.current_page + 1} of {len(self.embeds)}")
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    @discord.ui.button(label="◀️ Previous", style=discord.ButtonStyle.secondary)
+    async def prev_page(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.current_page -= 1
+        await self._update_message(interaction)
+
+    @discord.ui.button(label="▶️ Next", style=discord.ButtonStyle.secondary)
+    async def next_page(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.current_page += 1
+        await self._update_message(interaction)
 
     async def refresh_message(self) -> None:
         if self.message is None:
             return
-        await self.message.edit(
-            embeds=build_cache_report_embeds(self.scope),
-            view=self,
-        )
+        self.embeds = build_cache_report_embeds(self.scope)
+        self.current_page = min(self.current_page, len(self.embeds) - 1)
+        self._update_button_states()
+
+        embed = self.embeds[self.current_page]
+        embed.set_footer(text=f"Page {self.current_page + 1} of {len(self.embeds)}")
+        await self.message.edit(embed=embed, view=self)
 
 
 class CacheStats(commands.Cog):
@@ -609,9 +539,14 @@ class CacheStats(commands.Cog):
             await interaction.followup.send(embed=error_embed(exception=e))
             return
 
-        view = CacheStatsReportView(scope)
+        view = CacheStatsReportView(scope, embeds)
+
+        # Set footer for initial page
+        first_embed = embeds[0]
+        first_embed.set_footer(text=f"Page 1 of {len(embeds)}")
+        
         message = await interaction.followup.send(
-            embeds=embeds,
+            embed=first_embed,
             view=view,
             ephemeral=hidden,
             wait=True,

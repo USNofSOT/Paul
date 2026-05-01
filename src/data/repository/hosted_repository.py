@@ -9,10 +9,51 @@ from sqlalchemy.sql.functions import coalesce, count
 from src.config.cache import ONE_HOUR_IN_SECONDS
 from src.data import Sailor
 from src.data.models import Hosted
-from src.data.repository.common.base_repository import BaseRepository
+from src.data.repository.common.base_repository import BaseRepository, Session
 from src.utils.cache_utils import ttl_cache
 
 log = logging.getLogger(__name__)
+
+
+@ttl_cache(seconds=ONE_HOUR_IN_SECONDS, cache_name="ship_history")
+def _retrieve_ship_history(ship_name: str) -> list[type[Hosted]]:
+    """Internal cached helper for ship history."""
+    try:
+        with Session() as session:
+            # Try to find info for main ship,
+            # if not found, try to find info for auxiliary ship
+            ship = (
+                session.query(Hosted)
+                .filter(
+                    Hosted.ship_name == ship_name, Hosted.auxiliary_ship_name.is_(None)
+                )
+                .all()
+            )
+            if not ship:
+                ship = (
+                    session.query(Hosted)
+                    .filter(Hosted.auxiliary_ship_name == ship_name)
+                    .all()
+                )
+            return ship
+    except Exception as e:
+        log.error("Error retrieving ship history for %s: %s", ship_name, e)
+        raise
+
+
+@ttl_cache(seconds=ONE_HOUR_IN_SECONDS, cache_name="ship_name_combinations")
+def _retrieve_unique_ship_name_combinations() -> list[Row[tuple[Any, Any]]]:
+    """Internal cached helper for unique ship name combinations."""
+    try:
+        with Session() as session:
+            return (
+                session.query(Hosted.ship_name, Hosted.auxiliary_ship_name)
+                .distinct()
+                .all()
+            )
+    except Exception as e:
+        log.error("Error retrieving unique ship name combinations: %s", e)
+        raise
 
 
 class HostedRepository(BaseRepository[Hosted]):
@@ -331,7 +372,6 @@ class HostedRepository(BaseRepository[Hosted]):
             log.error("Error getting last hosted log entries.")
             raise e
 
-    @ttl_cache(seconds=ONE_HOUR_IN_SECONDS, cache_name="ship_history")
     def retrieve_ship_history(self, ship_name: str) -> list[type[Hosted]]:
         """
         Retrieves the ship history for the given ship name.
@@ -342,28 +382,8 @@ class HostedRepository(BaseRepository[Hosted]):
         Returns:
             list[Hosted] | None: The ship history if found, otherwise None.
         """
-        try:
-            # Try to find info for main ship,
-            # if not found, try to find info for auxiliary ship
-            ship = (
-                self.session.query(Hosted)
-                .filter(
-                    Hosted.ship_name == ship_name, Hosted.auxiliary_ship_name.is_(None)
-                )
-                .all()
-            )
-            if not ship:
-                ship = (
-                    self.session.query(Hosted)
-                    .filter(Hosted.auxiliary_ship_name == ship_name)
-                    .all()
-                )
-            return ship
-        except Exception as e:
-            log.error("Error retrieving ship history.")
-            raise e
+        return _retrieve_ship_history(ship_name)
 
-    @ttl_cache(seconds=ONE_HOUR_IN_SECONDS, cache_name="ship_name_combinations")
     def retrieve_unique_ship_name_combinations(self) -> list[Row[tuple[Any, Any]]]:
         """
         Retrieves the unique ship name combinations from the Hosted table.
@@ -372,15 +392,7 @@ class HostedRepository(BaseRepository[Hosted]):
         Returns:
             list[tuple[str]]: The unique ship name combinations.
         """
-        try:
-            return (
-                self.session.query(Hosted.ship_name, Hosted.auxiliary_ship_name)
-                .distinct()
-                .all()
-            )
-        except Exception as e:
-            log.error("Error retrieving unique ship name combinations.")
-            raise e
+        return _retrieve_unique_ship_name_combinations()
 
 
 def remove_hosted_entry_by_log_id(log_id: int) -> bool:
