@@ -26,6 +26,7 @@ MINUTES_PER_HOUR = 60
 HOURS_PER_DAY = 24
 DAYS_PER_MONTH = 30
 
+FIVE_MINUTES_IN_SECONDS = SECONDS_PER_MINUTE * 5
 THIRTY_MINUTES_IN_SECONDS = SECONDS_PER_MINUTE * 30
 ONE_HOUR_IN_SECONDS = SECONDS_PER_MINUTE * MINUTES_PER_HOUR
 TWO_HOURS_IN_SECONDS = ONE_HOUR_IN_SECONDS * 2
@@ -213,6 +214,15 @@ IMAGE_CACHES = {
         ttl_seconds=THIRTY_MINUTES_IN_SECONDS,
         version=1,
     ),
+    "streak_calendar": ImageCacheConfig(
+        name="streak_calendar",
+        category=REPORTS_CACHE_CATEGORY,
+        directory=".cache/reports/streak_calendar",
+        default_filename="streak_calendar.png",
+        max_items=LARGE_IMAGE_CACHE_MAX_ITEMS,
+        ttl_seconds=ONE_HOUR_IN_SECONDS,
+        version=1,
+    ),
 }
 
 MEMORY_CACHES = {
@@ -230,6 +240,11 @@ MEMORY_CACHES = {
         name="ship_history",
         category=SHIPS_CACHE_CATEGORY,
         ttl_seconds=ONE_HOUR_IN_SECONDS,
+    ),
+    "streak_activity_dates": MemoryCacheConfig(
+        name="streak_activity_dates",
+        category=REPORTS_CACHE_CATEGORY,
+        ttl_seconds=FIVE_MINUTES_IN_SECONDS,
     ),
 }
 
