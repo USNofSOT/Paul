@@ -153,7 +153,8 @@ class AuditLogRepository(BaseRepository[BotInteractionLog]):
             self.session.rollback()
 
     def log_interaction(self, interaction_type: BotInteractionType, guild_id: int, channel_id: int, user_id: int,
-                        command_name: str, failed: bool = False, interaction_id: int = None) -> BotInteractionLog:
+                        command_name: str, failed: bool = False, interaction_id: int = None,
+                        args: str = None) -> BotInteractionLog:
         try:
             log_entry = BotInteractionLog(
                 interaction_type=interaction_type,
@@ -163,6 +164,7 @@ class AuditLogRepository(BaseRepository[BotInteractionLog]):
                 command_name=command_name,
                 failed=failed,
                 interaction_id=interaction_id,
+                args=args,
                 log_time=utc_time_now()
             )
 
@@ -172,6 +174,19 @@ class AuditLogRepository(BaseRepository[BotInteractionLog]):
             return log_entry
         except Exception as e:
             log.error(f"Error logging interaction: {e}")
+            self.session.rollback()
+
+    def record_error(self, interaction_id: int, error_message: str) -> None:
+        try:
+            self.session.query(BotInteractionLog).filter(
+                BotInteractionLog.interaction_id == interaction_id
+            ).update({
+                "failed": True,
+                "error_message": error_message
+            })
+            self.session.commit()
+        except Exception as e:
+            log.error("Error recording error for interaction %s: %s", interaction_id, e)
             self.session.rollback()
 
     def record_execution_time(self, interaction_id: int, elapsed_ms: float) -> None:

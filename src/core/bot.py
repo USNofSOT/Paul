@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import functools
+import json
 import time
 from logging import getLogger
 from typing import Optional
@@ -148,14 +149,30 @@ class Bot(discord.ext.commands.Bot):
             log.info(f"[COMMAND] [{context.message.id}] > Channel: {context.channel or 'None'}")
             log.info(f"[COMMAND] [{context.message.id}] > User: {context.author or 'None'}")
             log.info(f"[COMMAND] [{context.message.id}] > Command: {context.command or 'None'}")
-            log.info(f"[COMMAND] [{context.message.id}] > Arguments: {context.args or 'None'}")
+
+            # Serialize arguments for logging
+            args_str = None
+            try:
+                args_str = json.dumps({
+                    "args": [str(a) for a in context.args],
+                    "kwargs": {k: str(v) for k, v in context.kwargs.items()},
+                    "content": context.message.content
+                })
+            except Exception as e:
+                log.warning(f"Failed to serialize command arguments: {e}")
+                args_str = str(context.args)
+
+            log.info(f"[COMMAND] [{context.message.id}] > Arguments: {args_str}")
+            
             create_low_priority_task(audit_log_repository.log_interaction)(
                 interaction_type=BotInteractionType.COMMAND,
                 guild_id=context.guild.id,
                 channel_id=context.channel.id,
                 user_id=context.author.id,
-                command_name=context.command or 'None',
-                failed=context.command_failed
+                command_name=context.command.name if context.command else 'None',
+                failed=context.command_failed,
+                interaction_id=context.message.id,
+                args=args_str
             )
         except CommandNotFound:
             pass
@@ -179,6 +196,13 @@ class Bot(discord.ext.commands.Bot):
 
         if await handle_text_command_security_error(context, error):
             return
+
+        # Record error in audit log
+        try:
+            audit_log_repository = AuditLogRepository()
+            audit_log_repository.record_error(interaction_id=context.message.id, error_message=str(error))
+        except Exception as e:
+            log.error(f"Failed to record command error in audit log: {e}")
 
         log.error(
             "Command error in %s: %s",
@@ -217,6 +241,13 @@ class Bot(discord.ext.commands.Bot):
         if await handle_app_command_security_error(interaction, error):
             return
 
+        # Record error in audit log
+        try:
+            audit_log_repository = AuditLogRepository()
+            audit_log_repository.record_error(interaction_id=interaction.id, error_message=str(error))
+        except Exception as e:
+            log.error(f"Failed to record app command error in audit log: {e}")
+
         log.error(
             "App command error: %s",
             error,
@@ -237,16 +268,28 @@ class Bot(discord.ext.commands.Bot):
             log.info(f"[INTERACTION] [{interaction.id}] > Channel: {interaction.channel or 'None'}")
             log.info(f"[INTERACTION] [{interaction.id}] > User: {interaction.user or 'None'}")
 
-            log.info(f"[INTERACTION] [{interaction.id}] > Command: {interaction.data['name'] or 'None'}")
-            log.info(f"[INTERACTION] [{interaction.id}] > > Options: {interaction.data.get('options', [])}")
+            log.info(f"[INTERACTION] [{interaction.id}] > Command: {interaction.data.get('name', 'None')}")
+
+            # Serialize options for logging
+            options = interaction.data.get('options', [])
+            args_str = None
+            try:
+                args_str = json.dumps(options)
+            except Exception as e:
+                log.warning(f"Failed to serialize interaction options: {e}")
+                args_str = str(options)
+
+            log.info(f"[INTERACTION] [{interaction.id}] > > Options: {args_str}")
+            
             create_low_priority_task(audit_log_repository.log_interaction)(
                 interaction_type=BotInteractionType.INTERACTION,
-                guild_id=interaction.guild.id,
-                channel_id=interaction.channel.id,
+                guild_id=interaction.guild.id if interaction.guild else 0,
+                channel_id=interaction.channel.id if interaction.channel else 0,
                 user_id=interaction.user.id,
-                command_name=str(interaction.data['name']) or 'None',
+                command_name=str(interaction.data.get('name', 'Unknown')),
                 failed=interaction.command_failed,
                 interaction_id=interaction.id,
+                args=args_str
             )
 
 
