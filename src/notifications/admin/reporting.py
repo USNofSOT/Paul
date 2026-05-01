@@ -15,8 +15,7 @@ from src.config.task_timing import (
     CHECK_TRAINING_AWARDS_TASK_TIME,
     COMMAND_NOTIFICATION_EVALUATOR_MAX_INTERVAL_HOURS,
     COMMAND_NOTIFICATION_EVALUATOR_MIN_INTERVAL_HOURS,
-    COMMAND_NOTIFICATION_WORKER_TASK_INTERVAL_SECONDS,
-    TRACK_SHIP_SIZE_TASK_TIME,
+    COMMAND_NOTIFICATION_WORKER_TASK_INTERVAL_SECONDS, TRACK_ROLE_SIZE_TASK_TIME,
 )
 from src.data.models import NotificationEvent
 from src.notifications.types import NotificationDefinition, NotificationStatus, NotificationType
@@ -87,7 +86,7 @@ def build_notification_overview_embed(
     embed.add_field(
         name="Task Timing",
         value=(
-            f"Ship size: **{_format_clock(TRACK_SHIP_SIZE_TASK_TIME)}**\n"
+            f"Role size: **{_format_clock(TRACK_ROLE_SIZE_TASK_TIME)}**\n"
             f"Notifications evaluator: **{_format_interval_window(COMMAND_NOTIFICATION_EVALUATOR_MIN_INTERVAL_HOURS, COMMAND_NOTIFICATION_EVALUATOR_MAX_INTERVAL_HOURS)}**\n"
             f"Worker poll: **every {COMMAND_NOTIFICATION_WORKER_TASK_INTERVAL_SECONDS}s**\n"
             f"Projection: **{NOTIFICATION_LOOKAHEAD_HOURS}h lookahead**, **{NOTIFICATION_DELIVERY_GRACE_HOURS}h grace**\n"

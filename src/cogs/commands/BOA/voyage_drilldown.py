@@ -26,13 +26,13 @@ class VoyageDrilldown(commands.Cog):
 
     @app_commands.command(
         name="voyage_drilldown",
-        description="Drill down for a Sailors Voyaging Record (SO+)",
+        description="Drill down for a Sailors Voyaging Record",
     )
     @app_commands.describe(
         target="Select the user you want to get the voyage record for"
     )
     @app_commands.describe(days="Number of days to look back (default 30)")
-    @require_any_role(Role.SO)
+    @require_any_role(Role.BOA, Role.NSC_ADMINISTRATOR)
     async def voyage_drilldown(
         self,
         interaction: discord.interactions,

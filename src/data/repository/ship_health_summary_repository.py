@@ -4,7 +4,7 @@ from datetime import datetime
 
 from sqlalchemy import func
 
-from src.data.models import Hosted, Sailor, ShipSize, Voyages
+from src.data.models import Hosted, Sailor, RoleSize, RoleType, Voyages
 from src.data.repository.common.base_repository import BaseRepository
 
 
@@ -86,12 +86,13 @@ class ShipHealthSummaryRepository(BaseRepository[Sailor]):
             before: datetime,
     ) -> int | None:
         record = (
-            self.session.query(ShipSize)
+            self.session.query(RoleSize)
             .filter(
-                ShipSize.ship_role_id == ship_role_id,
-                ShipSize.log_time <= before,
+                RoleSize.role_id == ship_role_id,
+                RoleSize.role_type == RoleType.SHIP,
+                RoleSize.log_time <= before,
             )
-            .order_by(ShipSize.log_time.desc())
+            .order_by(RoleSize.log_time.desc())
             .first()
         )
         return record.member_count if record is not None else None
