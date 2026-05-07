@@ -162,8 +162,8 @@ def create_dual_leaderboard_embed(bot, guild_id, data1, title1, data2, title2):
         field_values_2.append(field_value_2)
 
     # Add fields to the embed with the formatted values
-    embed.add_field(name=title1, value="\n".join(field_values_1), inline=True)
-    embed.add_field(name=title2, value="\n".join(field_values_2), inline=True)
+    embed.add_field(name=title1, value="\n".join(field_values_1) or "None", inline=True)
+    embed.add_field(name=title2, value="\n".join(field_values_2) or "None", inline=True)
 
     return embed
 

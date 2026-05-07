@@ -25,27 +25,100 @@ PING_USAGE_TREND_CACHE = BinaryImageCache(IMAGE_CACHES["ping_usage_trend"])
 WEEKDAY_LABELS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 
 UNIQUE_PING_ROLE_IDS = list(set(
-    role_id 
-    for channel_config in PING_TRACKING_CONFIG.values() 
+    role_id
+    for channel_config in PING_TRACKING_CONFIG.values()
     for role_id in channel_config.keys()
 ))
 
-def _week_anchor_now() -> datetime:
-    now = utc_time_now().replace(tzinfo=None).replace(hour=0, minute=0, second=0, microsecond=0)
-    return now - timedelta(days=now.weekday())
+# Granularity options: value -> (label, description)
+GRANULARITY_OPTIONS = {
+    "hour":  ("Per Hour",  "Break data into individual hours"),
+    "day":   ("Per Day",   "Break data into individual days"),
+    "week":  ("Per Week",  "Break data into calendar weeks"),
+    "month": ("Per Month", "Break data into calendar months"),
+}
+
+# Default period spans for each granularity (number of buckets shown)
+GRANULARITY_DEFAULTS = {
+    "hour":  48,   # last 48 hours
+    "day":   30,   # last 30 days
+    "week":  12,   # last 12 weeks
+    "month": 12,   # last 12 months
+}
+
+# Max buckets allowed per granularity
+GRANULARITY_MAX = {
+    "hour":  168,  # 1 week of hours
+    "day":   90,
+    "week":  52,
+    "month": 24,
+}
+
+
+def _now_floor() -> datetime:
+    """Return current UTC time floored to the current hour."""
+    return utc_time_now().replace(tzinfo=None).replace(minute=0, second=0, microsecond=0)
+
+
+def _bucket_for(dt: datetime, granularity: str) -> datetime:
+    """Return the start of the bucket that `dt` falls into."""
+    if granularity == "hour":
+        return dt.replace(minute=0, second=0, microsecond=0)
+    if granularity == "day":
+        return dt.replace(hour=0, minute=0, second=0, microsecond=0)
+    if granularity == "week":
+        base = dt.replace(hour=0, minute=0, second=0, microsecond=0)
+        return base - timedelta(days=base.weekday())
+    if granularity == "month":
+        return dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    raise ValueError(f"Unknown granularity: {granularity}")
+
+
+def _generate_buckets(granularity: str, n: int) -> list[datetime]:
+    """Generate n bucket-start datetimes ending at the current bucket."""
+    now = _now_floor()
+    current = _bucket_for(now, granularity)
+    buckets = []
+    for i in range(n - 1, -1, -1):
+        if granularity == "hour":
+            buckets.append(current - timedelta(hours=i))
+        elif granularity == "day":
+            buckets.append(current - timedelta(days=i))
+        elif granularity == "week":
+            buckets.append(current - relativedelta(weeks=i))
+        elif granularity == "month":
+            buckets.append(current - relativedelta(months=i))
+    return buckets
+
+
+def _bucket_label(dt: datetime, granularity: str) -> str:
+    if granularity == "hour":
+        return dt.strftime("%d %b %H:%M")
+    if granularity == "day":
+        return dt.strftime("%d %b")
+    if granularity == "week":
+        return dt.strftime("%d %b")
+    if granularity == "month":
+        return dt.strftime("%b %Y")
+    return str(dt)
+
+
+def _start_date_for(buckets: list[datetime], granularity: str) -> datetime:
+    """Return the earliest datetime we need to fetch."""
+    return buckets[0]
+
 
 class PingUsageFilterSelect(discord.ui.Select):
     def __init__(self, current_filter: str, guild: discord.Guild):
-        options = []
-        options.append(
+        options = [
             discord.SelectOption(
                 label="All Voyage LFG",
                 description="Aggregated view of all Voyage pings.",
                 value="ALL",
                 default=current_filter == "ALL"
             )
-        )
-        
+        ]
+
         for role_id in UNIQUE_PING_ROLE_IDS:
             role = guild.get_role(role_id)
             if role:
@@ -61,217 +134,229 @@ class PingUsageFilterSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        selected_filter = self.values[0]
         view: PingUsageView = self.view
-        view.filter_group = selected_filter
+        view.filter_group = self.values[0]
+        embed, discord_file = await view.cog.trend_ping_usage(
+            interaction, view.n_buckets, view.filter_group, view.granularity
+        )
+        view.update_select()
+        await interaction.edit_original_response(embed=embed, attachments=[discord_file], view=view)
 
-        embed, discord_file = await view.cog.trend_ping_usage(interaction, view.weeks, view.filter_group)
+
+class PingUsageGranularitySelect(discord.ui.Select):
+    def __init__(self, current_granularity: str):
+        options = [
+            discord.SelectOption(
+                label=GRANULARITY_OPTIONS[g][0],
+                description=GRANULARITY_OPTIONS[g][1],
+                value=g,
+                default=current_granularity == g,
+            )
+            for g in GRANULARITY_OPTIONS
+        ]
+        super().__init__(placeholder="Select time granularity...", min_values=1, max_values=1, options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        view: PingUsageView = self.view
+        new_gran = self.values[0]
+        if new_gran != view.granularity:
+            view.granularity = new_gran
+            # Reset bucket count to the sensible default for this granularity
+            view.n_buckets = GRANULARITY_DEFAULTS[new_gran]
+        embed, discord_file = await view.cog.trend_ping_usage(
+            interaction, view.n_buckets, view.filter_group, view.granularity
+        )
         view.update_select()
         await interaction.edit_original_response(embed=embed, attachments=[discord_file], view=view)
 
 
 class PingUsageView(discord.ui.View):
-    def __init__(self, cog: 'PingUsage', filter_group: str, weeks: int, guild: discord.Guild):
+    def __init__(self, cog: 'PingUsage', filter_group: str, n_buckets: int,
+                 granularity: str, guild: discord.Guild):
         super().__init__(timeout=180)
         self.cog = cog
         self.filter_group = filter_group
-        self.weeks = weeks
+        self.n_buckets = n_buckets
+        self.granularity = granularity
         self.guild = guild
         self.update_select()
 
     def update_select(self):
         self.clear_items()
         self.add_item(PingUsageFilterSelect(self.filter_group, self.guild))
+        self.add_item(PingUsageGranularitySelect(self.granularity))
+
 
 class PingUsage(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
     @app_commands.command(name="ping_usage", description="Get a report of LFG ping usage and deficiencies over time")
-    @app_commands.describe(weeks="Number of weeks to show trend for (default 12)")
+    @app_commands.describe(periods="Number of time periods to show (default varies by granularity)")
+    @app_commands.describe(granularity="Time granularity: hour, day, week (default), month")
     @app_commands.describe(hidden="Should only you be able to see the response?")
+    @app_commands.choices(granularity=[
+        app_commands.Choice(name="Per Hour", value="hour"),
+        app_commands.Choice(name="Per Day", value="day"),
+        app_commands.Choice(name="Per Week", value="week"),
+        app_commands.Choice(name="Per Month", value="month"),
+    ])
     @require_any_role(Role.BOA, Role.NSC_OBSERVER, Role.NSC_OPERATOR, Role.NSC_ADMINISTRATOR)
-    async def ping_usage(self, interaction: discord.Interaction, weeks: int = 12, hidden: bool = True):
+    async def ping_usage(self, interaction: discord.Interaction,
+                         granularity: str = "week",
+                         periods: int = 0,
+                         hidden: bool = True):
         try:
             await interaction.response.defer(ephemeral=hidden)
 
-            if weeks > 52:
-                await interaction.followup.send(embed=error_embed("Cannot trend more than 52 weeks at once."), ephemeral=True)
+            n_buckets = periods if periods > 0 else GRANULARITY_DEFAULTS[granularity]
+            max_buckets = GRANULARITY_MAX[granularity]
+            if n_buckets > max_buckets:
+                await interaction.followup.send(
+                    embed=error_embed(f"Cannot show more than {max_buckets} periods for '{granularity}' granularity."),
+                    ephemeral=True
+                )
                 return
 
-            default_type = "ALL"
-            embed, discord_file = await self.trend_ping_usage(interaction, weeks, filter_group=default_type)
-            view = PingUsageView(self, filter_group=default_type, weeks=weeks, guild=interaction.guild)
+            embed, discord_file = await self.trend_ping_usage(
+                interaction, n_buckets, filter_group="ALL", granularity=granularity
+            )
+            view = PingUsageView(
+                self, filter_group="ALL", n_buckets=n_buckets,
+                granularity=granularity, guild=interaction.guild
+            )
             await interaction.followup.send(embed=embed, file=discord_file, view=view)
 
         except Exception as e:
             log.error(f"Error getting ping usage trend: {e}", exc_info=True)
             await interaction.followup.send(embed=error_embed("Error generating the ping usage report."), ephemeral=True)
 
-    async def trend_ping_usage(self, interaction: discord.Interaction, weeks: int, filter_group: str):
-        reference_week = _week_anchor_now()
-        start_date = reference_week - relativedelta(weeks=weeks)
-        
+    async def trend_ping_usage(self, interaction: discord.Interaction,
+                               n_buckets: int, filter_group: str, granularity: str):
+        buckets = _generate_buckets(granularity, n_buckets)
+        start_date = _start_date_for(buckets, granularity)
+
         with PingTrackingRepository() as ping_repo:
             all_logs = ping_repo.get_active_ping_logs_since(start_date)
-            
+
         if filter_group == "ALL":
             logs = all_logs
             filter_name = "All Voyage LFG"
         else:
             role_id = int(filter_group)
-            logs = [log_entry for log_entry in all_logs if log_entry.ping_role_id == role_id]
+            logs = [e for e in all_logs if e.ping_role_id == role_id]
             role = interaction.guild.get_role(role_id)
             filter_name = role.name if role else f"Role {role_id}"
-        
+
         total_pings = len(logs)
-        vp_enabled_pings = sum(1 for log_entry in logs if log_entry.has_vp_permission)
+        vp_enabled_pings = sum(1 for e in logs if e.has_vp_permission)
         non_vp_pings = total_pings - vp_enabled_pings
 
-        weekly_total = defaultdict(int)
-        weekly_vp = defaultdict(int)
-        weekly_non_vp = defaultdict(int)
-        weekday_counts = {i: 0 for i in range(7)}
-        hourly_total_counts = {i: 0 for i in range(24)}
+        # --- Bucketed trend ---
+        bucket_total: dict[datetime, int] = defaultdict(int)
+        bucket_vp: dict[datetime, int] = defaultdict(int)
+        bucket_non_vp: dict[datetime, int] = defaultdict(int)
+
+        # --- Day-of-week and hourly distributions (VP/non-VP) ---
+        weekday_vp_counts = {i: 0 for i in range(7)}
+        weekday_non_vp_counts = {i: 0 for i in range(7)}
         hourly_vp_counts = {i: 0 for i in range(24)}
         hourly_non_vp_counts = {i: 0 for i in range(24)}
-        
-        rank_vp_counts = defaultdict(int)
-        rank_non_vp_counts = defaultdict(int)
-        
-        rank_lookup = {}
+
+        # --- Rank distribution ---
+        rank_lookup: dict[int, str] = {}
         for rank in RANKS:
-            for role_id in rank.role_ids:
-                rank_lookup[role_id] = rank.name
-        
-        for log_entry in logs:
-            base_date = log_entry.created_at.replace(hour=0, minute=0, second=0, microsecond=0)
-            if weeks == 1:
-                bucket_date = base_date
+            for rid in rank.role_ids:
+                rank_lookup[rid] = rank.name
+
+        rank_vp_counts: dict[str, int] = defaultdict(int)
+        rank_non_vp_counts: dict[str, int] = defaultdict(int)
+
+        for entry in logs:
+            b = _bucket_for(entry.created_at, granularity)
+            bucket_total[b] += 1
+            if entry.has_vp_permission:
+                bucket_vp[b] += 1
             else:
-                bucket_date = base_date - timedelta(days=base_date.weekday())
-            
-            weekly_total[bucket_date] += 1
-            if log_entry.has_vp_permission:
-                weekly_vp[bucket_date] += 1
+                bucket_non_vp[b] += 1
+
+            wd = entry.created_at.weekday()
+            hr = entry.created_at.hour
+            if entry.has_vp_permission:
+                weekday_vp_counts[wd] += 1
+                hourly_vp_counts[hr] += 1
             else:
-                weekly_non_vp[bucket_date] += 1
-                
-            weekday_counts[log_entry.created_at.weekday()] += 1
-            hour = log_entry.created_at.hour
-            hourly_total_counts[hour] += 1
-            if log_entry.has_vp_permission:
-                hourly_vp_counts[hour] += 1
-            else:
-                hourly_non_vp_counts[hour] += 1
-            
-            rank_name = rank_lookup.get(log_entry.highest_rank_role_id, "Unknown Rank")
-            if log_entry.has_vp_permission:
+                weekday_non_vp_counts[wd] += 1
+                hourly_non_vp_counts[hr] += 1
+
+            rank_name = rank_lookup.get(entry.highest_rank_role_id, "Unknown Rank")
+            if entry.has_vp_permission:
                 rank_vp_counts[rank_name] += 1
             else:
                 rank_non_vp_counts[rank_name] += 1
 
+        # Build ordered series for trend chart
+        y_total = [bucket_total.get(b, 0) for b in buckets]
+        y_vp = [bucket_vp.get(b, 0) for b in buckets]
+        y_non_vp = [bucket_non_vp.get(b, 0) for b in buckets]
+
+        # Rank chart
         unique_ranks = list(set(list(rank_vp_counts.keys()) + list(rank_non_vp_counts.keys())))
         unique_ranks.sort(key=lambda r: rank_vp_counts.get(r, 0) + rank_non_vp_counts.get(r, 0), reverse=True)
-        
         y_rank_vp = [rank_vp_counts.get(r, 0) for r in unique_ranks]
         y_rank_non_vp = [rank_non_vp_counts.get(r, 0) for r in unique_ranks]
 
-        x_dates = []
-        if weeks == 1:
-            for day_offset in range(7):
-                x_dates.append(reference_week + timedelta(days=day_offset))
-        else:
-            for week in range(weeks - 1, -1, -1):
-                x_dates.append(reference_week - relativedelta(weeks=week))
-            
-        y_total = [weekly_total.get(d, 0) for d in x_dates]
-        y_vp = [weekly_vp.get(d, 0) for d in x_dates]
-        y_non_vp = [weekly_non_vp.get(d, 0) for d in x_dates]
+        # Stats
+        active_buckets = sum(1 for v in y_total if v > 0)
+        avg_per_bucket = round(total_pings / max(n_buckets, 1), 2)
+        gran_label = GRANULARITY_OPTIONS[granularity][0]
 
-        active_weeks = sum(1 for v in y_total if v > 0)
-        avg_per_week = round(total_pings / max(weeks, 1), 2)
-        avg_per_active_week = round(total_pings / max(active_weeks, 1), 2)
-        
-        most_active_hour = max(hourly_total_counts.keys(), key=lambda k: hourly_total_counts[k]) if total_pings > 0 else 0
-        most_active_weekday = max(weekday_counts.keys(), key=lambda k: weekday_counts[k]) if total_pings > 0 else 0
-        
+        weekday_total = {i: weekday_vp_counts[i] + weekday_non_vp_counts[i] for i in range(7)}
+        hourly_total = {i: hourly_vp_counts[i] + hourly_non_vp_counts[i] for i in range(24)}
+        most_active_hour = max(hourly_total.keys(), key=lambda k: hourly_total[k]) if total_pings > 0 else 0
+        most_active_weekday = max(weekday_total.keys(), key=lambda k: weekday_total[k]) if total_pings > 0 else 0
         most_active_hour_label = f"{most_active_hour:02d}:00-{(most_active_hour + 1) % 24:02d}:00"
         most_active_weekday_label = WEEKDAY_LABELS[most_active_weekday]
+
+        # Determine x-tick label density (avoid crowding)
+        n = len(buckets)
+        tick_step = max(1, n // 20)
 
         def plotter():
             figure = plt.figure(figsize=(16, 15))
             grid = figure.add_gridspec(3, 2, height_ratios=[1.35, 1.35, 1])
 
-            weekly_axis = figure.add_subplot(grid[0, :])
+            trend_axis = figure.add_subplot(grid[0, :])
             rank_axis = figure.add_subplot(grid[1, :])
             weekday_axis = figure.add_subplot(grid[2, 0])
             hourly_axis = figure.add_subplot(grid[2, 1])
 
-            weekly_positions = range(len(x_dates))
-            weekly_labels_str = [d.strftime("%d %b") for d in x_dates]
+            positions = range(n)
+            labels = [_bucket_label(b, granularity) for b in buckets]
+            sparse_labels = [labels[i] if i % tick_step == 0 else "" for i in range(n)]
 
-            # Bar chart for Total Pings
-            weekly_axis.bar(
-                weekly_positions,
-                y_total,
-                color="#8CB9D1",
-                label="Total Pings",
-                alpha=0.4
-            )
-            
-            # Line chart overlay for VP vs Non-VP
+            # --- Trend chart ---
+            trend_axis.bar(positions, y_total, color="#8CB9D1", label="Total Pings", alpha=0.4)
             if total_pings > 0:
-                weekly_axis.plot(
-                    list(weekly_positions),
-                    y_vp,
-                    color="#2ECC71",
-                    marker="o",
-                    linewidth=3,
-                    markersize=8,
-                    label="VP Enabled"
-                )
-                weekly_axis.plot(
-                    list(weekly_positions),
-                    y_non_vp,
-                    color="#E74C3C",
-                    marker="o",
-                    linewidth=3,
-                    markersize=8,
-                    label="Non-VP (Deficient)"
-                )
-                
-            if weeks == 1:
-                weekly_axis.set_title(f"Daily Pings Overview: {filter_name}")
-                weekly_axis.set_xlabel("Day")
-            else:
-                weekly_axis.set_title(f"Weekly Pings Overview: {filter_name}")
-                weekly_axis.set_xlabel("Week Starting")
-                
-            weekly_axis.set_ylabel("Pings")
-            weekly_axis.set_xticks(list(weekly_positions))
-            weekly_axis.set_xticklabels(weekly_labels_str, rotation=45, ha="right", fontsize=8)
-            weekly_axis.grid(axis="y", linestyle="--", alpha=0.25)
-            weekly_axis.legend(loc="upper left")
+                trend_axis.plot(list(positions), y_vp, color="#2ECC71", marker="o",
+                                linewidth=2.5, markersize=6, label="VP Enabled")
+                trend_axis.plot(list(positions), y_non_vp, color="#E74C3C", marker="o",
+                                linewidth=2.5, markersize=6, label="Non-VP (Deficient)")
+            trend_axis.set_title(f"Ping Volume {gran_label}: {filter_name}")
+            trend_axis.set_xlabel("Period")
+            trend_axis.set_ylabel("Pings")
+            trend_axis.set_xticks(list(positions))
+            trend_axis.set_xticklabels(sparse_labels, rotation=45, ha="right", fontsize=8)
+            trend_axis.grid(axis="y", linestyle="--", alpha=0.25)
+            trend_axis.legend(loc="upper left")
 
-            # Rank Distribution Stacked Bar Chart
+            # --- Rank distribution stacked bar ---
             if unique_ranks:
                 rank_positions = np.arange(len(unique_ranks))
-                rank_axis.bar(
-                    rank_positions,
-                    y_rank_vp,
-                    color="#2ECC71",
-                    label="VP Enabled",
-                    alpha=0.8
-                )
-                rank_axis.bar(
-                    rank_positions,
-                    y_rank_non_vp,
-                    bottom=y_rank_vp,
-                    color="#E74C3C",
-                    label="Non-VP (Deficient)",
-                    alpha=0.8
-                )
+                rank_axis.bar(rank_positions, y_rank_vp, color="#2ECC71", label="VP Enabled", alpha=0.85)
+                rank_axis.bar(rank_positions, y_rank_non_vp, bottom=y_rank_vp,
+                              color="#E74C3C", label="Non-VP (Deficient)", alpha=0.85)
                 rank_axis.set_title(f"Rank Distribution: {filter_name}")
                 rank_axis.set_ylabel("Pings")
                 rank_axis.set_xticks(rank_positions)
@@ -280,103 +365,100 @@ class PingUsage(commands.Cog):
                 rank_axis.legend(loc="upper right")
             else:
                 rank_axis.set_title(f"Rank Distribution: {filter_name}")
-                rank_axis.text(0.5, 0.5, "No rank data available", ha="center", va="center")
+                rank_axis.text(0.5, 0.5, "No rank data available", ha="center", va="center",
+                               transform=rank_axis.transAxes)
 
-            # Weekday Bar Chart
-            weekday_positions = range(7)
-            y_weekday = [weekday_counts[i] for i in range(7)]
-            weekday_axis.bar(
-                weekday_positions,
-                y_weekday,
-                color="#ff7f0e",
-            )
+            # --- Weekday VP/Non-VP stacked bar ---
+            wd_positions = range(7)
+            y_wd_vp = [weekday_vp_counts[i] for i in range(7)]
+            y_wd_non_vp = [weekday_non_vp_counts[i] for i in range(7)]
+            weekday_axis.bar(wd_positions, y_wd_vp, color="#2ECC71", label="VP Enabled", alpha=0.85)
+            weekday_axis.bar(wd_positions, y_wd_non_vp, bottom=y_wd_vp,
+                             color="#E74C3C", label="Non-VP (Deficient)", alpha=0.85)
             weekday_axis.set_title("Most Active Days")
             weekday_axis.set_ylabel("Pings")
-            weekday_axis.set_xticks(list(weekday_positions))
+            weekday_axis.set_xticks(list(wd_positions))
             weekday_axis.set_xticklabels(WEEKDAY_LABELS)
             weekday_axis.grid(axis="y", linestyle="--", alpha=0.25)
+            if total_pings > 0:
+                weekday_axis.legend(loc="upper right", fontsize=8)
+            wd_totals = [y_wd_vp[i] + y_wd_non_vp[i] for i in range(7)]
+            if max(wd_totals, default=0) > 0:
+                weekday_axis.set_ylim(0, max(wd_totals) + 1)
 
-            # Hourly Bar Chart
-            hourly_positions = range(24)
-            y_hourly_vp = [hourly_vp_counts[i] for i in range(24)]
-            y_hourly_non_vp = [hourly_non_vp_counts[i] for i in range(24)]
-            
-            hourly_axis.bar(
-                hourly_positions,
-                y_hourly_vp,
-                color="#2ECC71",
-                label="VP Enabled",
-                alpha=0.8
-            )
-            hourly_axis.bar(
-                hourly_positions,
-                y_hourly_non_vp,
-                bottom=y_hourly_vp,
-                color="#E74C3C",
-                label="Non-VP (Deficient)",
-                alpha=0.8
-            )
+            # --- Hourly VP/Non-VP stacked bar ---
+            hr_positions = range(24)
+            y_hr_vp = [hourly_vp_counts[i] for i in range(24)]
+            y_hr_non_vp = [hourly_non_vp_counts[i] for i in range(24)]
+            hourly_axis.bar(hr_positions, y_hr_vp, color="#2ECC71", label="VP Enabled", alpha=0.85)
+            hourly_axis.bar(hr_positions, y_hr_non_vp, bottom=y_hr_vp,
+                            color="#E74C3C", label="Non-VP (Deficient)", alpha=0.85)
             hourly_axis.set_title("Most Active Hours (UTC)")
             hourly_axis.set_ylabel("Pings")
-            hourly_axis.set_xticks(list(hourly_positions))
-            hourly_axis.set_xticklabels([f"{hour:02d}" for hour in hourly_positions])
+            hourly_axis.set_xticks(list(hr_positions))
+            hourly_axis.set_xticklabels([f"{h:02d}" for h in hr_positions])
             hourly_axis.grid(axis="y", linestyle="--", alpha=0.25)
             if total_pings > 0:
-                hourly_axis.legend(loc="upper right")
+                hourly_axis.legend(loc="upper right", fontsize=8)
+            hr_totals = [y_hr_vp[i] + y_hr_non_vp[i] for i in range(24)]
+            if max(hr_totals, default=0) > 0:
+                hourly_axis.set_ylim(0, max(hr_totals) + 1)
 
-            if max(hourly_total_counts.values(), default=0) > 0:
-                hourly_axis.set_ylim(0, max(hourly_total_counts.values()) + 1)
-            if max(y_weekday, default=0) > 0:
-                weekday_axis.set_ylim(0, max(y_weekday) + 1)
-
-            figure.suptitle(f"Ping Usage Analytics: {filter_name} | Last {weeks} weeks", fontsize=16)
+            figure.suptitle(
+                f"Ping Usage Analytics: {filter_name} | Last {n_buckets} {gran_label.lower()}s",
+                fontsize=16
+            )
             figure.text(
-                0.5,
-                0.94,
+                0.5, 0.94,
                 (
                     f"Total Pings: {total_pings} | "
-                    f"Active weeks: {active_weeks}/{weeks} | "
+                    f"Active periods: {active_buckets}/{n_buckets} | "
                     f"Peak hour: {most_active_hour_label} | "
                     f"Peak day: {most_active_weekday_label}"
                 ),
-                ha="center",
-                fontsize=10,
+                ha="center", fontsize=10,
             )
             figure.tight_layout(rect=(0, 0, 1, 0.9))
 
-        # Because we changed the structure heavily, we should change the cache keys
         image_data = PING_USAGE_TREND_CACHE.get_or_create_bytes(
             {
-                "weeks": weeks,
+                "n_buckets": n_buckets,
+                "granularity": granularity,
                 "filter_group": filter_group,
-                "reference_week": reference_week.isoformat(),
+                "buckets": [b.isoformat() for b in buckets],
                 "y_total": y_total,
                 "y_vp": y_vp,
                 "y_non_vp": y_non_vp,
-                "weekday_counts": [weekday_counts[i] for i in range(7)],
-                "hourly_vp_counts": [hourly_vp_counts[i] for i in range(24)],
-                "hourly_non_vp_counts": [hourly_non_vp_counts[i] for i in range(24)],
+                "weekday_vp": [weekday_vp_counts[i] for i in range(7)],
+                "weekday_non_vp": [weekday_non_vp_counts[i] for i in range(7)],
+                "hourly_vp": [hourly_vp_counts[i] for i in range(24)],
+                "hourly_non_vp": [hourly_non_vp_counts[i] for i in range(24)],
                 "y_rank_vp": y_rank_vp,
                 "y_rank_non_vp": y_rank_non_vp,
                 "unique_ranks": unique_ranks,
             },
             lambda: render_matplotlib_plot_to_png(plotter),
         )
-        
+
         discord_file = PING_USAGE_TREND_CACHE.to_discord_file(image_data)
-        
+
         embed = discord.Embed(
             title=f"Analytics: {filter_name}",
             color=discord.Color.blue(),
-            description=f"Overview of `{filter_name}` usage over the last {weeks} weeks."
+            description=(
+                f"Overview of `{filter_name}` usage — **{gran_label}** view, "
+                f"last **{n_buckets}** periods."
+            )
         )
         embed.set_image(url=f"attachment://{PING_USAGE_TREND_CACHE.config.default_filename}")
-        
+
         embed.add_field(name="Total Volume", value=f"{total_pings} pings")
-        embed.add_field(name="Authorization", value=f"✅ {vp_enabled_pings} VP\n❌ {non_vp_pings} Non-VP")
-        embed.add_field(name="Weekly Average", value=f"{avg_per_week} pings/wk")
+        embed.add_field(name="Authorization",
+                        value=f"✅ {vp_enabled_pings} VP\n❌ {non_vp_pings} Non-VP")
+        embed.add_field(name=f"{gran_label} Average", value=f"{avg_per_bucket} pings")
         embed.add_field(name="Peak Day", value=most_active_weekday_label)
         embed.add_field(name="Peak Hour", value=f"{most_active_hour_label} UTC")
+        embed.add_field(name="Active Periods", value=f"{active_buckets}/{n_buckets}")
 
         return embed, discord_file
 

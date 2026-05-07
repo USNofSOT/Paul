@@ -110,6 +110,11 @@ async def get_member_embed(
         await interaction.followup.send(embed=embed, exception=e)
         return
 
+    # Add Streak to Title
+    highest_streak = max(database_report.voyage_streak, database_report.hosted_streak)
+    if highest_streak >= 2:
+        embed.title = f"{embed.title} (🔥 {highest_streak})"
+
     embed.add_field(
         name="Other Info",
         value=f"GT: {database_report.sailor.gamertag or 'N/A'}"
@@ -145,7 +150,7 @@ async def get_member_embed(
     total_voyages_display = (
         f"{total_voyages} ({database_report.sailor.voyage_count})"
         if database_report.sailor.force_voyage_count != 0
-        else str(total_voyages)
+        else f"{total_voyages}"
     )
 
     embed.add_field(name="Total Voyages", value=total_voyages_display, inline=True)
@@ -170,7 +175,7 @@ async def get_member_embed(
     total_hosted_display = (
         f"{total_hosted} ({database_report.sailor.hosted_count})"
         if database_report.sailor.force_hosted_count != 0
-        else str(total_hosted)
+        else f"{total_hosted}"
     )
 
     interaction_user_roles = [role.id for role in member.roles]
@@ -314,6 +319,7 @@ async def get_member_embed(
         embed.add_field(name="Awards / Titles", value="None", inline=True)
 
     coin_repository.close_session()
+
     return embed
 
 
