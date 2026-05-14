@@ -41,8 +41,7 @@ class CheckApprentices(commands.Cog):
         apprentice_emoji = SEAMAN.emoji
         try:
             for member in interaction.guild.members:
-                member_role_ids = {role.id for role in member.roles}
-                if apprentice_role not in member_role_ids:
+                if apprentice_role not in (role.id for role in member.roles):
                     continue
 
                 role_log = audit_log_repository.get_latest_role_log_for_target_and_role(
