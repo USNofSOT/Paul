@@ -8,7 +8,7 @@ from config.ranks import SEAMAN
 from data.repository import voyage_repository
 from src.data import RoleChangeType
 import src.config.ranks
-from src.config.emojis import NRC_EMOJI, USNLogo_EMOJI
+from src.config.emojis import NRC_EMOJI
 from src.config.ranks_roles import apprentice_role
 from src.security import require_any_role, Role
 
@@ -51,21 +51,11 @@ class CheckApprentices(commands.Cog):
                 returned_by = f"<@{role_log.changed_by_id}>" if role_log else "Unknown"
 
                 days_as_apprentice = 0
+                voyage_count = 0
                 if role_log and role_log.change_type == RoleChangeType.ADDED:
                     days_as_apprentice = get_time_difference_in_days(now, role_log.log_time)
+                    voyage_count = voyage_repository.get_voyage_after_log_roleadd(member.id, role_log.log_time)
 
-                voyage_count = 0
-
-                if role_log and role_log.change_type == RoleChangeType.ADDED:
-                    voyage_count = (
-                            voyage_repository.session.query(func.count(Voyages.log_id))
-                            .filter(
-                                Voyages.target_id == member.id,
-                                Voyages.log_time >= role_log.log_time,
-                            )
-                            .scalar()
-                            or 0
-                    )
                 if voyage_count > 0:
                     has_voyaged = True
                 else:
@@ -109,14 +99,20 @@ class CheckApprentices(commands.Cog):
                 )
             await interaction.followup.send(embed=embed, ephemeral=True)
         except Exception as e:
-            await interaction.response.send_message("No apprentices found.",ephemeral=True)
-            log.error(f"Failed to find apprentices {e}")
+            log.error("Error occurred finding apprentices %s", e)
+            return await interaction.followup.send(
+                embed=error_embed(
+                    description="An error occurred while finding apprentices",
+                    exception=e,
+                ),
+                ephemeral=True,
+            )
         finally:
             audit_log_repository.close_session()
             sailor_repository.close_session()
     @checkapprentices.error
     async def checkapprentices_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
-        log.error("Error occurred in addsubclass command: %s", error)
+        log.error("Error occurred in checkapprentice command: %s", error)
         if isinstance(error, app_commands.errors.MissingAnyRole):
             embed = error_embed(
                 title="Missing Permissions",

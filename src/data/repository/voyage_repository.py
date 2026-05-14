@@ -2,7 +2,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Type
 
-from sqlalchemy import delete, update
+from sqlalchemy import delete, update, func
 from sqlalchemy.sql.functions import count
 
 from src.data import Sailor
@@ -46,7 +46,16 @@ class VoyageRepository(BaseRepository[Voyages]):
         except Exception as e:
             log.error(f"Error getting most recent voyage log entry: {e}")
             raise e
-
+    def get_voyage_after_log_roleadd(self, member_id, log_time):
+        return (
+                self.session.query(func.count(Voyages.log_id))
+            .filter(
+                Voyages.target_id == member_id,
+                Voyages.log_time >= log_time,
+            )
+            .scalar()
+            or 0
+        )
     def batch_save_voyage_data(self, voyage_data: list[tuple[int, int, datetime, int]]):
         """
         Batch inserts voyage records. Ignores duplicates based on log_id and participant_id.
