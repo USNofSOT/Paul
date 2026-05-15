@@ -47,15 +47,11 @@ class VoyageRepository(BaseRepository[Voyages]):
             log.error(f"Error getting most recent voyage log entry: {e}")
             raise e
     def get_voyage_after_log_roleadd(self, member_id, log_time):
-        return (
-                self.session.query(func.count(Voyages.log_id))
-            .filter(
-                Voyages.target_id == member_id,
-                Voyages.log_time >= log_time,
-            )
-            .scalar()
-            or 0
-        )
+        try:
+            return self.session.query(func.count(Voyages.log_id)).filter(Voyages.target_id == member_id,Voyages.log_time >= log_time,).scalar() or 0
+        except Exception as e:
+            log.error(f"Error finding voyage after role change entry: {e}")
+            raise e
     def batch_save_voyage_data(self, voyage_data: list[tuple[int, int, datetime, int]]):
         """
         Batch inserts voyage records. Ignores duplicates based on log_id and participant_id.
