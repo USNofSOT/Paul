@@ -1,8 +1,7 @@
-from config import WO_ROLE
 from src.config.netc_server import HIGH_COMMAND_OF_NETC_ROLES
 from src.config.ranks_roles import (
     JE_ROLE, NCO_ROLE, SNCO_ROLE, JO_ROLE, SO_ROLE, BOA_ROLE,
-    NRC_ROLE, VT_ROLES, RT_ROLES, VOYAGE_PERMISSIONS, NSC_ROLE
+    NRC_ROLE, VT_ROLES, RT_ROLES, VOYAGE_PERMISSIONS, NSC_ROLE, WO_ROLE
 )
 from src.config.spd_servers import SPD_NSC_ROLE
 
