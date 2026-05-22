@@ -11,6 +11,7 @@ from config import (
     NRC_CMD_CHANNEL,
     NRC_ROLE,
     SPD_GUILD_ID,
+    XO_OF_NETC_ROLE,
 )
 from config.ranks import DECKHAND, RETIRED, VETERAN
 from data import TrainingRecord
@@ -92,7 +93,7 @@ class AutoCheckAwardsTraining(commands.Cog):
                 await nrc_channel.send(f"**Pending Training Awards for NRC Department (<@&{CO_OF_NRC_ROLE}>)**\n{nrc_str}")
             if netc_str:
                 log.info(f"Send NETC Training Awards to channel #{netc_channel.name} in {netc_channel.guild.name}")
-                await netc_channel.send(f"**Pending Training Awards for NETC Department (<@&{CO_OF_NETC_ROLE}>)**\n{netc_str}")
+                await netc_channel.send(f"**Pending Training Awards for NETC Department (<@&{CO_OF_NETC_ROLE}> <@&{XO_OF_NETC_ROLE}>)**\n{netc_str}")
 
         except Exception as e:
             log.error(f"Error in AutoCheckTrainingAwards: {e}", exc_info=True, extra={"notify_engineer": True})
