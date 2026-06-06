@@ -9,7 +9,7 @@ from sqlalchemy import (
     Date,
     ForeignKey,
     Integer,
-    UniqueConstraint,
+    UniqueConstraint, ColumnElement,
 )
 from sqlalchemy.dialects.mysql import TINYTEXT
 from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
@@ -30,7 +30,6 @@ class SubclassType(enum.Enum):
     GRENADIER = "Grenadier"
     SURGEON = "Surgeon"
 
-
 class TrainingCategory(enum.Enum):
     NRC = "NRC"
     NETC = "NETC"
@@ -46,6 +45,31 @@ class TraingType(enum.Enum):
     COSA = "COSA"
     OCS = "OCS"
     SOCS = "SOCS"
+
+
+class RepresentationDepartment(enum.Enum):
+    MEDIA = "Media"
+    SCHEDULING = "Scheduling"
+
+
+class RepresentationBadgeTier(enum.IntEnum):
+    NONE = 0
+    THIRD_CLASS = 1
+    SECOND_CLASS = 2
+    FIRST_CLASS = 4
+    DISTINGUISHED = 6
+
+    @classmethod
+    def from_points(cls, points: int) -> "RepresentationBadgeTier":
+        if points >= cls.DISTINGUISHED:
+            return cls.DISTINGUISHED
+        if points >= cls.FIRST_CLASS:
+            return cls.FIRST_CLASS
+        if points >= cls.SECOND_CLASS:
+            return cls.SECOND_CLASS
+        if points >= cls.THIRD_CLASS:
+            return cls.THIRD_CLASS
+        return cls.NONE
 
 
 # Base class for all models
@@ -562,6 +586,81 @@ class RolePingLog(Base):
     is_deleted = Column(BOOLEAN, nullable=False, default=False)
     created_at = Column(DATETIME, nullable=False, index=True, default=utc_time_now)
 
+
+class RepresentationPoints(Base):
+    __tablename__ = "representation_points"
+
+    target_id = mapped_column(BIGINT, ForeignKey("sailor.discord_id"), primary_key=True)
+
+    media_representation_points = Column(Integer, nullable=False, server_default="0")
+    scheduling_representation_points = Column(Integer, nullable=False, server_default="0")
+
+    target: Mapped["Sailor"] = relationship(
+        "Sailor",
+        foreign_keys=[target_id],
+    )
+
+    @property
+    def total_representation_points(self) -> int:
+        return int(self.media_representation_points or 0) + int(
+            self.scheduling_representation_points or 0
+        )
+
+    @property
+    def current_badge_tier(self) -> RepresentationBadgeTier:
+        return RepresentationBadgeTier.from_points(self.total_representation_points)
+
+
+class RepresentationPointMutation(Base):
+    __tablename__ = "representation_point_mutations"
+
+    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+
+    target_id = mapped_column(
+        BIGINT,
+        ForeignKey("sailor.discord_id"),
+        nullable=False,
+    )
+    changed_by_id = mapped_column(
+        BIGINT,
+        ForeignKey("sailor.discord_id"),
+        nullable=False,
+    )
+
+    department = Column(
+        Enum(RepresentationDepartment),
+        nullable=False,
+    )
+    points_delta = Column(
+        Integer,
+        nullable=False,
+    )
+    reason = Column(
+        TEXT,
+        nullable=False,
+    )
+    created_at = Column(
+        DATETIME,
+        nullable=False,
+        default=utc_time_now,
+    )
+
+    target: Mapped["Sailor"] = relationship(
+        "Sailor",
+        foreign_keys=[target_id],
+    )
+    changed_by: Mapped["Sailor"] = relationship(
+        "Sailor",
+        foreign_keys=[changed_by_id],
+    )
+
+    @property
+    def is_addition(self) -> ColumnElement[bool]:
+        return self.points_delta > 0
+
+    @property
+    def is_removal(self) -> ColumnElement[bool]:
+        return self.points_delta < 0
 
 # Nifty function to create all tables
 def create_tables():
