@@ -61,6 +61,8 @@ COMMAND_COOLDOWNS = {
     "populate_training_records": command_cooldown(90),
     "populate_voyages": command_cooldown(120),
     "progress": command_cooldown(8),
+    "representation": command_cooldown(8),
+    "representationmod": command_cooldown(8),
     "removeanycoin": command_cooldown(3),
     "removecoin": command_cooldown(3),
     "ribbonboard": command_cooldown(15),

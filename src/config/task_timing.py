@@ -9,6 +9,7 @@ COMMAND_NOTIFICATION_EVALUATOR_MIN_INTERVAL_HOURS: Final[int] = 24
 COMMAND_NOTIFICATION_EVALUATOR_MAX_INTERVAL_HOURS: Final[int] = 26
 CHECK_AWARDS_TASK_TIME: Final[time] = time(hour=15, minute=5, tzinfo=UTC)
 CHECK_TRAINING_AWARDS_TASK_TIME: Final[time] = time(hour=15, minute=12, tzinfo=UTC)
+CHECK_REPRESENTATION_AWARDS_TASK_TIME: Final[time] = time(hour=15, minute=18, tzinfo=UTC)
 SHIP_HEALTH_SUMMARY_TASK_TIME: Final[time] = time(hour=9, minute=0, tzinfo=UTC)
 SHIP_HEALTH_SUMMARY_TASK_WEEKDAY: Final[int] = 4  # Friday
 
