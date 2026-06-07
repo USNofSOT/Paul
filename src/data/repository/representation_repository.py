@@ -98,6 +98,25 @@ class RepresentationRepository(BaseRepository[RepresentationPoints]):
             query = query.limit(limit)
         return query.all()
 
+    def list_all_mutations(
+            self,
+            department: RepresentationDepartment | None = None,
+    ) -> list[RepresentationPointMutation]:
+        query = (
+            self.session.query(RepresentationPointMutation)
+            .order_by(desc(RepresentationPointMutation.created_at), desc(RepresentationPointMutation.id))
+        )
+        if department is not None:
+            query = query.filter(RepresentationPointMutation.department == department)
+        return query.all()
+
+    def list_all_points(self) -> list[RepresentationPoints]:
+        return (
+            self.session.query(RepresentationPoints)
+            .order_by(RepresentationPoints.target_id.asc())
+            .all()
+        )
+
     def get_total_points(self, target_id: int) -> int:
         return self.get_or_create_points_record(target_id).total_representation_points
 

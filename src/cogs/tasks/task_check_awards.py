@@ -30,6 +30,20 @@ def fake_context(bot, GUILD, channel_name="test-channel"):
     return ctx
 
 
+def append_award_message_chunk(
+        messages: list[str],
+        current_message: str,
+        award_message: str,
+        max_message_length: int = MAX_MESSAGE_LENGTH,
+) -> str:
+    if len(current_message + award_message) <= max_message_length:
+        return current_message + award_message
+
+    if current_message:
+        messages.append(current_message)
+    return award_message
+
+
 def create_award_messages(role, sailor_repo, GUILD, context, exclude_roles=[]):
     messages = []
     msg_str = ""
@@ -53,11 +67,7 @@ def create_award_messages(role, sailor_repo, GUILD, context, exclude_roles=[]):
 
         # Add strings to message, printing early if message would be too long
         for sailor_str in sailor_strs:
-            if len(msg_str + sailor_str) <= MAX_MESSAGE_LENGTH:
-                msg_str += sailor_str
-            else:
-                messages.append(msg_str)
-                msg_str = sailor_str
+            msg_str = append_award_message_chunk(messages, msg_str, sailor_str)
     if msg_str:
         messages.append(msg_str)
     return messages

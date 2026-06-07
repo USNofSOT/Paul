@@ -637,7 +637,7 @@ class RepresentationPointMutation(Base):
     )
     reason = Column(
         TEXT,
-        nullable=False,
+        nullable=True,
     )
     created_at = Column(
         DATETIME,

@@ -2,7 +2,8 @@ from logging import getLogger
 
 from discord.ext import commands, tasks
 
-from src.cogs.tasks.task_check_awards import fake_context
+from src.cogs.tasks.task_check_awards import append_award_message_chunk, fake_context
+from src.config import MAX_MESSAGE_LENGTH
 from src.config.main_server import GUILD_ID
 from src.config.ranks import DECKHAND, RETIRED, VETERAN
 from src.config.representation import (
@@ -42,6 +43,30 @@ def _build_pending_representation_header(
         f"**Pending Representation Awards for Scheduling Department "
         f"(<@&{HEAD_OF_SCHEDULING_ROLE_ID}> <@&{XO_OF_SCHEDULING_ROLE_ID}>)**\n"
     )
+
+
+def _build_pending_representation_messages(
+        department: RepresentationDepartment,
+        award_messages: list[str],
+        max_message_length: int = MAX_MESSAGE_LENGTH,
+) -> list[str]:
+    header = _build_pending_representation_header(department)
+    body_max_length = max_message_length - len(header)
+    pending_messages: list[str] = []
+    current_body = ""
+
+    for award_message in award_messages:
+        current_body = append_award_message_chunk(
+            pending_messages,
+            current_body,
+            award_message,
+            body_max_length,
+        )
+
+    if current_body:
+        pending_messages.append(current_body)
+
+    return [header + message for message in pending_messages]
 
 
 class AutoCheckRepresentationAwards(commands.Cog):
@@ -102,17 +127,19 @@ class AutoCheckRepresentationAwards(commands.Cog):
 
             if media_messages and media_channel is not None:
                 log.info("Sending pending representation awards to media channel.")
-                await media_channel.send(
-                    _build_pending_representation_header(RepresentationDepartment.MEDIA)
-                    + "".join(media_messages)
-                )
+                for message in _build_pending_representation_messages(
+                        RepresentationDepartment.MEDIA,
+                        media_messages,
+                ):
+                    await media_channel.send(message)
 
             if scheduling_messages and scheduling_channel is not None:
                 log.info("Sending pending representation awards to scheduling channel.")
-                await scheduling_channel.send(
-                    _build_pending_representation_header(RepresentationDepartment.SCHEDULING)
-                    + "".join(scheduling_messages)
-                )
+                for message in _build_pending_representation_messages(
+                        RepresentationDepartment.SCHEDULING,
+                        scheduling_messages,
+                ):
+                    await scheduling_channel.send(message)
 
         except Exception as e:
             log.error(

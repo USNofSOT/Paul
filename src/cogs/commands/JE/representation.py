@@ -11,7 +11,6 @@ from src.data.repository.representation_repository import RepresentationReposito
 from src.security import require_any_role, Role
 from src.utils.embeds import default_embed, error_embed
 from src.utils.representation_utils import get_current_representation_award, get_next_representation_award
-from src.utils.time_utils import format_time, get_time_difference_past
 
 log = getLogger(__name__)
 
@@ -25,10 +24,9 @@ def _department_label(department) -> str:
 
 def _format_mutation(mutation: RepresentationPointMutation) -> str:
     sign = "+" if mutation.points_delta > 0 else ""
-    created_ago = format_time(get_time_difference_past(mutation.created_at))
     return (
         f"`{sign}{mutation.points_delta}` {_department_label(mutation.department)} "
-        f"by <@{mutation.changed_by_id}> ({created_ago} ago)\n"
+        f"by <@{mutation.changed_by_id}> ({discord.utils.format_dt(mutation.created_at, style='R')})\n"
         f"> {mutation.reason}"
     )
 
