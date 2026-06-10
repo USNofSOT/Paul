@@ -54,26 +54,30 @@ class DummyBot:
 
 class TestDiscordUtils(unittest.IsolatedAsyncioTestCase):
     def test_bot_log_channel_helper_uses_environment(self) -> None:
+        # Act & Assert
         self.assertEqual(get_bot_log_channel_id("DEV"), BOT_LOG_DEV)
         self.assertEqual(get_bot_log_channel_id("PROD"), BOT_LOG_PROD)
 
     def test_engineer_alert_embed_uses_severity_label_and_fields(self) -> None:
+        # Arrange
+        # Act
         embed = engineer_alert_embed(
             severity=AlertSeverity.WARNING,
             title="Training Backfill Skipped",
             description="Skipped one missing channel.",
             fields=(("Channel ID", "`123`"),),
         )
-
+        # Assert
         self.assertEqual(embed.title, "[WARNING] Training Backfill Skipped")
         self.assertEqual(embed.fields[0].name, "Channel ID")
         self.assertEqual(embed.fields[0].value, "`123`")
 
     async def test_send_engineer_log_posts_to_channel_without_dms(self) -> None:
+        # Arrange
         channel = DummyChannel(99)
         engineer = DummyEngineer(1)
         bot = DummyBot(DummyGuild({1: engineer}, {99: channel}))
-
+        # Act
         await send_engineer_log(
             bot,
             severity=AlertSeverity.INFO,
@@ -84,12 +88,13 @@ class TestDiscordUtils(unittest.IsolatedAsyncioTestCase):
             channel_id=99,
             guild_id=1,
         )
-
+        # Assert
         self.assertEqual(len(channel.sent_embeds), 1)
         self.assertEqual(channel.sent_embeds[0].title, "[INFO] Training Backfill Completed")
         self.assertEqual(len(engineer.sent_embeds), 0)
 
     async def test_alert_engineers_dms_engineers_with_structured_embed(self) -> None:
+        # Arrange
         engineer = DummyEngineer(42)
         bot = DummyBot(DummyGuild({42: engineer}, {}))
         dispatcher = DiscordEngineerAlertDispatcher()
@@ -98,6 +103,7 @@ class TestDiscordUtils(unittest.IsolatedAsyncioTestCase):
 
         original_engineers = discord_utils_module.ENGINEERS
         discord_utils_module.ENGINEERS = [42]
+        # Act
         try:
             await alert_engineers(
                 bot,
@@ -109,14 +115,15 @@ class TestDiscordUtils(unittest.IsolatedAsyncioTestCase):
             )
         finally:
             discord_utils_module.ENGINEERS = original_engineers
-
+        # Assert
         self.assertEqual(len(engineer.sent_embeds), 1)
         self.assertEqual(engineer.sent_embeds[0].title, "[ERROR] Command Task Failed")
 
     async def test_dispatcher_posts_when_channel_matches_alert(self) -> None:
+        # Arrange
         channel = DummyChannel(55)
         bot = DummyBot(DummyGuild({}, {55: channel}))
-
+        # Act
         await send_engineer_alert(
             bot,
             EngineerAlert(
@@ -129,7 +136,7 @@ class TestDiscordUtils(unittest.IsolatedAsyncioTestCase):
             ),
             dispatcher=DiscordEngineerAlertDispatcher(),
         )
-
+        # Assert
         self.assertEqual(len(channel.sent_embeds), 1)
         self.assertEqual(channel.sent_embeds[0].title, "[INFO] Scheduler Summary")
 

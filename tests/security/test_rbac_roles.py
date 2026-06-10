@@ -27,7 +27,9 @@ def _make_member(discord_role_ids: list[int], user_id: int = 1) -> discord.Membe
 
 class TestDiscordRoleMap(unittest.TestCase):
     def test_standard_ranks_mapped(self):
+        # Arrange
         from src.config.ranks_roles import JE_ROLE, NCO_ROLE, SNCO_ROLE, JO_ROLE, SO_ROLE, BOA_ROLE
+        # Assert
         self.assertEqual(DISCORD_ROLE_MAP[JE_ROLE], Role.JE)
         self.assertEqual(DISCORD_ROLE_MAP[NCO_ROLE], Role.NCO)
         self.assertEqual(DISCORD_ROLE_MAP[SNCO_ROLE], Role.SNCO)
@@ -36,66 +38,91 @@ class TestDiscordRoleMap(unittest.TestCase):
         self.assertEqual(DISCORD_ROLE_MAP[BOA_ROLE], Role.BOA)
 
     def test_nrc_role_mapped(self):
+        # Arrange
         from src.config.ranks_roles import NRC_ROLE
+        # Assert
         self.assertEqual(DISCORD_ROLE_MAP[NRC_ROLE], Role.NRC)
 
     def test_veteran_roles_mapped(self):
+        # Arrange
         from src.config.ranks_roles import VT_ROLES
+        # Assert
         for role_id in VT_ROLES:
             self.assertEqual(DISCORD_ROLE_MAP[role_id], Role.VETERAN)
 
     def test_retired_roles_mapped(self):
+        # Arrange
         from src.config.ranks_roles import RT_ROLES
+        # Assert
         for role_id in RT_ROLES:
             self.assertEqual(DISCORD_ROLE_MAP[role_id], Role.RETIRED)
 
     def test_voyage_permissions_mapped(self):
+        # Arrange
         from src.config.ranks_roles import VOYAGE_PERMISSIONS
+        # Assert
         self.assertEqual(DISCORD_ROLE_MAP[VOYAGE_PERMISSIONS], Role.VOYAGE_PERMISSIONS)
 
     def test_nsc_role_maps_to_observer(self):
+        # Arrange
         from src.config.ranks_roles import NSC_ROLE
+        # Assert
         self.assertEqual(DISCORD_ROLE_MAP[NSC_ROLE], Role.NSC_OBSERVER)
 
     def test_spd_nsc_role_maps_to_observer(self):
+        # Arrange
         from src.config.spd_servers import SPD_NSC_ROLE
+        # Assert
         self.assertEqual(DISCORD_ROLE_MAP[SPD_NSC_ROLE], Role.NSC_OBSERVER)
 
     def test_netc_high_command_roles_mapped(self):
+        # Arrange
         from src.config.netc_server import HIGH_COMMAND_OF_NETC_ROLES
+        # Assert
         for role_id in HIGH_COMMAND_OF_NETC_ROLES:
             self.assertEqual(DISCORD_ROLE_MAP[role_id], Role.NETC_HIGH_COMMAND)
 
 
 class TestRoleHierarchy(unittest.TestCase):
     def test_boa_includes_all_lower_ranks(self):
+        # Act
         expanded = {Role.BOA} | set(ROLE_HIERARCHY.get(Role.BOA, []))
+        # Assert
         for role in (Role.SO, Role.JO, Role.SNCO, Role.NCO, Role.JE):
             self.assertIn(role, expanded)
 
     def test_so_includes_jo_and_below(self):
+        # Act
         expanded = {Role.SO} | set(ROLE_HIERARCHY.get(Role.SO, []))
+        # Assert
         for role in (Role.JO, Role.SNCO, Role.NCO, Role.JE):
             self.assertIn(role, expanded)
 
     def test_nsc_administrator_includes_operator_and_observer(self):
+        # Act
         expanded = set(ROLE_HIERARCHY.get(Role.NSC_ADMINISTRATOR, []))
+        # Assert
         self.assertIn(Role.NSC_OPERATOR, expanded)
         self.assertIn(Role.NSC_OBSERVER, expanded)
 
     def test_nsc_operator_includes_observer(self):
+        # Act
         expanded = set(ROLE_HIERARCHY.get(Role.NSC_OPERATOR, []))
+        # Assert
         self.assertIn(Role.NSC_OBSERVER, expanded)
 
     def test_je_has_no_hierarchy_expansion(self):
+        # Assert
         self.assertNotIn(Role.JE, ROLE_HIERARCHY)
 
     def test_nrc_has_no_hierarchy_expansion(self):
+        # Assert
         self.assertNotIn(Role.NRC, ROLE_HIERARCHY)
 
 
 class TestResolveEffectiveRoles(unittest.TestCase):
     def setUp(self):
+        # Arrange
         clear_role_cache()
 
     def _resolve(self, member, db_roles=None):
@@ -105,48 +132,67 @@ class TestResolveEffectiveRoles(unittest.TestCase):
             return resolve_effective_roles(member)
 
     def test_nsc_member_gets_observer_via_discord_role(self):
+        # Arrange
         from src.config.ranks_roles import NSC_ROLE
         member = _make_member([NSC_ROLE])
+        # Act
         roles = self._resolve(member)
+        # Assert
         self.assertIn(Role.NSC_OBSERVER, roles)
 
     def test_spd_nsc_member_gets_observer(self):
+        # Arrange
         from src.config.spd_servers import SPD_NSC_ROLE
         member = _make_member([SPD_NSC_ROLE])
+        # Act
         roles = self._resolve(member)
+        # Assert
         self.assertIn(Role.NSC_OBSERVER, roles)
 
     def test_veteran_discord_role_resolves(self):
+        # Arrange
         from src.config.ranks_roles import VT_ROLES
         if not VT_ROLES:
             self.skipTest("No VT_ROLES configured")
         member = _make_member([VT_ROLES[0]])
+        # Act
         roles = self._resolve(member)
+        # Assert
         self.assertIn(Role.VETERAN, roles)
 
     def test_voyage_permissions_discord_role_resolves(self):
+        # Arrange
         from src.config.ranks_roles import VOYAGE_PERMISSIONS
         member = _make_member([VOYAGE_PERMISSIONS])
+        # Act
         roles = self._resolve(member)
+        # Assert
         self.assertIn(Role.VOYAGE_PERMISSIONS, roles)
 
     def test_nsc_administrator_db_role_expands_to_observer(self):
+        # Arrange
         member = _make_member([])
+        # Act
         roles = self._resolve(member, db_roles={Role.NSC_ADMINISTRATOR})
+        # Assert
         self.assertIn(Role.NSC_ADMINISTRATOR, roles)
         self.assertIn(Role.NSC_OPERATOR, roles)
         self.assertIn(Role.NSC_OBSERVER, roles)
 
     def test_boa_discord_role_expands_full_hierarchy(self):
+        # Arrange
         from src.config.ranks_roles import BOA_ROLE
         member = _make_member([BOA_ROLE])
+        # Act
         roles = self._resolve(member)
+        # Assert
         for expected in (Role.BOA, Role.SO, Role.JO, Role.SNCO, Role.NCO, Role.JE):
             self.assertIn(expected, roles)
 
 
 class TestRequireAnyRoleDecorator(unittest.TestCase):
     def setUp(self):
+        # Arrange
         clear_role_cache()
 
     def _make_interaction(self, discord_role_ids: list[int], user_id: int = 1) -> discord.Interaction:
@@ -158,10 +204,8 @@ class TestRequireAnyRoleDecorator(unittest.TestCase):
         with patch('src.security.evaluator.UserRoleRepository') as mock_repo_class:
             mock_repo = mock_repo_class.return_value.__enter__.return_value
             mock_repo.get_user_roles.return_value = db_roles or set()
-            # Extract the predicate from the combined_check closure
             dummy_func = MagicMock()
             dummy_func.__discord_app_commands_checks__ = []
-            # Call with interaction directly to test predicate logic
             from src.security.evaluator import resolve_effective_roles
             user_roles = resolve_effective_roles(interaction.user)
             if any(role in user_roles for role in roles_required):
@@ -169,44 +213,62 @@ class TestRequireAnyRoleDecorator(unittest.TestCase):
             raise InsufficientLevelError(list(roles_required), list(user_roles))
 
     def test_je_role_passes_je_requirement(self):
+        # Arrange
         from src.config.ranks_roles import JE_ROLE
         interaction = self._make_interaction([JE_ROLE])
+        # Act
         result = self._call_predicate([Role.JE], interaction)
+        # Assert
         self.assertTrue(result)
 
     def test_boa_passes_nco_requirement_via_hierarchy(self):
+        # Arrange
         from src.config.ranks_roles import BOA_ROLE
         interaction = self._make_interaction([BOA_ROLE])
+        # Act
         result = self._call_predicate([Role.NCO], interaction)
+        # Assert
         self.assertTrue(result)
 
     def test_no_roles_raises_insufficient_level_error(self):
+        # Arrange
         interaction = self._make_interaction([])
+        # Act & Assert
         with self.assertRaises(InsufficientLevelError) as ctx:
             self._call_predicate([Role.JE], interaction)
         self.assertIn(Role.JE, ctx.exception.required_roles)
 
     def test_nsc_member_passes_observer_requirement(self):
+        # Arrange
         from src.config.ranks_roles import NSC_ROLE
         interaction = self._make_interaction([NSC_ROLE])
+        # Act
         result = self._call_predicate([Role.NSC_OBSERVER], interaction)
+        # Assert
         self.assertTrue(result)
 
     def test_voyage_permissions_role_passes_requirement(self):
+        # Arrange
         from src.config.ranks_roles import VOYAGE_PERMISSIONS
         interaction = self._make_interaction([VOYAGE_PERMISSIONS])
+        # Act
         result = self._call_predicate([Role.NCO, Role.VOYAGE_PERMISSIONS], interaction)
+        # Assert
         self.assertTrue(result)
 
     def test_je_member_does_not_pass_nco_requirement(self):
+        # Arrange
         from src.config.ranks_roles import JE_ROLE
         interaction = self._make_interaction([JE_ROLE])
+        # Act & Assert
         with self.assertRaises(InsufficientLevelError):
             self._call_predicate([Role.NCO], interaction)
 
     def test_insufficient_level_error_contains_possessed_roles(self):
+        # Arrange
         from src.config.ranks_roles import JE_ROLE
         interaction = self._make_interaction([JE_ROLE])
+        # Act & Assert
         with self.assertRaises(InsufficientLevelError) as ctx:
             self._call_predicate([Role.SO], interaction)
         self.assertIn(Role.JE, ctx.exception.possessed_roles)

@@ -15,6 +15,7 @@ from src.config.task_timing import (
 
 class TestNotificationTaskConfiguration(unittest.TestCase):
     def test_scheduler_uses_configured_base_interval(self) -> None:
+        # Assert
         self.assertEqual(
             ScheduleCommandNotifications.evaluate_notifications.hours,
             COMMAND_NOTIFICATION_EVALUATOR_MIN_INTERVAL_HOURS,
@@ -22,25 +23,30 @@ class TestNotificationTaskConfiguration(unittest.TestCase):
         self.assertIsNone(ScheduleCommandNotifications.evaluate_notifications.time)
 
     def test_scheduler_adds_jitter_within_configured_window(self) -> None:
+        # Arrange
         cog = object.__new__(ScheduleCommandNotifications)
         cog._random = random.Random(1234)
 
+        # Act
         additional_delay_seconds = cog._sample_additional_delay_seconds()
         max_additional_delay_seconds = (
                                                COMMAND_NOTIFICATION_EVALUATOR_MAX_INTERVAL_HOURS
                                                - COMMAND_NOTIFICATION_EVALUATOR_MIN_INTERVAL_HOURS
                                        ) * 60 * 60
 
+        # Assert
         self.assertGreaterEqual(additional_delay_seconds, 0.0)
         self.assertLessEqual(additional_delay_seconds, max_additional_delay_seconds)
 
     def test_worker_uses_configured_interval(self) -> None:
+        # Assert
         self.assertEqual(
             ProcessCommandNotifications.process_notifications.seconds,
             COMMAND_NOTIFICATION_WORKER_TASK_INTERVAL_SECONDS,
         )
 
     def test_ship_health_summary_uses_configured_time(self) -> None:
+        # Assert
         self.assertEqual(
             ShipHealthSummaryTask.ship_health_summary.time,
             [SHIP_HEALTH_SUMMARY_TASK_TIME],

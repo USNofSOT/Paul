@@ -14,6 +14,7 @@ from src.config.netc_server import NETC_ACTIVE_CURRICULUMS, NETC_LEGACY_CURRICUL
 
 class TestTrainingRecordsHelpers(unittest.TestCase):
     def test_curricula_helpers_split_active_and_legacy_roles(self) -> None:
+        # Arrange
         member_role_ids = {
             NETC_ACTIVE_CURRICULUMS[0][2],
             NETC_ACTIVE_CURRICULUMS[1][3],
@@ -21,6 +22,7 @@ class TestTrainingRecordsHelpers(unittest.TestCase):
             NETC_LEGACY_CURRICULUMS[0][3],
         }
 
+        # Assert
         self.assertEqual(
             _curricula_for_instructor_roles(member_role_ids, NETC_ACTIVE_CURRICULUMS),
             ["JLA"],
@@ -40,6 +42,7 @@ class TestTrainingRecordsHelpers(unittest.TestCase):
         self.assertEqual(_format_curriculum_list(["SNLA"]), "- SNLA")
 
     def test_point_fields_keep_legacy_stats_separate(self) -> None:
+        # Arrange
         training_record = SimpleNamespace(
             jla_training_points=4,
             sla_training_points=3,
@@ -51,6 +54,7 @@ class TestTrainingRecordsHelpers(unittest.TestCase):
             vla_training_points=0,
         )
 
+        # Act & Assert
         self.assertEqual(
             _get_positive_point_fields(training_record, ACTIVE_NETC_POINT_FIELDS),
             [

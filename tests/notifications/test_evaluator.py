@@ -18,6 +18,7 @@ from src.notifications.types import (
 
 class TestSailorInactivityEligibilityEvaluator(unittest.TestCase):
     def setUp(self) -> None:
+        # Arrange
         self.evaluator = SailorInactivityEligibilityEvaluator()
         self.member_context = ResolvedMemberContext(
             sailor_id=1,
@@ -29,6 +30,7 @@ class TestSailorInactivityEligibilityEvaluator(unittest.TestCase):
         )
 
     def test_voyage_projection_uses_exact_threshold_and_sparse_offsets(self) -> None:
+        # Arrange
         sailor = Sailor(
             discord_id=1,
             last_voyage_at=datetime(2026, 3, 1, 23, 30, tzinfo=UTC),
@@ -42,6 +44,7 @@ class TestSailorInactivityEligibilityEvaluator(unittest.TestCase):
             routing_target=RoutingTargetType.SHIP_COMMAND_CHANNEL,
         )
 
+        # Act
         projected = self.evaluator.project_for_window(
             definition,
             sailor,
@@ -50,6 +53,7 @@ class TestSailorInactivityEligibilityEvaluator(unittest.TestCase):
             datetime(2026, 4, 6, 0, 0, tzinfo=UTC),
         )
 
+        # Assert
         self.assertEqual([result.trigger_offset for result in projected], [-7, -3, 0, 7])
         self.assertEqual(
             [result.scheduled_for_at.isoformat() for result in projected],
@@ -64,6 +68,7 @@ class TestSailorInactivityEligibilityEvaluator(unittest.TestCase):
         self.assertEqual(projected[-1].days_remaining, -7)
 
     def test_hosting_projection_excludes_events_outside_lookahead(self) -> None:
+        # Arrange
         sailor = Sailor(
             discord_id=4,
             last_hosting_at=datetime(2026, 3, 20, 12, 0, tzinfo=UTC),
@@ -77,6 +82,7 @@ class TestSailorInactivityEligibilityEvaluator(unittest.TestCase):
             routing_target=RoutingTargetType.SHIP_COMMAND_CHANNEL,
         )
 
+        # Act
         projected = self.evaluator.project_for_window(
             definition,
             sailor,
@@ -85,11 +91,13 @@ class TestSailorInactivityEligibilityEvaluator(unittest.TestCase):
             datetime(2026, 4, 1, 23, 59, tzinfo=UTC),
         )
 
+        # Assert
         self.assertEqual(len(projected), 1)
         self.assertEqual(projected[0].trigger_offset, -3)
         self.assertEqual(projected[0].scheduled_for_at.isoformat(), "2026-03-31T12:00:00+00:00")
 
     def test_null_baseline_is_excluded(self) -> None:
+        # Arrange
         sailor = Sailor(discord_id=2, last_hosting_at=None)
         definition = NotificationDefinition(
             notification_type=NotificationType.NO_HOSTING_REMINDER,
@@ -100,6 +108,7 @@ class TestSailorInactivityEligibilityEvaluator(unittest.TestCase):
             routing_target=RoutingTargetType.SHIP_COMMAND_CHANNEL,
         )
 
+        # Act
         projected = self.evaluator.project_for_window(
             definition,
             sailor,
@@ -108,9 +117,11 @@ class TestSailorInactivityEligibilityEvaluator(unittest.TestCase):
             datetime(2026, 4, 2, 0, 0, tzinfo=UTC),
         )
 
+        # Assert
         self.assertEqual(projected, ())
 
     def test_matches_event_false_when_activity_cycle_changes(self) -> None:
+        # Arrange
         sailor = Sailor(
             discord_id=3,
             last_voyage_at=datetime(2026, 3, 5, 12, 0, tzinfo=UTC),
@@ -143,11 +154,13 @@ class TestSailorInactivityEligibilityEvaluator(unittest.TestCase):
             updated_at=datetime(2026, 3, 21, 0, 0, tzinfo=UTC),
         )
 
+        # Act & Assert
         self.assertFalse(
             self.evaluator.matches_event(definition, sailor, self.member_context, event)
         )
 
     def test_matches_event_true_for_current_cycle(self) -> None:
+        # Arrange
         definition = NotificationDefinition(
             notification_type=NotificationType.NO_HOSTING_REMINDER,
             activity_field="last_hosting_at",
@@ -182,6 +195,7 @@ class TestSailorInactivityEligibilityEvaluator(unittest.TestCase):
             updated_at=datetime(2026, 3, 30, 0, 0, tzinfo=UTC),
         )
 
+        # Act & Assert
         self.assertTrue(
             self.evaluator.matches_event(definition, sailor, self.member_context, event)
         )

@@ -56,6 +56,7 @@ class FakeCleanupRecorder:
 
 class TestImageCache(unittest.TestCase):
     def test_build_cache_key_is_stable_for_equivalent_payloads(self):
+        # Arrange
         left = {
             "roles": [{"id": 2, "icon_url": "b"}, {"id": 1, "icon_url": "a"}],
             "layout": {"columns": 3, "spacing": 5},
@@ -64,7 +65,7 @@ class TestImageCache(unittest.TestCase):
             "layout": {"spacing": 5, "columns": 3},
             "roles": [{"id": 2, "icon_url": "b"}, {"icon_url": "a", "id": 1}],
         }
-
+        # Act & Assert
         self.assertEqual(
             build_cache_key(left, version=2),
             build_cache_key(right, version=2),
@@ -72,6 +73,7 @@ class TestImageCache(unittest.TestCase):
 
     def test_get_or_create_bytes_uses_cached_file_after_first_write(self):
         with TemporaryDirectory() as temp_dir:
+            # Arrange
             stats_recorder = FakeStatsRecorder()
             cache = BinaryImageCache(
                 ImageCacheConfig(
@@ -86,10 +88,10 @@ class TestImageCache(unittest.TestCase):
             )
             producer = MagicMock(return_value=b"cached-image")
             payload = {"value": 1}
-
+            # Act
             first = cache.get_or_create_bytes(payload, producer)
             second = cache.get_or_create_bytes(payload, producer)
-
+            # Assert
             self.assertEqual(first, b"cached-image")
             self.assertEqual(second, b"cached-image")
             self.assertEqual(producer.call_count, 1)
@@ -102,6 +104,7 @@ class TestImageCache(unittest.TestCase):
     def test_get_or_create_bytes_async_uses_cached_file_after_first_write(self):
         async def run_test():
             with TemporaryDirectory() as temp_dir:
+                # Arrange
                 stats_recorder = FakeStatsRecorder()
                 cache = BinaryImageCache(
                     ImageCacheConfig(
@@ -116,10 +119,10 @@ class TestImageCache(unittest.TestCase):
                 )
                 producer = MagicMock(return_value=b"cached-image")
                 payload = {"value": 2}
-
+                # Act
                 first = await cache.get_or_create_bytes_async(payload, producer)
                 second = await cache.get_or_create_bytes_async(payload, producer)
-
+                # Assert
                 self.assertEqual(first, b"cached-image")
                 self.assertEqual(second, b"cached-image")
                 self.assertEqual(producer.call_count, 1)
@@ -133,6 +136,7 @@ class TestImageCache(unittest.TestCase):
 
     def test_cleanup_cache_removes_expired_and_overflow_items(self):
         with TemporaryDirectory() as temp_dir:
+            # Arrange
             config = ImageCacheConfig(
                 name="cleanup_cache",
                 category="tests",
@@ -148,14 +152,13 @@ class TestImageCache(unittest.TestCase):
                 ("keep_second.png", base_time - 20),
                 ("remove_overflow.png", base_time - 30),
             ]
-
             for file_name, modified_time in file_specs:
                 path = Path(temp_dir) / file_name
                 path.write_bytes(file_name.encode("utf-8"))
                 os.utime(path, (modified_time, modified_time))
-
+            # Act
             result = cleanup_cache(config, now=base_time)
-
+            # Assert
             self.assertEqual(result.removed_expired, 1)
             self.assertEqual(result.removed_overflow, 1)
             self.assertEqual(result.remaining_items, 2)
@@ -166,6 +169,7 @@ class TestImageCache(unittest.TestCase):
 
     def test_load_bytes_removes_expired_file_on_read(self):
         with TemporaryDirectory() as temp_dir:
+            # Arrange
             config = ImageCacheConfig(
                 name="test_cache",
                 category="tests",
@@ -180,14 +184,15 @@ class TestImageCache(unittest.TestCase):
             cache_path.write_bytes(b"expired")
             expired_time = base_time - 120
             os.utime(cache_path, (expired_time, expired_time))
-
+            # Act
             loaded = cache._load_bytes_from_path(cache_path)
-
+            # Assert
             self.assertIsNone(loaded)
             self.assertFalse(cache_path.exists())
 
     def test_is_cache_file_expired_checks_ttl(self):
         with TemporaryDirectory() as temp_dir:
+            # Arrange
             config = ImageCacheConfig(
                 name="test_cache",
                 category="tests",
@@ -200,7 +205,7 @@ class TestImageCache(unittest.TestCase):
             base_time = time.time()
             cache_path.write_bytes(b"content")
             os.utime(cache_path, (base_time - 61, base_time - 61))
-
+            # Act & Assert
             self.assertTrue(_is_cache_file_expired(cache_path, config, now=base_time))
             self.assertFalse(
                 _is_cache_file_expired(cache_path, config, now=base_time - 10)
@@ -208,6 +213,7 @@ class TestImageCache(unittest.TestCase):
 
     def test_to_discord_file_uses_default_filename(self):
         with TemporaryDirectory() as temp_dir:
+            # Arrange
             cache = BinaryImageCache(
                 ImageCacheConfig(
                     name="test_cache",
@@ -218,13 +224,14 @@ class TestImageCache(unittest.TestCase):
                     ttl_seconds=60,
                 )
             )
-
+            # Act
             discord_file = cache.to_discord_file(b"image-bytes")
-
+            # Assert
             self.assertEqual(discord_file.filename, "image.png")
 
     def test_clear_cached_items_removes_all_matching_files(self):
         with TemporaryDirectory() as temp_dir:
+            # Arrange
             config = ImageCacheConfig(
                 name="test_cache",
                 category="tests",
@@ -236,14 +243,15 @@ class TestImageCache(unittest.TestCase):
             (Path(temp_dir) / "one.png").write_bytes(b"1")
             (Path(temp_dir) / "two.png").write_bytes(b"2")
             (Path(temp_dir) / "note.txt").write_text("ignore", encoding="utf-8")
-
+            # Act
             removed_items = clear_cached_items(config)
-
+            # Assert
             self.assertEqual(removed_items, 2)
             self.assertEqual(len(list(Path(temp_dir).glob("*.png"))), 0)
             self.assertTrue((Path(temp_dir) / "note.txt").exists())
 
     def test_should_trigger_auto_cleanup_only_after_threshold_is_exceeded(self):
+        # Arrange
         config = ImageCacheConfig(
             name="test_cache",
             category="tests",
@@ -253,12 +261,13 @@ class TestImageCache(unittest.TestCase):
             ttl_seconds=60,
             auto_cleanup_trigger_ratio=1.1,
         )
-
+        # Act & Assert
         self.assertFalse(should_trigger_auto_cleanup(config, 11))
         self.assertTrue(should_trigger_auto_cleanup(config, 12))
 
     def test_get_or_create_bytes_triggers_auto_cleanup_after_threshold(self):
         with TemporaryDirectory() as temp_dir:
+            # Arrange
             stats_recorder = FakeStatsRecorder()
             cleanup_recorder = FakeCleanupRecorder()
             cache = BinaryImageCache(
@@ -274,13 +283,13 @@ class TestImageCache(unittest.TestCase):
                 stats_recorder=stats_recorder,
                 cleanup_recorder=cleanup_recorder,
             )
-
+            # Act
             for index in range(3):
                 cache.get_or_create_bytes(
                     {"value": index},
                     MagicMock(return_value=f"cached-image-{index}".encode()),
                 )
-
+            # Assert
             self.assertEqual(len(list(Path(temp_dir).glob("*.png"))), 2)
             self.assertEqual(len(cleanup_recorder.results), 1)
             self.assertEqual(cleanup_recorder.results[0].removed_overflow, 1)

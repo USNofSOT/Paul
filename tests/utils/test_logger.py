@@ -5,7 +5,7 @@ from src.utils.logger import NotifyEngineerHandler, set_notification_callback
 
 
 def test_notify_engineer_handler_calls_callback():
-    # Setup mock callback
+    # Arrange
     callback = MagicMock()
     set_notification_callback(callback)
 
@@ -15,18 +15,20 @@ def test_notify_engineer_handler_calls_callback():
     logger.propagate = False  # Prevent logs from leaking to console during test
 
     try:
-        # Test with flag
+        # Act
         logger.error("Test message", extra={"notify_engineer": True})
 
+        # Assert
         assert callback.called
         record = callback.call_args[0][0]
         assert record.getMessage() == "Test message"
 
-        # Reset mock
+        # Arrange
         callback.reset_mock()
 
-        # Test without flag
+        # Act
         logger.error("No notify message")
+        # Assert
         assert not callback.called
     finally:
         # Cleanup

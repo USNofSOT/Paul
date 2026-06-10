@@ -17,6 +17,7 @@ from src.data.models import RepresentationDepartment, RepresentationPointMutatio
 
 class TestRepresentationFormatting(unittest.TestCase):
     def test_format_mutation_uses_discord_relative_timestamp(self) -> None:
+        # Arrange
         mutation = RepresentationPointMutation(
             target_id=1,
             changed_by_id=2,
@@ -26,17 +27,21 @@ class TestRepresentationFormatting(unittest.TestCase):
             created_at=datetime(2026, 6, 7, 10, 30, tzinfo=UTC),
         )
 
+        # Act
         formatted = _format_mutation(mutation)
 
+        # Assert
         self.assertIn("`+3` Media by <@2>", formatted)
         self.assertIn("(<t:1780828200:R>)", formatted)
         self.assertIn("> Great work", formatted)
         self.assertNotIn("ago", formatted)
 
     def test_representation_mod_result_embed_is_compact(self) -> None:
+        # Arrange
         target = SimpleNamespace(display_name="Sailor", mention="<@123>")
         actor = SimpleNamespace(mention="<@456>")
 
+        # Act
         embed = build_representation_mod_result_embed(
             target=target,
             actor=actor,
@@ -44,6 +49,7 @@ class TestRepresentationFormatting(unittest.TestCase):
             new_total_count=7,
         )
 
+        # Assert
         self.assertEqual(embed.title, "Representation updated for Sailor")
         self.assertEqual(embed.description, "<@123>")
         self.assertEqual(len(embed.fields), 3)
@@ -55,14 +61,18 @@ class TestRepresentationFormatting(unittest.TestCase):
         self.assertEqual(embed.fields[2].value, "7")
 
     def test_get_representation_actor_role_ids_includes_spd_roles(self) -> None:
+        # Arrange
         interaction_member = SimpleNamespace(roles=[SimpleNamespace(id=10), SimpleNamespace(id=20)])
         spd_member = SimpleNamespace(roles=[SimpleNamespace(id=20), SimpleNamespace(id=30)])
 
+        # Act
         role_ids = get_representation_actor_role_ids(interaction_member, spd_member)
 
+        # Assert
         self.assertEqual(role_ids, {10, 20, 30})
 
     def test_validate_representation_mutation_request_requires_exactly_one_action(self) -> None:
+        # Act & Assert
         self.assertEqual(
             validate_representation_mutation_request(add=None, remove=None, department=None, reason=None),
             (
@@ -79,6 +89,7 @@ class TestRepresentationFormatting(unittest.TestCase):
         )
 
     def test_normalize_representation_dump_department_accepts_known_values(self) -> None:
+        # Act & Assert
         self.assertIsNone(normalize_representation_dump_department(None))
         self.assertEqual(
             normalize_representation_dump_department("media"),
@@ -90,6 +101,7 @@ class TestRepresentationFormatting(unittest.TestCase):
         )
 
     def test_build_representation_dump_csv_includes_totals_and_mutations(self) -> None:
+        # Arrange
         points_records = [
             RepresentationPoints(
                 target_id=123,
@@ -109,8 +121,10 @@ class TestRepresentationFormatting(unittest.TestCase):
             ),
         ]
 
+        # Act
         csv_text = build_representation_dump_csv(points_records, mutations)
 
+        # Assert
         self.assertIn("[POINT_TOTALS]", csv_text)
         self.assertIn("123,2,3,5", csv_text)
         self.assertIn("[MUTATIONS]", csv_text)

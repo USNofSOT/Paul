@@ -97,138 +97,178 @@ class TestVoyageSpecification(TestCase):
 
 class TestGetMainShipName(TestCase):
     def test_virtual_legendary_main_ship_is_supported(self):
+        # Arrange
         content = (
             "@Lt. Commander Terin Official Patrol Log of the 7th Voyage of the "
             "USS Constitution, auxiliary to the USS Legendary."
         )
+        # Act & Assert
         self.assertEqual(get_main_ship_from_content(content), "USS Legendary")
         self.assertEqual(get_auxiliary_ship_from_content(content), "USS Constitution")
 
     def test_virtual_ceremonial_main_ship_is_supported(self):
+        # Arrange
         content = (
             "@Lt. Commander Terin Official Patrol Log of the 7th Voyage of the "
             "USS Constitution, auxiliary to the USS Ceremonial."
         )
+        # Act & Assert
         self.assertEqual(get_main_ship_from_content(content), "USS Ceremonial")
         self.assertEqual(get_auxiliary_ship_from_content(content), "USS Constitution")
 
     def test_virtual_heritage_main_ship_is_supported(self):
+        # Arrange
         content = (
             "@Lt. Commander Terin Official Patrol Log of the 7th Voyage of the "
             "USS Constitution, auxiliary to the USS Heritage."
         )
+        # Act & Assert
         self.assertEqual(get_main_ship_from_content(content), "USS Heritage")
         self.assertEqual(get_auxiliary_ship_from_content(content), "USS Constitution")
 
     def test_main_ship_included(self):
+        # Arrange
         content = (
             "<@5848673888963>__**'s official log of the 134th voyage of the USS "
             "Phoenix , Auxiliary to the USS Mystery"
         )
+        # Act & Assert
         self.assertEqual(get_main_ship_from_content(content), "USS Mystery")
 
     def test_main_ship_not_included(self):
+        # Arrange
         content = "<@5848673888963>__**'s official log of the 134th voyage of the USS " "Phoenix"
+        # Act & Assert
         self.assertEqual(get_main_ship_from_content(content), None)
 
     def test_main_ship_name(self):
+        # Arrange
         content = (
             "<@5848673888963>__**'s official log of the 134th voyage of the USS "
             "Phoenix , Auxiliary to the USS Mystery**__ We started our adventure "
             "at Plunder"
         )
+        # Act & Assert
         self.assertEqual(get_main_ship_from_content(content), "USS Mystery")
 
     def test_main_ship_name_with_emoji(self):
+        # Arrange
         content = (
             "<@5848673888963>__**'s official log of the 134th voyage of the USS "
             "Phoenix , Auxiliary to the USS Mystery**__ We started our adventure "
             "at Plunder <:USS_Platypus:123456789>"
         )
+        # Act & Assert
         self.assertEqual(get_main_ship_from_content(content), "USS Mystery")
 
     def test_main_ship_within_the_first_25_words(self):
+        # Arrange
         content = (
             "We started our adventure at Plunder on the USS Phoenix, Auxiliary to "
             "the USS Mystery"
         )
+        # Act & Assert
         self.assertEqual(get_main_ship_from_content(content), "USS Mystery")
+        # Arrange
         content = (
             "We started our adventure at Plunder on the we dit a lot of yapping at "
             "least a good 25 words, so that is like more than 25 words. USS Phoenix"
         )
+        # Act & Assert
         self.assertEqual(get_main_ship_from_content(content), None)
 
     def test_main_ship_with_dash_between_words(self):
+        # Arrange
         content = (
             "We started our adventure at Plunder on the USS Phoenix, Auxiliary to "
             "the USS Mystery"
         )
+        # Act & Assert
         self.assertEqual(get_main_ship_from_content(content), "USS Mystery")
+        # Arrange
         content = (
             "We started our adventure at Plunder on the USS Phoenix, Auxiliary to "
             "the USS-Platypus"
         )
+        # Act & Assert
         self.assertEqual(get_main_ship_from_content(content), None)
 
 
 class TestGetAuxiliaryShipName(TestCase):
     def test_auxiliary_ship_included(self):
+        # Arrange
         content = (
             "<@5848673888963>__**'s official log of the 134th voyage of the USS "
             "Phoenix , Auxiliary to the USS Platypus"
         )
+        # Act & Assert
         self.assertEqual(get_auxiliary_ship_from_content(content), "USS Phoenix")
 
     def test_auxiliary_ship_not_included(self):
+        # Arrange
         content = "<@5848673888963>__**'s official log of the 134th voyage of the USS " "Adrestia"
+        # Act & Assert
         self.assertEqual(get_auxiliary_ship_from_content(content), None)
 
     def test_auxiliary_ship_name(self):
+        # Arrange
         content = (
             "<@5848673888963>__**'s official log of the 134th voyage of the USS "
             "Phoenix , Auxiliary to the USS Platypus**__ We started our adventure "
             "at Plunder"
         )
+        # Act & Assert
         self.assertEqual(get_auxiliary_ship_from_content(content), "USS Phoenix")
 
     def test_auxiliary_ship_name_with_emoji(self):
+        # Arrange
         content = (
             "<@5848673888963>__**'s official log of the 134th voyage of the USS "
             "Phoenix , Auxiliary to the USS Platypus**__ We started our adventure "
             "at Plunder <:USS_Phoenix:123456789>"
         )
+        # Act & Assert
         self.assertEqual(get_auxiliary_ship_from_content(content), "USS Phoenix")
 
     def test_auxiliary_ship_within_the_first_25_words(self):
+        # Arrange
         content = (
             "We started our adventure at Plunder on the USS Phoenix, Auxiliary to "
             "the USS Platypus"
         )
+        # Act & Assert
         self.assertEqual(get_auxiliary_ship_from_content(content), "USS Phoenix")
+        # Arrange
         content = (
             "We started our adventure at Plunder on the USS Platypus we dit a lot "
             "of yapping at least a good 25 words, so that is like more than 25 "
             "words. USS Phoenix"
         )
+        # Act & Assert
         self.assertEqual(get_auxiliary_ship_from_content(content), None)
 
     def test_auxiliary_ship_with_dash_between_words(self):
+        # Arrange
         content = (
             "We started our adventure at Plunder on the USS Phoenix, Auxiliary to "
             "the USS Platypus"
         )
+        # Act & Assert
         self.assertEqual(get_auxiliary_ship_from_content(content), "USS Phoenix")
+        # Arrange
         content = (
             "We started our adventure at Plunder on the USS-Phoenix, Auxiliary to "
             "the USS Platypus"
         )
+        # Act & Assert
         self.assertEqual(get_auxiliary_ship_from_content(content), None)
 
     def test_auxiliary_is_main_ship(self):
+        # Arrange
         content = (
             "We started our adventure at Plunder on the USS Mystery, Auxiliary to "
             "the USS Mystery"
         )
+        # Act & Assert
         self.assertEqual(get_auxiliary_ship_from_content(content), None)
         self.assertEqual(get_main_ship_from_content(content), "USS Mystery")

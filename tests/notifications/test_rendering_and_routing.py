@@ -29,6 +29,7 @@ class DummyGuild:
 
 class TestRenderingAndRouting(unittest.TestCase):
     def setUp(self) -> None:
+        # Arrange
         self.definition = NotificationDefinition(
             notification_type=NotificationType.NO_HOSTING_REMINDER,
             activity_field="last_hosting_at",
@@ -59,6 +60,7 @@ class TestRenderingAndRouting(unittest.TestCase):
         )
 
     def test_payload_snapshot_round_trip_and_rendering(self) -> None:
+        # Arrange
         factory = NotificationPayloadFactory()
         payload = factory.build(
             self.definition,
@@ -70,8 +72,10 @@ class TestRenderingAndRouting(unittest.TestCase):
         snapshot = factory.to_snapshot(payload)
         restored = factory.from_snapshot(snapshot)
         rendered = EmbedNotificationRenderer().render(restored)
+        # Act
         embed = EmbedNotificationRenderer.to_embed(rendered)
 
+        # Assert
         self.assertEqual(restored.title, "<:Venom:1239895956489633852> Hosting inactivity reminder")
         # Body now uses the mention only (no repeated display name) and uses "to reach" for upcoming
         self.assertIn("<@1> is due <t:", restored.body)
@@ -94,6 +98,7 @@ class TestRenderingAndRouting(unittest.TestCase):
         self.assertIsNone(embed.author.name)
 
     def test_payload_uses_became_due_after_threshold_time(self) -> None:
+        # Act
         payload = NotificationPayloadFactory().build(
             self.definition,
             self.sailor,
@@ -102,11 +107,13 @@ class TestRenderingAndRouting(unittest.TestCase):
             reference_time=datetime(2026, 4, 3, 9, 0, tzinfo=UTC),
         )
 
+        # Assert
         # Overdue notifications still use "became due" and the mention only
         self.assertIn("<@1> became due <t:", payload.body)
         self.assertIn(":R>", payload.body)
 
     def test_payload_uses_overdue_status_label_for_post_threshold_offsets(self) -> None:
+        # Arrange
         overdue_payload = NotificationPayloadFactory().build(
             self.definition,
             self.sailor,
@@ -123,13 +130,16 @@ class TestRenderingAndRouting(unittest.TestCase):
             ),
             reference_time=datetime(2026, 4, 10, 8, 5, tzinfo=UTC),
         )
+        # Act
         rendered = EmbedNotificationRenderer().render(overdue_payload)
 
+        # Assert
         self.assertEqual(overdue_payload.days_remaining_label, "7 day(s) overdue")
         self.assertIn("<@1> became due <t:", overdue_payload.body)
         self.assertGreater(rendered.color_value, 0)
 
     def test_payload_sanitizes_subject_name(self) -> None:
+        # Arrange
         risky_context = ResolvedMemberContext(
             sailor_id=1,
             display_name="@everyone *Render* Sailor",
@@ -148,22 +158,26 @@ class TestRenderingAndRouting(unittest.TestCase):
             reference_time=datetime(2026, 4, 1, 8, 0, tzinfo=UTC),
         )
 
+        # Assert
         self.assertIn("<@1>", payload.body)
         self.assertNotIn("@everyone", payload.body)
         # Sanitized display name is stored on the payload (and no longer repeated in the body)
         self.assertIn("@\u200beveryone", payload.subject_name)
 
     def test_route_resolver_skips_when_command_channel_missing(self) -> None:
+        # Act
         route = ShipCommandRouteResolver().resolve(
             self.definition,
             self.member_context,
             DummyGuild(channels={}),
         )
 
+        # Assert
         self.assertIsNone(route.destination_channel_id)
         self.assertEqual(route.skip_reason, "command_channel_not_found")
 
     def test_route_resolver_uses_ship_command_channel_for_titan(self) -> None:
+        # Arrange
         titan_context = ResolvedMemberContext(
             sailor_id=2,
             display_name="Titan Sailor",
@@ -185,11 +199,13 @@ class TestRenderingAndRouting(unittest.TestCase):
             ),
         )
 
+        # Assert
         expected_channel = BOT_TEST_COMMAND if ENVIRONMENT != "PROD" else BC_TITAN
         self.assertEqual(route.destination_channel_id, expected_channel)
         self.assertIsNone(route.skip_reason)
 
     def test_rollout_honors_ship_and_squad_scope(self) -> None:
+        # Act
         enabled = is_notification_enabled_for_member(
             {NotificationType.NO_HOSTING_REMINDER: {1237838106711822457: (10,)}},
             NotificationType.NO_HOSTING_REMINDER,
@@ -201,5 +217,6 @@ class TestRenderingAndRouting(unittest.TestCase):
             self.member_context,
         )
 
+        # Assert
         self.assertTrue(enabled)
         self.assertFalse(disabled)

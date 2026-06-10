@@ -48,6 +48,7 @@ async def _text_callback(ctx):
 
 
 def test_apply_configured_cooldowns_tracks_message_and_skips_zero_second_items():
+    # Arrange
     ships_command = app_commands.Command(
         name="ships",
         description="Ship report",
@@ -56,10 +57,12 @@ def test_apply_configured_cooldowns_tracks_message_and_skips_zero_second_items()
     future_command = _text_callback
     baseline_ship_checks = len(ships_command.checks)
 
+    # Act
     apply_configured_cooldowns(
         _FakeBot([ships_command], [future_command]),
     )
 
+    # Assert
     assert ships_command.extras[COOLDOWN_SECONDS_KEY] == 20
     assert COOLDOWN_TRACKING_KEY in ships_command.extras
     assert len(ships_command.checks) == baseline_ship_checks + 1
@@ -69,8 +72,10 @@ def test_apply_configured_cooldowns_tracks_message_and_skips_zero_second_items()
 
 
 def test_build_cooldown_error_embed_uses_configured_message_template():
+    # Act
     embed = build_cooldown_error_embed("ships", 12.1)
 
+    # Assert
     assert embed.title == "Command on cooldown"
     assert embed.description == (
         "Please wait 13 seconds before using `ships` again."
@@ -78,6 +83,7 @@ def test_build_cooldown_error_embed_uses_configured_message_template():
 
 
 def test_record_command_cooldown_event_tracks_rendered_message(monkeypatch):
+    # Arrange
     recorded_calls = []
 
     class _FakeRepository:
@@ -97,8 +103,10 @@ def test_record_command_cooldown_event_tracks_rendered_message(monkeypatch):
         fake_module,
     )
 
+    # Act
     rendered_message = record_command_cooldown_event("Ships", 12.1)
 
+    # Assert
     assert rendered_message == (
         "Please wait 13 seconds before using `ships` again."
     )
@@ -114,6 +122,7 @@ def test_record_command_cooldown_event_tracks_rendered_message(monkeypatch):
 
 
 def test_build_cooldown_stats_payload_sanitizes_names_and_mentions():
+    # Act
     payload = build_cooldown_stats_payload(
         "Weird\nCommand <@123>",
         4.2,
@@ -123,6 +132,7 @@ def test_build_cooldown_stats_payload_sanitizes_names_and_mentions():
         ),
     )
 
+    # Assert
     assert payload["command_name"] == "weird_command _123_"
     assert payload["cooldown_seconds"] == 7
     assert payload["retry_after_seconds"] == 5

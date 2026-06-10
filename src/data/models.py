@@ -77,32 +77,6 @@ class RepresentationBadgeTier(enum.IntEnum):
 Base = declarative_base()
 
 
-class Rank(Base):
-    __tablename__ = "rank"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    identifier = Column(VARCHAR(16), nullable=False)
-    name = Column(VARCHAR(64), nullable=False)
-    marine_name = Column(VARCHAR(64), nullable=True)
-    index = Column(Integer, nullable=False)
-    role_id = Column(BIGINT, nullable=False, unique=True)
-    is_active = Column(BOOLEAN, server_default="1")
-
-
-class RankHistory(Base):
-    __tablename__ = "log_rank_history"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    sailor_id = mapped_column(ForeignKey("sailor.discord_id"), nullable=False)
-    rank_id = mapped_column(ForeignKey("rank.id"), nullable=False)
-    log_time = Column(DATETIME, nullable=False, index=True, default=utc_time_now)
-    reason = Column(TEXT, nullable=True)
-
-    # Relationships
-    sailor: Mapped["Sailor"] = relationship("Sailor", foreign_keys=[sailor_id])
-    rank: Mapped["Rank"] = relationship("Rank", foreign_keys=[rank_id])
-
-
 class Coins(Base):
     __tablename__ = "coins"
 
@@ -702,6 +676,33 @@ class RepresentationPointMutation(Base):
     @property
     def is_removal(self) -> ColumnElement[bool]:
         return self.points_delta < 0
+
+
+class Rank(Base):
+    __tablename__ = "rank"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    identifier = Column(VARCHAR(16), nullable=False)
+    name = Column(VARCHAR(64), nullable=False)
+    marine_name = Column(VARCHAR(64), nullable=True)
+    index = Column(Integer, nullable=False)
+    role_id = Column(BIGINT, nullable=False, unique=True)
+    is_active = Column(BOOLEAN, server_default="1")
+
+
+class RankHistory(Base):
+    __tablename__ = "log_rank_history"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    sailor_id = mapped_column(ForeignKey("sailor.discord_id"), nullable=False)
+    rank_id = mapped_column(ForeignKey("rank.id"), nullable=False)
+    log_time = Column(DATETIME, nullable=False, index=True, default=utc_time_now)
+    reason = Column(TEXT, nullable=True)
+
+    # Relationships
+    sailor: Mapped["Sailor"] = relationship("Sailor", foreign_keys=[sailor_id])
+    rank: Mapped["Rank"] = relationship("Rank", foreign_keys=[rank_id])
+
 
 # Nifty function to create all tables
 def create_tables():

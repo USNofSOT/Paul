@@ -16,51 +16,50 @@ from src.security.evaluator import clear_role_cache
 
 class TestSecurityDecorators(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
+        # Arrange
         clear_role_cache()
 
     async def test_require_any_role_wrapper_blocks_direct_call(self):
-        # Mock callback
+        # Arrange
         async def mock_callback(interaction):
             return "Executed"
 
-        # Decorate
         decorated = require_any_role(Role.JE)(mock_callback)
 
         interaction = MagicMock(spec=discord.Interaction)
         interaction.user.id = 123
         interaction.command = None
 
-        # Mock resolve_effective_roles to return no roles
         with patch('src.security.decorators.resolve_effective_roles', return_value=set()):
-            # Our decorator now handles UI interactions by calling the error handler
             with patch('src.security.error_handler.handle_app_command_security_error',
                        return_value=True) as mock_handler:
+                # Act
                 result = await decorated(interaction)
+                # Assert
                 self.assertIsNone(result)
                 mock_handler.assert_called_once()
 
     async def test_require_any_role_wrapper_allows_authorized_call(self):
-        # Mock callback
+        # Arrange
         async def mock_callback(interaction):
             return "Executed"
 
-        # Decorate
         decorated = require_any_role(Role.JE)(mock_callback)
 
         interaction = MagicMock(spec=discord.Interaction)
         interaction.user.id = 123
 
-        # Mock resolve_effective_roles to return JE
         with patch('src.security.decorators.resolve_effective_roles', return_value={Role.JE}):
+            # Act
             result = await decorated(interaction)
+            # Assert
             self.assertEqual(result, "Executed")
 
     async def test_audit_interaction_success(self):
-        # Mock command callback
+        # Arrange
         async def mock_callback(self_arg, interaction, **kwargs):
             return "Result"
 
-        # Decorate
         decorated = audit_interaction(mock_callback)
 
         interaction = MagicMock(spec=discord.Interaction)
@@ -70,21 +69,21 @@ class TestSecurityDecorators(unittest.IsolatedAsyncioTestCase):
         with patch('src.security.decorators.SecurityInteractionRepository') as mock_repo_class:
             mock_repo = mock_repo_class.return_value.__enter__.return_value
 
+            # Act
             result = await decorated(None, interaction, arg1="val1")
 
+            # Assert
             self.assertEqual(result, "Result")
-            # Verify log_interaction was called with SUCCESS
             mock_repo.log_interaction.assert_called_once()
             args, kwargs = mock_repo.log_interaction.call_args
             self.assertEqual(kwargs['event_type'], "SUCCESS")
             self.assertIn("val1", kwargs['args'])
 
     async def test_audit_interaction_failure(self):
-        # Mock command callback that raises exception
+        # Arrange
         async def mock_callback(self_arg, interaction, **kwargs):
             raise ValueError("Test Error")
 
-        # Decorate
         decorated = audit_interaction(mock_callback)
 
         interaction = MagicMock(spec=discord.Interaction)
@@ -94,10 +93,10 @@ class TestSecurityDecorators(unittest.IsolatedAsyncioTestCase):
         with patch('src.security.decorators.SecurityInteractionRepository') as mock_repo_class:
             mock_repo = mock_repo_class.return_value.__enter__.return_value
 
+            # Act & Assert
             with self.assertRaises(ValueError):
                 await decorated(None, interaction)
 
-            # Verify log_interaction was called with FAILURE
             mock_repo.log_interaction.assert_called_once()
             args, kwargs = mock_repo.log_interaction.call_args
             self.assertEqual(kwargs['event_type'], "FAILURE")

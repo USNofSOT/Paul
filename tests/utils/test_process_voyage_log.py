@@ -214,18 +214,34 @@ class TestGetCountFromContentByKeyword(unittest.TestCase):
 
 class TestGetDoubloonCountFromContent(unittest.TestCase):
     def test_doubloons_at_beginning(self):
+        # Arrange
         content = "doubloons 100"
-        self.assertEqual(get_doubloon_count_from_content(content), 100)
+        # Act
+        result = get_doubloon_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 100)
 
     def test_doubloons_with_colon(self):
+        # Arrange
         content = "doubloons: 1,000"
-        self.assertEqual(get_doubloon_count_from_content(content), 1000)
+        # Act
+        result = get_doubloon_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 1000)
 
     def test_doubloons_with_emoji(self):
+        # Arrange
         content = f"{DOUBLOONS_EMOJI} 10,000"
-        self.assertEqual(get_doubloon_count_from_content(content), 10000)
+        # Act
+        result = get_doubloon_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 10000)
+        # Arrange
         content = f"{DOUBLOONS_EMOJI}  10.000"
-        self.assertEqual(get_doubloon_count_from_content(content), 10000)
+        # Act
+        result = get_doubloon_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 10000)
 
     # def test_doubloons_with_emoji_and_behind(self):
     #     content = "10,232 <:Doubloons:965929014067867699>"
@@ -234,75 +250,144 @@ class TestGetDoubloonCountFromContent(unittest.TestCase):
     #     self.assertEqual(get_doubloon_count_from_content(content), 10121)
 
     def test_max_20m_doubloons(self):
+        # Arrange
         content = "doubloons 20,000,001"
-        self.assertEqual(get_doubloon_count_from_content(content), 20000000)
+        # Act
+        result = get_doubloon_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 20000000)
 
     def test_doubloons_both_sides(self):
+        # Arrange
         content = f"{DOUBLOONS_EMOJI}  10.010 {DOUBLOONS_EMOJI}"
-        self.assertEqual(get_doubloon_count_from_content(content), 10010)
+        # Act
+        result = get_doubloon_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 10010)
 
     def test_weird_formatting(self):
+        # Arrange
         content = "Doubloons secured: 562.4123"
-        self.assertEqual(get_doubloon_count_from_content(content), 5624123)
+        # Act
+        result = get_doubloon_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 5624123)
 
     # def test_doubloons_at_end(self):
     #     content = "122 doubloons"
     #     self.assertEqual(get_doubloon_count_from_content(content), 122)
 
     def test_no_doubloons(self):
+        # Arrange
         content = "no doubloons here"
-        self.assertEqual(get_doubloon_count_from_content(content), 0)
+        # Act
+        result = get_doubloon_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 0)
 
     def test_doubloons_with_text(self):
+        # Arrange
         content = "You have earned doubloons 2,500 today!"
-        self.assertEqual(get_doubloon_count_from_content(content), 2500)
+        # Act
+        result = get_doubloon_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 2500)
 
     def test_doubloons_with_extra_text(self):
+        # Arrange
         content = "Doubloons secured: 1,224,132"
-        self.assertEqual(get_doubloon_count_from_content(content), 1224132)
+        # Act
+        result = get_doubloon_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 1224132)
 
     def test_doubloons_with_previous_line_containing_numbers(self):
+        # Arrange
         content = "::Gold> Gold: 1536057\n:Doubloons> Doubloons: 12"
-        self.assertEqual(get_doubloon_count_from_content(content), 12)
+        # Act
+        result = get_doubloon_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 12)
 
     def test_doubloons_with_emoji_named_doubloon(self):
+        # Arrange
         content = "::Gold> Gold: 1536057\n:Doubloon> 12"
-        self.assertEqual(get_doubloon_count_from_content(content), 12)
+        # Act
+        result = get_doubloon_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 12)
 
     def test_doubloons_with_dash(self):
+        # Arrange
         content = "Doubloons - 234,646"
-        self.assertEqual(get_doubloon_count_from_content(content), 234646)
+        # Act
+        result = get_doubloon_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 234646)
         # content = "548,646 - Doubloons"
         # self.assertEqual(get_doubloon_count_from_content(content), 548646)
 
     def test_doubloons_with_italic_or_bold(self):
+        # Arrange
         content = "Doubloons **1,000**"
-        self.assertEqual(get_doubloon_count_from_content(content), 1000)
+        # Act
+        result = get_doubloon_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 1000)
+        # Arrange
         content = "Doubloons *1,000*"
-        self.assertEqual(get_doubloon_count_from_content(content), 1000)
+        # Act
+        result = get_doubloon_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 1000)
 
     def test_doubloons_with_underline(self):
+        # Arrange
         content = "Doubloons __1,050__"
-        self.assertEqual(get_doubloon_count_from_content(content), 1050)
+        # Act
+        result = get_doubloon_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 1050)
 
     def test_doubloons_with_bold_underline(self):
+        # Arrange
         content = "Doubloons __**1,055**__"
-        self.assertEqual(get_doubloon_count_from_content(content), 1055)
+        # Act
+        result = get_doubloon_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 1055)
 
-# class TestGetGoldCountFromContent(unittest.TestCase):
-#     def test_gold_at_beginning(self):
-#         content = "gold 100"
-#         self.assertEqual(get_gold_count_from_content(content), 100)
+
+class TestGetGoldCountFromContent(unittest.TestCase):
+    def test_gold_at_beginning(self):
+        # Arrange
+        content = "gold 100"
+        # Act
+        result = get_gold_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 100)
 
     def test_gold_with_colon(self):
+        # Arrange
         content = "gold: 1,000"
-        self.assertEqual(get_gold_count_from_content(content), 1000)
+        # Act
+        result = get_gold_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 1000)
 
     def test_gold_with_emoji(self):
+        # Arrange
         content = f"{GOLD_EMOJI} 10,000"
-        self.assertEqual(get_gold_count_from_content(content), 10000)
+        # Act
+        result = get_gold_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 10000)
+        # Arrange
         content = f"{GOLD_ANIMATED_EMOJI} 10.000"
-        self.assertEqual(get_gold_count_from_content(content), 10000)
+        # Act
+        result = get_gold_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 10000)
 
     # def test_gold_with_emoji_and_behind(self):
     #     content = "10,232 <:Gold:965929014067867699>"
@@ -311,73 +396,141 @@ class TestGetDoubloonCountFromContent(unittest.TestCase):
     #     self.assertEqual(get_gold_count_from_content(content), 10121)
 
     def test_max_20m_gold(self):
+        # Arrange
         content = "gold 20,000,001"
-        self.assertEqual(get_gold_count_from_content(content), 20000000)
+        # Act
+        result = get_gold_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 20000000)
 
     def test_gold_both_sides(self):
+        # Arrange
         content = f"{GOLD_EMOJI} 10.010 {GOLD_EMOJI}"
-        self.assertEqual(get_gold_count_from_content(content), 10010)
+        # Act
+        result = get_gold_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 10010)
 
     def test_weird_formatting(self):
+        # Arrange
         content = "Gold secured: 562.4123"
-        self.assertEqual(get_gold_count_from_content(content), 5624123)
+        # Act
+        result = get_gold_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 5624123)
 
     # def test_gold_at_end(self):
     #     content = "100 gold"
     #     self.assertEqual(get_gold_count_from_content(content), 100)
 
     def test_no_gold(self):
+        # Arrange
         content = "no gold here"
-        self.assertEqual(get_gold_count_from_content(content), 0)
+        # Act
+        result = get_gold_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 0)
 
     def test_gold_with_text(self):
+        # Arrange
         content = "You have earned gold 2,500 today!"
-        self.assertEqual(get_gold_count_from_content(content), 2500)
+        # Act
+        result = get_gold_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 2500)
 
     def test_gold_with_extra_text(self):
+        # Arrange
         content = "Gold secured: 1,224,132"
-        self.assertEqual(get_gold_count_from_content(content), 1224132)
+        # Act
+        result = get_gold_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 1224132)
 
     def test_gold_with_space(self):
+        # Arrange
         content = "Gold 1 000"
-        self.assertEqual(get_gold_count_from_content(content), 1000)
+        # Act
+        result = get_gold_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 1000)
+        # Arrange
         content = "We as Gold Hoarders achieved so much, we even managed to sink a grade 3 reaper. \n \n Loot gold: \n1 005 "
-        self.assertEqual(get_gold_count_from_content(content), 1005)
+        # Act
+        result = get_gold_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 1005)
         # content = "212 543 gold"
         # self.assertEqual(get_gold_count_from_content(content), 212543)
 
     def test_gold_and_number_earlier_in_log(self):
+        # Arrange
         content = "We voted up Gold hoarders proceeded to do a series of other things, like sinking a ship to then fight a grade 3 reaper, and then we did a fort. \n \n Loot gold: \n1536057 "
-        self.assertEqual(get_gold_count_from_content(content), 1536057)
+        # Act
+        result = get_gold_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 1536057)
+        # Arrange
         content = "We voted up Gold hoarders 3 proceeded to do a series of other things, like sinking a ship to then fight a grade 3 reaper, and then we did a fort. \n \n Loot gold: \n1536057 "
-        self.assertEqual(get_gold_count_from_content(content), 1536057)
+        # Act
+        result = get_gold_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 1536057)
 
     def test_gold_count_must_be_within_25_characters(self):
+        # Arrange
         twenty_five_characters = "Lorem ipsum dolor sit adi"
         content = "Gold " + twenty_five_characters + " 100"
-        self.assertEqual(get_gold_count_from_content(content), 0)
+        # Act
+        result = get_gold_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 0)
+        # Arrange
         content = "Gold " + twenty_five_characters[1:] + " 100"
-        self.assertEqual(get_gold_count_from_content(content), 100)
+        # Act
+        result = get_gold_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 100)
 
     def test_gold_count_with_dash(self):
+        # Arrange
         content = "Gold - 234,646"
-        self.assertEqual(get_gold_count_from_content(content), 234646)
+        # Act
+        result = get_gold_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 234646)
         # content = "548,646 - Gold"
         # self.assertEqual(get_gold_count_from_content(content), 548646)
 
     def test_gold_count_with_italic_or_bold(self):
+        # Arrange
         content = "Gold **1,000**"
-        self.assertEqual(get_gold_count_from_content(content), 1000)
+        # Act
+        result = get_gold_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 1000)
+        # Arrange
         content = "Gold *1,000*"
-        self.assertEqual(get_gold_count_from_content(content), 1000)
+        # Act
+        result = get_gold_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 1000)
 
     def test_gold_count_with_underline(self):
+        # Arrange
         content = "Gold __1,050__"
-        self.assertEqual(get_gold_count_from_content(content), 1050)
+        # Act
+        result = get_gold_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 1050)
 
     def test_gold_count_with_bold_underline(self):
+        # Arrange
         content = "Gold __**1,055**__"
-        self.assertEqual(get_gold_count_from_content(content), 1055)
+        # Act
+        result = get_gold_count_from_content(content)
+        # Assert
+        self.assertEqual(result, 1055)
 
 
 class TestProcessVoyageLog(unittest.IsolatedAsyncioTestCase):
@@ -426,55 +579,58 @@ class TestProcessVoyageLog(unittest.IsolatedAsyncioTestCase):
         return voyage_repository, hosted_repository, sailor_repository
 
     async def test_process_voyage_log_saves_voyage_planning_reference(self):
+        # Arrange
         message = self.make_message(
             "https://discord.com/channels/1/2/4444",
             datetime(2026, 2, 1, tzinfo=UTC),
         )
         voyage_repository, hosted_repository, sailor_repository = self.make_repositories()
-
+        # Act
         await Process_Voyage_Log.process_voyage_log(
             message,
             voyage_repository=voyage_repository,
             hosted_repository=hosted_repository,
             sailor_repository=sailor_repository,
         )
-
+        # Assert
         _, kwargs = hosted_repository.save_hosted_data.call_args
         self.assertEqual(kwargs["voyage_planning_channel_id"], 2)
         self.assertEqual(kwargs["voyage_planning_message_id"], 4444)
 
     async def test_process_voyage_log_saves_voyage_announcement_reference(self):
+        # Arrange
         message = self.make_message(
             "https://discord.com/channels/1/3/5555",
             datetime(2026, 2, 1, tzinfo=UTC),
         )
         voyage_repository, hosted_repository, sailor_repository = self.make_repositories()
-
+        # Act
         await Process_Voyage_Log.process_voyage_log(
             message,
             voyage_repository=voyage_repository,
             hosted_repository=hosted_repository,
             sailor_repository=sailor_repository,
         )
-
+        # Assert
         _, kwargs = hosted_repository.save_hosted_data.call_args
         self.assertEqual(kwargs["voyage_planning_channel_id"], 3)
         self.assertEqual(kwargs["voyage_planning_message_id"], 5555)
 
     async def test_process_voyage_log_skips_reference_for_logs_before_rollout(self):
+        # Arrange
         message = self.make_message(
             "https://discord.com/channels/1/3/5555",
             datetime(2026, 1, 21, 23, 59, tzinfo=UTC),
         )
         voyage_repository, hosted_repository, sailor_repository = self.make_repositories()
-
+        # Act
         await Process_Voyage_Log.process_voyage_log(
             message,
             voyage_repository=voyage_repository,
             hosted_repository=hosted_repository,
             sailor_repository=sailor_repository,
         )
-
+        # Assert
         _, kwargs = hosted_repository.save_hosted_data.call_args
         self.assertIsNone(kwargs["voyage_planning_channel_id"])
         self.assertIsNone(kwargs["voyage_planning_message_id"])
