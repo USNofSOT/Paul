@@ -553,10 +553,10 @@ class TestProcessVoyageLog(unittest.IsolatedAsyncioTestCase):
         )
 
     def make_message(self, content: str, created_at: datetime):
-        author = SimpleNamespace(id=100)
-        mentions = [SimpleNamespace(id=200), SimpleNamespace(id=300)]
+        author = SimpleNamespace(id=100, roles=[])
+        mentions = [SimpleNamespace(id=200, roles=[]), SimpleNamespace(id=300, roles=[])]
         guild = MagicMock()
-        guild.get_member.side_effect = lambda discord_id: SimpleNamespace(id=discord_id)
+        guild.get_member.side_effect = lambda discord_id: SimpleNamespace(id=discord_id, roles=[])
 
         return SimpleNamespace(
             id=999,

@@ -9,6 +9,7 @@ from src.config.main_server import GUILD_ID, VOYAGE_ANNOUNCEMENTS, VOYAGE_PLANNI
 from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.sailor_repository import SailorRepository
 from src.data.repository.voyage_repository import VoyageRepository
+from src.utils.rank_and_promotion_utils import get_current_rank
 from src.utils.ship_utils import (
     get_auxiliary_ship_from_content,
     get_count_from_content,
@@ -150,6 +151,8 @@ class Process_Voyage_Log:
 
         # 2. If not, process the log. But first, ensure the host is in the Sailor table
         sailor_repository.update_or_create_sailor_by_discord_id(host_id)
+        rank = get_current_rank(message.author)
+        host_rank_id = rank.id if rank else None
         hosted_repository.save_hosted_data(
             log_id,
             host_id,
@@ -165,6 +168,7 @@ class Process_Voyage_Log:
             voyage_type=get_voyage_type_from_content(message.content),
             voyage_planning_channel_id=vp_channel_id,
             voyage_planning_message_id=vp_id,
+            host_rank_id=host_rank_id,
         )
         # 3.Log Voyage Count
 
@@ -174,7 +178,11 @@ class Process_Voyage_Log:
                     # Ensure the participant is in the Sailor table
                     sailor_repository.update_or_create_sailor_by_discord_id(participant_id)
                     # Add the voyage data to the list
-                    voyage_data.append((log_id, participant_id, log_time, get_ship_role_id_by_member(message.guild.get_member(participant_id))))
+                    member = message.guild.get_member(participant_id)
+                    rank = get_current_rank(member)
+                    participant_rank_id = rank.id if rank else None
+                    voyage_data.append(
+                        (log_id, participant_id, log_time, get_ship_role_id_by_member(member), participant_rank_id))
                     # Increment the voyage count for the participant
                     sailor_repository.increment_voyage_count_by_discord_id(participant_id)
 

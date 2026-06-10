@@ -79,33 +79,39 @@ class SailorRepository(BaseRepository[Sailor]):
             raise e
 
     def update_or_create_sailor_by_discord_id(self, target_id: int, gamertag: str | None = None,
-                                              timezone: str | None = None) -> Sailor | None:
+                                              timezone: str | None = None,
+                                              current_rank_id: int | None = None) -> Sailor | None:
         """
-        Set the gamertag and or timezone for a Sailor by Discord ID
+        Set the gamertag, timezone, and current_rank_id for a Sailor by Discord ID
         Will create a new Sailor if one does not exist
 
         Args:
             target_id (int): The Discord ID of the user.
             gamertag (str | None): The gamertag to set for the user. Optional.
             timezone (str | None): The timezone to set for the user. Optional.
+            current_rank_id (int | None): The rank ID to set for the user. Optional.
         Returns:
             Sailor: The Sailor object that was updated, or None if the operation failed.
         """
         try:
-            sailor = Sailor(discord_id=target_id)
+            # Check if sailor exists to preserve existing data on merge if necessary
+            sailor = self.session.query(Sailor).filter(Sailor.discord_id == target_id).first()
+            if not sailor:
+                sailor = Sailor(discord_id=target_id)
+                self.session.add(sailor)
 
-            # Ensures that the gamertag and timezone are only altered if they are not None
+            # Ensures that the gamertag, timezone, and current_rank_id are only altered if they are not None
             if gamertag:
                 sailor.gamertag = gamertag
             if timezone:
                 sailor.timezone = timezone
+            if current_rank_id is not None:
+                sailor.current_rank_id = current_rank_id
 
-            self.session.merge(sailor)  # merge will update or create the sailor object if it doesn't exist
             self.session.commit()
-            return self.session.query(Sailor).filter(
-                Sailor.discord_id == target_id).first()  # This will return the updated Sailor object
+            return sailor
         except Exception as e:
-            log.error(f"Error setting gamertag: {e}")
+            log.error(f"Error updating/creating sailor: {e}")
             self.session.rollback()
             raise e
 

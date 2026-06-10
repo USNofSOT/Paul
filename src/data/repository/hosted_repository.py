@@ -163,6 +163,7 @@ class HostedRepository(BaseRepository[Hosted]):
         voyage_type: VoyageType = None,
             voyage_planning_channel_id: int = None,
             voyage_planning_message_id: int = None,
+            host_rank_id: int = None,
     ) -> bool:
         """
         Adds a hosted data entry to the Hosted table.
@@ -183,6 +184,7 @@ class HostedRepository(BaseRepository[Hosted]):
             voyage_type (VoyageType): The type of voyage. Defaults to VoyageType.UNKNOWN.
             voyage_planning_channel_id (int): The channel ID of the voyage planning or announcement message. Defaults to None.
             voyage_planning_message_id (int): The ID of the voyage planning message. Defaults to None.
+            host_rank_id (int): The rank ID of the host. Defaults to None.
         Returns:
             bool: True if the operation was successful, False otherwise.
         """
@@ -212,6 +214,7 @@ class HostedRepository(BaseRepository[Hosted]):
                         ),
                         voyage_planning_channel_id=voyage_planning_channel_id,
                         voyage_planning_message_id=voyage_planning_message_id,
+                        host_rank_id=host_rank_id,
                     )
                 )
 
