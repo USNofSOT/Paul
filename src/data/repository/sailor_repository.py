@@ -321,6 +321,99 @@ class SailorRepository(BaseRepository[Sailor]):
                 log.error(f"Error getting top members by voyage count: {e}")
                 return []  # Return an empty list in case of an error
 
+    def update_rank(self, target_id: int, rank_id: int, reason: str = None) -> bool:
+        """
+        Update the rank for a specific Sailor and log the change if it has changed.
+
+        Args:
+            target_id (int): The Discord ID of the user.
+            rank_id (int): The ID of the new rank.
+            reason (str, optional): The reason for the rank change. Defaults to None.
+        Returns:
+            bool: True if the operation was successful, False otherwise.
+        """
+        try:
+            sailor = self.get_sailor(target_id)
+            if not sailor:
+                return False
+
+            if sailor.current_rank_id != rank_id:
+                sailor.current_rank_id = rank_id
+                self.session.commit()
+
+                from src.data.repository.rank_history_repository import (
+                    RankHistoryRepository,
+                )
+                with RankHistoryRepository() as rank_history_repo:
+                    rank_history_repo.log_rank_change(target_id, rank_id, reason)
+
+            return True
+        except Exception as e:
+            log.error(f"Error updating sailor rank: {e}")
+            self.session.rollback()
+            return False
+
+    def update_discord_profile(
+            self,
+            target_id: int,
+            nickname: str | None,
+            global_name: str | None,
+            discord_name: str | None,
+            avatar_url: str | None,
+    ) -> bool:
+        try:
+            sailor = self.session.query(Sailor).filter(Sailor.discord_id == target_id).first()
+            if sailor is None:
+                return False
+            sailor.nickname = nickname
+            sailor.global_name = global_name
+            sailor.discord_name = discord_name
+            sailor.avatar_url = avatar_url
+            self.session.commit()
+            return True
+        except Exception as e:
+            log.error(f"Error updating discord profile for {target_id}: {e}")
+            self.session.rollback()
+            return False
+
+    def update_discord_profiles_batch(self, profiles: list[dict]) -> int:
+        """
+        Batch update discord profiles for multiple sailors.
+
+        Args:
+            profiles: list of dicts with keys: discord_id, nickname, global_name, discord_name, avatar_url
+        Returns:
+            int: Number of sailors updated
+        """
+        updated = 0
+        try:
+            for profile in profiles:
+                result = self.session.execute(
+                    update(Sailor)
+                    .where(Sailor.discord_id == profile["discord_id"])
+                    .values(
+                        nickname=profile.get("nickname"),
+                        global_name=profile.get("global_name"),
+                        discord_name=profile.get("discord_name"),
+                        avatar_url=profile.get("avatar_url"),
+                    )
+                )
+                updated += result.rowcount
+            self.session.commit()
+            return updated
+        except Exception as e:
+            log.error(f"Error batch updating discord profiles: {e}")
+            self.session.rollback()
+            return 0
+
+    def get_all_sailor_discord_ids(self) -> list[int]:
+        try:
+            results = self.session.query(Sailor.discord_id).all()
+            return [row[0] for row in results]
+        except Exception as e:
+            log.error(f"Error getting all sailor discord IDs: {e}")
+            return []
+
 
 def ensure_sailor_exists(target_id: int) -> Sailor | None:
     """

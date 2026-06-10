@@ -6,10 +6,11 @@ from sqlalchemy import (
     FLOAT,
     VARCHAR,
     Column,
+    ColumnElement,
     Date,
     ForeignKey,
     Integer,
-    UniqueConstraint, ColumnElement,
+    UniqueConstraint,
 )
 from sqlalchemy.dialects.mysql import TINYTEXT
 from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
@@ -74,6 +75,32 @@ class RepresentationBadgeTier(enum.IntEnum):
 
 # Base class for all models
 Base = declarative_base()
+
+
+class Rank(Base):
+    __tablename__ = "rank"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    identifier = Column(VARCHAR(16), nullable=False)
+    name = Column(VARCHAR(64), nullable=False)
+    marine_name = Column(VARCHAR(64), nullable=True)
+    index = Column(Integer, nullable=False)
+    role_id = Column(BIGINT, nullable=False, unique=True)
+    is_active = Column(BOOLEAN, server_default="1")
+
+
+class RankHistory(Base):
+    __tablename__ = "log_rank_history"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    sailor_id = mapped_column(ForeignKey("sailor.discord_id"), nullable=False)
+    rank_id = mapped_column(ForeignKey("rank.id"), nullable=False)
+    log_time = Column(DATETIME, nullable=False, index=True, default=utc_time_now)
+    reason = Column(TEXT, nullable=True)
+
+    # Relationships
+    sailor: Mapped["Sailor"] = relationship("Sailor", foreign_keys=[sailor_id])
+    rank: Mapped["Rank"] = relationship("Rank", foreign_keys=[rank_id])
 
 
 class Coins(Base):
@@ -141,6 +168,9 @@ class Hosted(Base):
         VARCHAR(32), nullable=True
     )  # e.g. "USS Auxiliary" which would be the auxiliary ship for the USS Venom
 
+    host_rank_id = mapped_column(ForeignKey("rank.id"), nullable=True)
+    host_rank: Mapped["Rank"] = relationship("Rank", foreign_keys=[host_rank_id])
+
     # One-To-Many relationship with Voyages
     voyages: Mapped[list["Voyages"]] = relationship("Voyages", back_populates="hosted")
     # One-To-Many relationship with Subclasses
@@ -198,6 +228,9 @@ class Voyages(Base):
     log_time = Column(DATETIME)
     ship_role_id = Column(BIGINT, nullable=True)
 
+    participant_rank_id = mapped_column(ForeignKey("rank.id"), nullable=True)
+    participant_rank: Mapped["Rank"] = relationship("Rank", foreign_keys=[participant_rank_id])
+
     # Many-to-One relationship with Hosted
     hosted: Mapped["Hosted"] = relationship(
         "Hosted", back_populates="voyages", foreign_keys=[log_id]
@@ -231,6 +264,14 @@ class Sailor(Base):
     force_hosted_count = Column(Integer, server_default="0")
     last_voyage_at = Column(DATETIME, nullable=True)
     last_hosting_at = Column(DATETIME, nullable=True)
+
+    nickname = Column(VARCHAR(64), nullable=True)
+    global_name = Column(VARCHAR(64), nullable=True)
+    discord_name = Column(VARCHAR(64), nullable=True)
+    avatar_url = Column(TEXT, nullable=True)
+
+    current_rank_id = mapped_column(ForeignKey("rank.id"), nullable=True)
+    current_rank: Mapped["Rank"] = relationship("Rank", foreign_keys=[current_rank_id])
 
     # One-to-Many relationship with Hosted
     hosted: Mapped[list["Hosted"]] = relationship(
