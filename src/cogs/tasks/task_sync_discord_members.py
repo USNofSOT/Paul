@@ -2,7 +2,7 @@ from logging import getLogger
 
 from discord.ext import commands, tasks
 
-from src.config.main_server import GUILD_ID
+from src.config.main_server import GUILD_ID, ENVIRONMENT
 from src.config.task_timing import DISCORD_MEMBER_SYNC_TASK_INTERVAL_HOURS
 from src.data.repository.sailor_repository import SailorRepository
 
@@ -19,6 +19,11 @@ class SyncDiscordMembers(commands.Cog):
 
     @tasks.loop(hours=DISCORD_MEMBER_SYNC_TASK_INTERVAL_HOURS)
     async def sync_discord_members(self):
+
+        if ENVIRONMENT != "PROD":
+            log.info("Not In Production")
+            return
+
         guild = self.bot.get_guild(GUILD_ID)
         if not guild:
             log.error("Could not find guild for syncing discord members.")

@@ -9,7 +9,7 @@ from src.config.main_server import GUILD_ID, VOYAGE_ANNOUNCEMENTS, VOYAGE_PLANNI
 from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.sailor_repository import SailorRepository
 from src.data.repository.voyage_repository import VoyageRepository
-from src.utils.rank_and_promotion_utils import get_current_rank
+from src.utils.rank_and_promotion_utils import get_current_rank_role_id
 from src.utils.ship_utils import (
     get_auxiliary_ship_from_content,
     get_count_from_content,
@@ -151,8 +151,7 @@ class Process_Voyage_Log:
 
         # 2. If not, process the log. But first, ensure the host is in the Sailor table
         sailor_repository.update_or_create_sailor_by_discord_id(host_id)
-        rank = get_current_rank(message.author)
-        host_rank_id = rank.id if rank else None
+        host_rank_id = get_current_rank_role_id(message.author)
         hosted_repository.save_hosted_data(
             log_id,
             host_id,
@@ -179,8 +178,7 @@ class Process_Voyage_Log:
                     sailor_repository.update_or_create_sailor_by_discord_id(participant_id)
                     # Add the voyage data to the list
                     member = message.guild.get_member(participant_id)
-                    rank = get_current_rank(member)
-                    participant_rank_id = rank.id if rank else None
+                    participant_rank_id = get_current_rank_role_id(member)
                     voyage_data.append(
                         (log_id, participant_id, log_time, get_ship_role_id_by_member(member), participant_rank_id))
                     # Increment the voyage count for the participant

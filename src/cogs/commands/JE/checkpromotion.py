@@ -4,7 +4,7 @@ from discord.ext import commands
 
 from src.config.main_server import GUILD_ID
 from src.config.netc_server import NETC_GUILD_ID
-from src.config.ranks_roles import E2_ROLES, MARINE_ROLE
+from src.config.ranks_roles import MARINE_ROLE
 from src.data import Sailor
 from src.data.repository.auditlog_repository import AuditLogRepository
 from src.data.repository.sailor_repository import SailorRepository, ensure_sailor_exists
@@ -14,7 +14,7 @@ from src.security import require_any_role, Role
 from src.utils.embeds import default_embed
 from src.utils.promotion import build_default_promotion_check_service
 from src.utils.promotion.models import PromotionContext
-from src.utils.rank_and_promotion_utils import get_current_rank
+from src.utils.rank_and_promotion_utils import get_current_rank, is_seaman_apprentice
 
 
 class CheckPromotion(commands.Cog):
@@ -80,7 +80,7 @@ class CheckPromotion(commands.Cog):
                 return
 
             current_rank_name = current_rank.marine_name if is_marine else current_rank.name
-            if E2_ROLES[1] in guild_member_role_ids:
+            if is_seaman_apprentice(guild_member):
                 current_rank_name = "Seaman Apprentice"
 
             embed.add_field(name="Current Rank", value=current_rank_name)
