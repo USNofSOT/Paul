@@ -1,8 +1,11 @@
 """
 Generic embeds for the bot.
 """
-
+import os
+import subprocess
 from enum import StrEnum
+from pathlib import Path
+from typing import Optional
 
 import discord
 
@@ -143,10 +146,29 @@ def engineer_alert_embed(
             embed.add_field(name="Exception Detail", value=f"```\n{str(exception)}\n```", inline=False)
 
     if footer:
+        commit = _get_git_head_hash() or "unknown"
         from src.config.main_server import ENVIRONMENT
-        footer_text = f"Env: {ENVIRONMENT}"
+        footer_text = f"Env: {ENVIRONMENT} | {commit}"
         if log_time:
             footer_text += f" | Log Time: {log_time}"
         embed.set_footer(text=footer_text)
 
     return embed
+
+
+def _get_git_head_hash() -> Optional[str]:
+    commit = os.environ.get("GIT_COMMIT") or os.environ.get("GITHUB_SHA")
+    if commit:
+        return commit[:7]
+    try:
+        repo_root = Path(__file__).resolve().parents[2]  # project root from src/core/bot.py
+        completed = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=str(repo_root),
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return completed.stdout.strip()
+    except Exception:
+        return None
