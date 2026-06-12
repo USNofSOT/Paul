@@ -7,7 +7,12 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.security import require_any_role, Role, resolve_effective_roles
+from src.config.cooldowns import COMMAND_COOLDOWNS, get_command_cooldown_config
+from src.core.command_cooldowns import normalize_command_name, sanitize_cooldown_text
+from src.data.repository.command_cooldown_stats_repository import (
+    CommandCooldownStatsRepository,
+)
+from src.security import Role, require_any_role, resolve_effective_roles
 from src.utils.embeds import default_embed, error_embed
 
 log = getLogger(__name__)
@@ -44,6 +49,9 @@ def fetch_stored_cooldown_stats() -> dict[str, dict[str, Any]]:
                 "last_retry_after_seconds": stat.last_retry_after_seconds,
             }
         return stored_stats
+    except Exception as e:
+        log.error("Unable to fetch stored cooldown stats: %s", e, exc_info=True)
+        return {}
     finally:
         repository.close_session()
 
@@ -223,7 +231,8 @@ def build_single_command_embeds(command_name: str) -> list[discord.Embed]:
         value=(
             f"Cooldown hits: **{snapshot['trigger_count']}**\n"
             f"Last retry after: **{snapshot['last_retry_after_seconds']}s**\n"
-            f"Last triggered: **{_format_last_triggered(snapshot['last_triggered_at'])}**"
+            "Last triggered: "
+            f"**{_format_last_triggered(snapshot['last_triggered_at'])}**"
         ),
         inline=False,
     )
@@ -242,7 +251,7 @@ def build_cooldown_report_embeds(scope: str | None) -> list[discord.Embed]:
 
 
 class ConfirmClearCooldownStatsView(discord.ui.View):
-    def __init__(self, report_view: "CooldownStatsReportView"):
+    def __init__(self, report_view: CooldownStatsReportView):
         super().__init__(timeout=120)
         self.report_view = report_view
 
@@ -292,7 +301,7 @@ class ConfirmClearCooldownStatsView(discord.ui.View):
 
 
 class CooldownStatsControls(discord.ui.Select):
-    def __init__(self, report_view: "CooldownStatsReportView"):
+    def __init__(self, report_view: CooldownStatsReportView):
         self.report_view = report_view
         options = [
             discord.SelectOption(
