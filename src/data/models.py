@@ -6,6 +6,7 @@ from sqlalchemy import (
     FLOAT,
     VARCHAR,
     Column,
+    ColumnElement,
     Date,
     ForeignKey,
     Integer,
@@ -16,6 +17,7 @@ from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
 from sqlalchemy.sql.sqltypes import BOOLEAN, DATETIME, TEXT, Enum
 
 from src.utils.time_utils import get_time_difference, utc_time_now
+
 from .engine import engine
 
 log = logging.getLogger(__name__)
@@ -29,7 +31,6 @@ class SubclassType(enum.Enum):
     HELM = "Helm"
     GRENADIER = "Grenadier"
     SURGEON = "Surgeon"
-
 
 class TrainingCategory(enum.Enum):
     NRC = "NRC"
@@ -46,6 +47,31 @@ class TraingType(enum.Enum):
     COSA = "COSA"
     OCS = "OCS"
     SOCS = "SOCS"
+
+
+class RepresentationDepartment(enum.Enum):
+    MEDIA = "Media"
+    SCHEDULING = "Scheduling"
+
+
+class RepresentationBadgeTier(enum.IntEnum):
+    NONE = 0
+    THIRD_CLASS = 1
+    SECOND_CLASS = 2
+    FIRST_CLASS = 4
+    DISTINGUISHED = 6
+
+    @classmethod
+    def from_points(cls, points: int) -> "RepresentationBadgeTier":
+        if points >= cls.DISTINGUISHED:
+            return cls.DISTINGUISHED
+        if points >= cls.FIRST_CLASS:
+            return cls.FIRST_CLASS
+        if points >= cls.SECOND_CLASS:
+            return cls.SECOND_CLASS
+        if points >= cls.THIRD_CLASS:
+            return cls.THIRD_CLASS
+        return cls.NONE
 
 
 # Base class for all models
@@ -117,6 +143,9 @@ class Hosted(Base):
         VARCHAR(32), nullable=True
     )  # e.g. "USS Auxiliary" which would be the auxiliary ship for the USS Venom
 
+    host_rank_id = mapped_column(ForeignKey("rank.role_id"), nullable=True)
+    host_rank: Mapped["Rank"] = relationship("Rank", foreign_keys=[host_rank_id])
+
     # One-To-Many relationship with Voyages
     voyages: Mapped[list["Voyages"]] = relationship("Voyages", back_populates="hosted")
     # One-To-Many relationship with Subclasses
@@ -174,6 +203,9 @@ class Voyages(Base):
     log_time = Column(DATETIME)
     ship_role_id = Column(BIGINT, nullable=True)
 
+    participant_rank_id = mapped_column(ForeignKey("rank.role_id"), nullable=True)
+    participant_rank: Mapped["Rank"] = relationship("Rank", foreign_keys=[participant_rank_id])
+
     # Many-to-One relationship with Hosted
     hosted: Mapped["Hosted"] = relationship(
         "Hosted", back_populates="voyages", foreign_keys=[log_id]
@@ -207,6 +239,14 @@ class Sailor(Base):
     force_hosted_count = Column(Integer, server_default="0")
     last_voyage_at = Column(DATETIME, nullable=True)
     last_hosting_at = Column(DATETIME, nullable=True)
+
+    nickname = Column(VARCHAR(64), nullable=True)
+    global_name = Column(VARCHAR(64), nullable=True)
+    discord_name = Column(VARCHAR(64), nullable=True)
+    avatar_url = Column(TEXT, nullable=True)
+
+    current_rank_id = mapped_column(ForeignKey("rank.role_id"), nullable=True)
+    current_rank: Mapped["Rank"] = relationship("Rank", foreign_keys=[current_rank_id])
 
     # One-to-Many relationship with Hosted
     hosted: Mapped[list["Hosted"]] = relationship(
@@ -561,6 +601,107 @@ class RolePingLog(Base):
     has_vp_permission = Column(BOOLEAN, nullable=False)
     is_deleted = Column(BOOLEAN, nullable=False, default=False)
     created_at = Column(DATETIME, nullable=False, index=True, default=utc_time_now)
+
+
+class RepresentationPoints(Base):
+    __tablename__ = "representation_points"
+
+    target_id = mapped_column(BIGINT, ForeignKey("sailor.discord_id"), primary_key=True)
+
+    media_representation_points = Column(Integer, nullable=False, server_default="0")
+    scheduling_representation_points = Column(Integer, nullable=False, server_default="0")
+
+    target: Mapped["Sailor"] = relationship(
+        "Sailor",
+        foreign_keys=[target_id],
+    )
+
+    @property
+    def total_representation_points(self) -> int:
+        return int(self.media_representation_points or 0) + int(
+            self.scheduling_representation_points or 0
+        )
+
+    @property
+    def current_badge_tier(self) -> RepresentationBadgeTier:
+        return RepresentationBadgeTier.from_points(self.total_representation_points)
+
+
+class RepresentationPointMutation(Base):
+    __tablename__ = "representation_point_mutations"
+
+    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+
+    target_id = mapped_column(
+        BIGINT,
+        ForeignKey("sailor.discord_id"),
+        nullable=False,
+    )
+    changed_by_id = mapped_column(
+        BIGINT,
+        ForeignKey("sailor.discord_id"),
+        nullable=False,
+    )
+
+    department = Column(
+        Enum(RepresentationDepartment),
+        nullable=False,
+    )
+    points_delta = Column(
+        Integer,
+        nullable=False,
+    )
+    reason = Column(
+        TEXT,
+        nullable=True,
+    )
+    created_at = Column(
+        DATETIME,
+        nullable=False,
+        default=utc_time_now,
+    )
+
+    target: Mapped["Sailor"] = relationship(
+        "Sailor",
+        foreign_keys=[target_id],
+    )
+    changed_by: Mapped["Sailor"] = relationship(
+        "Sailor",
+        foreign_keys=[changed_by_id],
+    )
+
+    @property
+    def is_addition(self) -> ColumnElement[bool]:
+        return self.points_delta > 0
+
+    @property
+    def is_removal(self) -> ColumnElement[bool]:
+        return self.points_delta < 0
+
+
+class Rank(Base):
+    __tablename__ = "rank"
+
+    identifier = Column(VARCHAR(16), nullable=False)
+    name = Column(VARCHAR(64), nullable=False)
+    marine_name = Column(VARCHAR(64), nullable=True)
+    index = Column(Integer, nullable=False)
+    role_id = Column(BIGINT, primary_key=True, nullable=False)
+    is_active = Column(BOOLEAN, server_default="1")
+
+
+class RankHistory(Base):
+    __tablename__ = "log_rank_history"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    sailor_id = mapped_column(ForeignKey("sailor.discord_id"), nullable=False)
+    rank_id = mapped_column(ForeignKey("rank.role_id"), nullable=False)
+    log_time = Column(DATETIME, nullable=False, index=True, default=utc_time_now)
+    reason = Column(TEXT, nullable=True)
+
+    # Relationships
+    sailor: Mapped["Sailor"] = relationship("Sailor", foreign_keys=[sailor_id])
+    rank: Mapped["Rank"] = relationship("Rank", foreign_keys=[rank_id])
 
 
 # Nifty function to create all tables

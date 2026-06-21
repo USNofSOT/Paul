@@ -3,9 +3,17 @@ import logging
 import discord
 
 from src.config.ranks import RANKS
+from src.config.ranks_roles import E2_ROLES
 from src.data.structs import NavyRank, Award
 
 log = logging.getLogger(__name__)
+
+
+def is_seaman_apprentice(target: discord.Member) -> bool:
+    """
+    Check if the member has the Seaman Apprentice role.
+    """
+    return E2_ROLES[1] in [role.id for role in target.roles]
 
 def get_next_award(
         target: discord.Member,
@@ -63,7 +71,7 @@ def has_award_or_higher(
 
 def get_current_rank(
         target: discord.Member
-) -> NavyRank:
+) -> NavyRank | None:
     """
     Given the current member, return the rank with the highest index that the member has.
     """
@@ -73,6 +81,27 @@ def get_current_rank(
             if highest_rank is None or rank.index < highest_rank.index:
                 highest_rank = rank
     return highest_rank
+
+
+def get_current_rank_role_id(target: discord.Member) -> int | None:
+    """
+    Given the current member, return the specific applicable role ID for their rank.
+    """
+    highest_rank = get_current_rank(target)
+    if not highest_rank:
+        return None
+
+    # Check if the user has the Seaman Apprentice role specifically
+    if is_seaman_apprentice(target):
+        return E2_ROLES[1]
+
+    # Find the highest rank role ID the user actually possesses
+    member_role_ids = {role.id for role in target.roles}
+    for role_id in highest_rank.role_ids:
+        if role_id in member_role_ids:
+            return role_id
+
+    return None
 
 def get_rank_by_index(
         index: int

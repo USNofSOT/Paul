@@ -45,6 +45,7 @@ class DummyBot:
 
 class TestTrainingUtils(unittest.IsolatedAsyncioTestCase):
     async def test_process_training_record_skips_messages_without_author_id(self) -> None:
+        # Arrange
         repository = MagicMock()
         message = SimpleNamespace(
             id=123,
@@ -58,22 +59,28 @@ class TestTrainingUtils(unittest.IsolatedAsyncioTestCase):
                 "src.utils.training_utils.TrainingRecordsRepository",
                 return_value=repository,
         ):
+            # Act
             processed = await process_training_record(message, channel)
 
+        # Assert
         self.assertFalse(processed)
         repository.save_training.assert_not_called()
         repository.close_session.assert_called_once()
 
     async def test_populate_netc_training_records_skips_missing_channels(self) -> None:
+        # Arrange
         resolved_channel = DummyChannel(2, "resolved-records")
         bot = DummyBot(DummyGuild({1: None, 2: resolved_channel}))
 
         with patch.object(training_utils_module, "ALL_NETC_RECORDS_CHANNELS", (1, 2)):
+            # Act
             await populate_netc_training_records(bot, amount=10)
 
+        # Assert
         self.assertEqual(resolved_channel.name, "resolved-records")
 
     async def test_populate_netc_training_records_continues_after_record_error(self) -> None:
+        # Arrange
         channel = DummyChannel(
             2,
             "resolved-records",
@@ -89,8 +96,10 @@ class TestTrainingUtils(unittest.IsolatedAsyncioTestCase):
                     "src.utils.training_utils.process_training_record",
                     new=AsyncMock(side_effect=[RuntimeError("boom"), True]),
             ) as process_mock:
+                # Act
                 await populate_netc_training_records(bot, amount=10)
 
+        # Assert
         self.assertEqual(process_mock.await_count, 2)
 
 

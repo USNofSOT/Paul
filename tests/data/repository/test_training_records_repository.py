@@ -27,6 +27,7 @@ from src.data.repository.training_records_repository import (
 
 class TestTrainingRecordsRepositoryConfiguration(unittest.TestCase):
     def test_new_active_curriculums_have_expected_channel_and_role_ids(self):
+        # Assert
         self.assertEqual(SLA_RECORDS_CHANNEL, 1471663660060512487)
         self.assertEqual(SLA_INSTRUCTOR_ROLE, 1471675392023859200)
         self.assertEqual(SLA_GRADUATE_ROLE, 1471682430497984633)
@@ -36,6 +37,7 @@ class TestTrainingRecordsRepositoryConfiguration(unittest.TestCase):
         self.assertEqual(COSA_GRADUATE_ROLE, 1471682545883287757)
 
     def test_active_netc_channels_exclude_legacy_snla(self):
+        # Assert
         self.assertIn(SLA_RECORDS_CHANNEL, NETC_RECORDS_CHANNELS)
         self.assertIn(COSA_RECORDS_CHANNEL, NETC_RECORDS_CHANNELS)
         self.assertNotIn(SNLA_RECORDS_CHANNEL, NETC_RECORDS_CHANNELS)
@@ -51,15 +53,18 @@ class TestTrainingRecordsRepositoryConfiguration(unittest.TestCase):
         )
 
     def test_all_training_channels_keep_legacy_snla_for_historical_handling(self):
+        # Assert
         self.assertIn(SNLA_RECORDS_CHANNEL, ALL_TRAINING_RECORDS_CHANNELS)
 
     def test_netc_channel_classification_keeps_legacy_snla_accessible(self):
+        # Arrange
         expectations = (
             (SLA_RECORDS_CHANNEL, TraingType.SLA),
             (COSA_RECORDS_CHANNEL, TraingType.COSA),
             (SNLA_RECORDS_CHANNEL, TraingType.SNLA),
         )
 
+        # Act & Assert
         for channel_id, training_type in expectations:
             with self.subTest(channel_id=channel_id):
                 self.assertTrue(is_netc_records_channel(channel_id))

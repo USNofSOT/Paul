@@ -152,8 +152,9 @@ class TestNotificationSchedulerAndWorker(unittest.IsolatedAsyncioTestCase):
         )
 
     async def test_scheduler_precreates_exact_time_events_without_duplicates(self) -> None:
+        # Arrange
         scheduler = self._build_scheduler()
-
+        # Act
         first = await scheduler.run_once(
             self.bot,
             reference_time=datetime(2026, 3, 21, 12, 0, tzinfo=UTC),
@@ -169,13 +170,12 @@ class TestNotificationSchedulerAndWorker(unittest.IsolatedAsyncioTestCase):
             reference_time=datetime(2026, 3, 25, 12, 0, tzinfo=UTC),
             lookahead_hours=NOTIFICATION_LOOKAHEAD_HOURS,
         )
-
+        # Assert
         events = (
             self.session.query(NotificationEvent)
             .order_by(NotificationEvent.scheduled_for_at.asc())
             .all()
         )
-
         self.assertEqual(first.event_count, 1)
         self.assertEqual(second.event_count, 1)
         self.assertEqual(duplicate.event_count, 0)
@@ -195,20 +195,20 @@ class TestNotificationSchedulerAndWorker(unittest.IsolatedAsyncioTestCase):
         )
 
     async def test_scheduler_precreates_single_seven_day_overdue_event(self) -> None:
+        # Arrange
         scheduler = self._build_scheduler()
-
+        # Act
         summary = await scheduler.run_once(
             self.bot,
             reference_time=datetime(2026, 4, 5, 0, 30, tzinfo=UTC),
             lookahead_hours=NOTIFICATION_LOOKAHEAD_HOURS,
         )
-
+        # Assert
         events = (
             self.session.query(NotificationEvent)
             .order_by(NotificationEvent.scheduled_for_at.asc())
             .all()
         )
-
         self.assertEqual(summary.event_count, 1)
         self.assertEqual(summary.per_ship_counts, {ROLE_ID_VENOM: 1})
         self.assertEqual(len(events), 1)
@@ -216,15 +216,15 @@ class TestNotificationSchedulerAndWorker(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(events[0].scheduled_for_at.isoformat(), "2026-04-05T12:00:00")
 
     async def test_worker_delivers_only_due_events(self) -> None:
+        # Arrange
         scheduler = self._build_scheduler()
         await scheduler.run_once(
             self.bot,
             reference_time=datetime(2026, 3, 21, 12, 0, tzinfo=UTC),
         )
-
         delivery_adapter = SuccessfulDeliveryAdapter()
         worker = self._build_worker(delivery_adapter)
-
+        # Act
         early = await worker.run_once(
             self.bot,
             reference_time=datetime(2026, 3, 22, 11, 59, tzinfo=UTC),
@@ -233,49 +233,50 @@ class TestNotificationSchedulerAndWorker(unittest.IsolatedAsyncioTestCase):
             self.bot,
             reference_time=datetime(2026, 3, 22, 12, 5, tzinfo=UTC),
         )
-
+        # Assert
         self.assertEqual(early.event_count, 0)
         self.assertEqual(due.event_count, 1)
         self.assertEqual(due.per_ship_counts, {ROLE_ID_VENOM: 1})
         self.assertEqual(delivery_adapter.send.await_count, 1)
 
     async def test_worker_skips_events_after_grace_window_elapses(self) -> None:
+        # Arrange
         scheduler = self._build_scheduler()
         await scheduler.run_once(
             self.bot,
             reference_time=datetime(2026, 3, 21, 12, 0, tzinfo=UTC),
         )
-
         worker = self._build_worker(SuccessfulDeliveryAdapter())
+        # Act
         summary = await worker.run_once(
             self.bot,
             reference_time=datetime(2026, 3, 22, 12, 0, tzinfo=UTC)
                            + timedelta(hours=NOTIFICATION_DELIVERY_GRACE_HOURS, minutes=1),
         )
-
+        # Assert
         event = self.session.query(NotificationEvent).order_by(NotificationEvent.id.asc()).first()
         self.assertEqual(summary.event_count, 0)
         self.assertEqual(event.status, NotificationStatus.SKIPPED.value)
         self.assertEqual(event.skip_reason, "delivery_window_elapsed")
 
     async def test_worker_skips_event_when_activity_cycle_changes(self) -> None:
+        # Arrange
         scheduler = self._build_scheduler()
         await scheduler.run_once(
             self.bot,
             reference_time=datetime(2026, 3, 21, 12, 0, tzinfo=UTC),
         )
-
         sailor = self.session.query(Sailor).filter(Sailor.discord_id == 1).first()
         sailor.last_voyage_at = datetime(2026, 3, 24, 18, 0, tzinfo=UTC)
         self.session.commit()
-
         delivery_adapter = SuccessfulDeliveryAdapter()
         worker = self._build_worker(delivery_adapter)
+        # Act
         summary = await worker.run_once(
             self.bot,
             reference_time=datetime(2026, 3, 22, 12, 5, tzinfo=UTC),
         )
-
+        # Assert
         self.assertEqual(summary.event_count, 0)
         self.assertEqual(delivery_adapter.send.await_count, 0)
         event = self.session.query(NotificationEvent).order_by(NotificationEvent.id.asc()).first()
@@ -283,20 +284,20 @@ class TestNotificationSchedulerAndWorker(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(event.skip_reason, "activity_cycle_changed")
 
     async def test_worker_alerts_engineers_after_retry_exhaustion(self) -> None:
+        # Arrange
         scheduler = self._build_scheduler()
         await scheduler.run_once(
             self.bot,
             reference_time=datetime(2026, 3, 21, 12, 0, tzinfo=UTC),
         )
-
         worker = self._build_worker(FailingDeliveryAdapter())
         due_time = datetime(2026, 3, 22, 12, 5, tzinfo=UTC)
-
+        # Act
         with patch("src.notifications.worker.alert_engineers", new=AsyncMock()) as alert_mock:
             await worker.run_once(self.bot, reference_time=due_time)
             await worker.run_once(self.bot, reference_time=due_time + timedelta(minutes=5))
             await worker.run_once(self.bot, reference_time=due_time + timedelta(minutes=10))
-
+        # Assert
         event = self.session.query(NotificationEvent).order_by(NotificationEvent.id.asc()).first()
         self.assertEqual(event.status, NotificationStatus.FAILED.value)
         self.assertEqual(event.attempt_count, 3)
@@ -305,23 +306,23 @@ class TestNotificationSchedulerAndWorker(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(any(field.label == "Ship Overview" for field in fields))
 
     async def test_worker_refreshes_payload_snapshot_with_runtime_wording(self) -> None:
+        # Arrange
         scheduler = self._build_scheduler()
         await scheduler.run_once(
             self.bot,
             reference_time=datetime(2026, 3, 28, 0, 0, tzinfo=UTC),
         )
-
         event = self.session.query(NotificationEvent).order_by(NotificationEvent.id.asc()).first()
         self.assertIn("is due", event.payload_snapshot)
-
         delivery_adapter = SuccessfulDeliveryAdapter()
         worker = self._build_worker(delivery_adapter)
+        # Act
         summary = await worker.run_once(
             self.bot,
             reference_time=datetime(2026, 3, 29, 15, 0, tzinfo=UTC),
             batch_size=10,
         )
-
+        # Assert
         refreshed_event = self.session.query(NotificationEvent).filter(
             NotificationEvent.id == event.id
         ).first()
@@ -330,20 +331,21 @@ class TestNotificationSchedulerAndWorker(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(refreshed_event.status, NotificationStatus.DELIVERED.value)
 
     async def test_worker_renders_overdue_status_for_seven_day_overdue_event(self) -> None:
+        # Arrange
         scheduler = self._build_scheduler()
         await scheduler.run_once(
             self.bot,
             reference_time=datetime(2026, 4, 5, 0, 0, tzinfo=UTC),
         )
-
         delivery_adapter = SuccessfulDeliveryAdapter()
         worker = self._build_worker(delivery_adapter)
+        # Act
         summary = await worker.run_once(
             self.bot,
             reference_time=datetime(2026, 4, 5, 12, 5, tzinfo=UTC),
             batch_size=10,
         )
-
+        # Assert
         refreshed_event = self.session.query(NotificationEvent).order_by(
             NotificationEvent.id.asc()
         ).first()
@@ -353,7 +355,9 @@ class TestNotificationSchedulerAndWorker(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(refreshed_event.status, NotificationStatus.DELIVERED.value)
 
     async def test_scheduler_counts_ships_in_summary(self) -> None:
+        # Arrange
         scheduler = self._build_scheduler()
+        # Act
         first = await scheduler.run_once(
             self.bot,
             reference_time=datetime(2026, 3, 21, 12, 0, tzinfo=UTC),
@@ -362,11 +366,12 @@ class TestNotificationSchedulerAndWorker(unittest.IsolatedAsyncioTestCase):
             self.bot,
             reference_time=datetime(2026, 3, 25, 12, 0, tzinfo=UTC),
         )
-
+        # Assert
         self.assertEqual(first.per_ship_counts, {ROLE_ID_VENOM: 1})
         self.assertEqual(second.per_ship_counts, {ROLE_ID_VENOM: 1})
 
     async def test_scheduler_records_skipped_event_when_route_missing(self) -> None:
+        # Arrange
         scheduler = self._build_scheduler()
         unroutable_bot = DummyBot(
             DummyGuild(
@@ -375,12 +380,12 @@ class TestNotificationSchedulerAndWorker(unittest.IsolatedAsyncioTestCase):
                 DummyChannel(888888),
             )
         )
-
+        # Act
         summary = await scheduler.run_once(
             unroutable_bot,
             reference_time=datetime(2026, 3, 21, 12, 0, tzinfo=UTC),
         )
-
+        # Assert
         event = self.session.query(NotificationEvent).order_by(NotificationEvent.id.asc()).first()
         self.assertEqual(summary.event_count, 1)
         self.assertEqual(event.status, NotificationStatus.SKIPPED.value)

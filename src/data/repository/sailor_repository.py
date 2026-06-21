@@ -79,33 +79,39 @@ class SailorRepository(BaseRepository[Sailor]):
             raise e
 
     def update_or_create_sailor_by_discord_id(self, target_id: int, gamertag: str | None = None,
-                                              timezone: str | None = None) -> Sailor | None:
+                                              timezone: str | None = None,
+                                              current_rank_id: int | None = None) -> Sailor | None:
         """
-        Set the gamertag and or timezone for a Sailor by Discord ID
+        Set the gamertag, timezone, and current_rank_id for a Sailor by Discord ID
         Will create a new Sailor if one does not exist
 
         Args:
             target_id (int): The Discord ID of the user.
             gamertag (str | None): The gamertag to set for the user. Optional.
             timezone (str | None): The timezone to set for the user. Optional.
+            current_rank_id (int | None): The rank ID to set for the user. Optional.
         Returns:
             Sailor: The Sailor object that was updated, or None if the operation failed.
         """
         try:
-            sailor = Sailor(discord_id=target_id)
+            # Check if sailor exists to preserve existing data on merge if necessary
+            sailor = self.session.query(Sailor).filter(Sailor.discord_id == target_id).first()
+            if not sailor:
+                sailor = Sailor(discord_id=target_id)
+                self.session.add(sailor)
 
-            # Ensures that the gamertag and timezone are only altered if they are not None
+            # Ensures that the gamertag, timezone, and current_rank_id are only altered if they are not None
             if gamertag:
                 sailor.gamertag = gamertag
             if timezone:
                 sailor.timezone = timezone
+            if current_rank_id is not None:
+                sailor.current_rank_id = current_rank_id
 
-            self.session.merge(sailor)  # merge will update or create the sailor object if it doesn't exist
             self.session.commit()
-            return self.session.query(Sailor).filter(
-                Sailor.discord_id == target_id).first()  # This will return the updated Sailor object
+            return sailor
         except Exception as e:
-            log.error(f"Error setting gamertag: {e}")
+            log.error(f"Error updating/creating sailor: {e}")
             self.session.rollback()
             raise e
 
@@ -320,6 +326,99 @@ class SailorRepository(BaseRepository[Sailor]):
             except Exception as e:
                 log.error(f"Error getting top members by voyage count: {e}")
                 return []  # Return an empty list in case of an error
+
+    def update_rank(self, target_id: int, rank_id: int, reason: str = None) -> bool:
+        """
+        Update the rank for a specific Sailor and log the change if it has changed.
+
+        Args:
+            target_id (int): The Discord ID of the user.
+            rank_id (int): The ID of the new rank.
+            reason (str, optional): The reason for the rank change. Defaults to None.
+        Returns:
+            bool: True if the operation was successful, False otherwise.
+        """
+        try:
+            sailor = self.get_sailor(target_id)
+            if not sailor:
+                return False
+
+            if sailor.current_rank_id != rank_id:
+                sailor.current_rank_id = rank_id
+                self.session.commit()
+
+                from src.data.repository.rank_history_repository import (
+                    RankHistoryRepository,
+                )
+                with RankHistoryRepository() as rank_history_repo:
+                    rank_history_repo.log_rank_change(target_id, rank_id, reason)
+
+            return True
+        except Exception as e:
+            log.error(f"Error updating sailor rank: {e}")
+            self.session.rollback()
+            return False
+
+    def update_discord_profile(
+            self,
+            target_id: int,
+            nickname: str | None,
+            global_name: str | None,
+            discord_name: str | None,
+            avatar_url: str | None,
+    ) -> bool:
+        try:
+            sailor = self.session.query(Sailor).filter(Sailor.discord_id == target_id).first()
+            if sailor is None:
+                return False
+            sailor.nickname = nickname
+            sailor.global_name = global_name
+            sailor.discord_name = discord_name
+            sailor.avatar_url = avatar_url
+            self.session.commit()
+            return True
+        except Exception as e:
+            log.error(f"Error updating discord profile for {target_id}: {e}")
+            self.session.rollback()
+            return False
+
+    def update_discord_profiles_batch(self, profiles: list[dict]) -> int:
+        """
+        Batch update discord profiles for multiple sailors.
+
+        Args:
+            profiles: list of dicts with keys: discord_id, nickname, global_name, discord_name, avatar_url
+        Returns:
+            int: Number of sailors updated
+        """
+        updated = 0
+        try:
+            for profile in profiles:
+                result = self.session.execute(
+                    update(Sailor)
+                    .where(Sailor.discord_id == profile["discord_id"])
+                    .values(
+                        nickname=profile.get("nickname"),
+                        global_name=profile.get("global_name"),
+                        discord_name=profile.get("discord_name"),
+                        avatar_url=profile.get("avatar_url"),
+                    )
+                )
+                updated += result.rowcount
+            self.session.commit()
+            return updated
+        except Exception as e:
+            log.error(f"Error batch updating discord profiles: {e}")
+            self.session.rollback()
+            return 0
+
+    def get_all_sailor_discord_ids(self) -> list[int]:
+        try:
+            results = self.session.query(Sailor.discord_id).all()
+            return [row[0] for row in results]
+        except Exception as e:
+            log.error(f"Error getting all sailor discord IDs: {e}")
+            return []
 
 
 def ensure_sailor_exists(target_id: int) -> Sailor | None:

@@ -6,6 +6,7 @@ from config.cooldowns import *
 from config.main_server import *
 from config.netc_server import *
 from config.ranks_roles import *
+from config.representation import *
 from config.requirements import *
 from config.spd_servers import *
 from config.subclasses import *

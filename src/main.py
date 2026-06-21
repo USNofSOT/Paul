@@ -13,6 +13,7 @@ from src.core import Bot
 from src.data import create_tables
 from src.data.engine import engine_string
 from src.data.migrations.migrate import run_migrations
+from src.services.rank_sync_service import RankSyncService
 from src.utils.logger import initialise_logger
 
 log = getLogger(__name__)
@@ -46,5 +47,7 @@ if __name__ == "__main__":
     create_tables()
     log.info("Running database migrations")
     run_migrations(engine_string)
+    log.info("Synchronising ranks")
+    RankSyncService().sync_ranks()
     log.info("Startup bootstrap complete; launching bot event loop")
     asyncio.run(main())

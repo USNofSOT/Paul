@@ -171,8 +171,9 @@ class TestShipHealthSummary(unittest.IsolatedAsyncioTestCase):
         Sailor.__table__.drop(self.engine)
 
     def test_data_provider_counts_due_soon_overdue_and_recent_activity(self) -> None:
+        # Arrange
         provider = DatabaseShipHealthSummaryDataProvider(self.repository)
-
+        # Act
         summary = provider.build_summary(
             ship_role_id=ROLE_ID_VENOM,
             ship_name="USS Venom",
@@ -180,7 +181,7 @@ class TestShipHealthSummary(unittest.IsolatedAsyncioTestCase):
             sailor_ids=[1, 2, 3, 4, 5],
             reference_time=self.reference_time,
         )
-
+        # Assert
         self.assertEqual(summary.ship_size, 5)
         self.assertEqual(summary.ship_size_delta, -2)
         self.assertEqual(summary.voyaging_due_soon_count, 1)
@@ -193,6 +194,8 @@ class TestShipHealthSummary(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(summary.recent_hosting_delta, 0)
 
     def test_renderer_uses_ship_emoji_and_compact_sections(self) -> None:
+        # Arrange
+        # Act
         rendered = ShipHealthSummaryEmbedRenderer().render(
             DatabaseShipHealthSummaryDataProvider(self.repository).build_summary(
                 ship_role_id=ROLE_ID_VENOM,
@@ -202,7 +205,7 @@ class TestShipHealthSummary(unittest.IsolatedAsyncioTestCase):
                 reference_time=self.reference_time,
             )
         )
-
+        # Assert
         self.assertEqual(rendered.embed_title, "<:Venom:1239895956489633852> Ship health summary")
         self.assertEqual(rendered.embed_description, "Weekly operational overview for USS Venom.")
         self.assertEqual(
@@ -219,6 +222,7 @@ class TestShipHealthSummary(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(rendered.footer, "")
 
     async def test_service_sends_one_summary_per_enabled_ship(self) -> None:
+        # Arrange
         delivery_adapter = SuccessfulDeliveryAdapter()
         service = ShipHealthSummaryService(
             data_provider=DatabaseShipHealthSummaryDataProvider(self.repository),
@@ -228,15 +232,16 @@ class TestShipHealthSummary(unittest.IsolatedAsyncioTestCase):
             enabled=True,
             rollout=(ROLE_ID_VENOM,),
         )
-
+        # Act
         summary = await service.run_once(self.bot, reference_time=self.reference_time)
-
+        # Assert
         self.assertEqual(summary.summary_count, 1)
         self.assertEqual(summary.skipped_count, 0)
         self.assertEqual(summary.per_ship_counts, {ROLE_ID_VENOM: 1})
         self.assertEqual(delivery_adapter.send.await_count, 1)
 
     async def test_service_skips_ship_when_command_channel_missing(self) -> None:
+        # Arrange
         delivery_adapter = SuccessfulDeliveryAdapter()
         unroutable_bot = DummyBot(
             DummyGuild(
@@ -252,15 +257,16 @@ class TestShipHealthSummary(unittest.IsolatedAsyncioTestCase):
             enabled=True,
             rollout=(ROLE_ID_VENOM,),
         )
-
+        # Act
         summary = await service.run_once(unroutable_bot, reference_time=self.reference_time)
-
+        # Assert
         self.assertEqual(summary.summary_count, 0)
         self.assertEqual(summary.skipped_count, 1)
         self.assertEqual(summary.skipped_ship_counts, {ROLE_ID_VENOM: 1})
         self.assertEqual(delivery_adapter.send.await_count, 0)
 
     async def test_service_ignores_non_enabled_ships(self) -> None:
+        # Arrange
         delivery_adapter = SuccessfulDeliveryAdapter()
         service = ShipHealthSummaryService(
             data_provider=DatabaseShipHealthSummaryDataProvider(self.repository),
@@ -270,9 +276,9 @@ class TestShipHealthSummary(unittest.IsolatedAsyncioTestCase):
             enabled=True,
             rollout=(),
         )
-
+        # Act
         summary = await service.run_once(self.bot, reference_time=self.reference_time)
-
+        # Assert
         self.assertEqual(summary.summary_count, 0)
         self.assertEqual(summary.skipped_count, 0)
         self.assertEqual(delivery_adapter.send.await_count, 0)

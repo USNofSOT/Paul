@@ -7,6 +7,7 @@ from src.notifications.admin.engineer_overview import build_ship_overview_field
 
 class TestNotificationEngineerOverview(unittest.TestCase):
     def test_build_ship_overview_field_includes_ship_emojis(self) -> None:
+        # Act
         field = build_ship_overview_field(
             {
                 ROLE_ID_TITAN: 2,
@@ -14,6 +15,7 @@ class TestNotificationEngineerOverview(unittest.TestCase):
             }
         )
 
+        # Assert
         self.assertIsNotNone(field)
         assert field is not None
         self.assertEqual(field.label, "Ship Overview")
@@ -21,8 +23,10 @@ class TestNotificationEngineerOverview(unittest.TestCase):
         self.assertIn(":Venom:", field.value)
 
     def test_build_ship_overview_field_uses_fallback_for_unknown_ship(self) -> None:
+        # Act
         field = build_ship_overview_field({999999: 3})
 
+        # Assert
         self.assertIsNotNone(field)
         assert field is not None
         self.assertIn(USNSOT_EMOJI, field.value)

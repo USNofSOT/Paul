@@ -1,23 +1,31 @@
+import logging
+
 import discord
 from discord import app_commands
 from discord.ext import commands
+from sqlalchemy.orm import Session
 
 from src.data import Sailor
 from src.data.repository.sailor_repository import SailorRepository
 from src.security import require_any_role, audit_interaction, Role
 from src.utils.embeds import error_embed, default_embed
 
+log = logging.getLogger(__name__)
 
 class AddInfo(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
-    
+
+    def get_sailor_attached(self, session: Session, sailor_or_id):
+        """Return a Sailor instance bound to `session` (accepts Sailor or discord_id)."""
+        sailor_id = getattr(sailor_or_id, "discord_id", sailor_or_id)
+        return session.get(Sailor, sailor_id)
+
     @app_commands.command(name="addinfo", description="Add Gamertag or Timezone to yourself or another user")
     @app_commands.describe(target="Select the user to add information to")
     @app_commands.describe(gamertag="Enter the user's in-game username")
     @require_any_role(Role.SNCO, Role.NRC)
     @audit_interaction
-    #@app_commands.describe(timezone="Enter the user's timezone manually (e.g., UTC+2) or leave empty to calculate automatically")
     @app_commands.choices(timezone=[
                                     app_commands.Choice(name="Niue Time, Samoa Standard Time - UTC-11:00 (NUT)", value="UTC-11:00 (NUT)"),
                                     app_commands.Choice(name="Hawaii-Aleutian Standard Time - UTC-10:00 (HST)", value="UTC-10:00 (HST)"),
@@ -45,8 +53,9 @@ class AddInfo(commands.Cog):
                                     app_commands.Choice(name="New Zealand Standard Time, Fiji Time - UTC+12:00 (NZST)", value="UTC+12:00 (NZST)"),
                                     app_commands.Choice(name="International Date Line West - UTC-12:00 (IDLW)", value="UTC-12:00 (IDLW)")
                                 ])
-    async def addinfo(self, interaction: discord.interactions, target: discord.Member = None, gamertag: str = None, timezone: str = None):
-        await interaction.response.defer (ephemeral=True)
+    async def addinfo(self, interaction: discord.Interaction, target: discord.Member = None, gamertag: str = None,
+                      timezone: str = None):
+        await interaction.response.defer(ephemeral=True)
 
         # Quick exit if no gamertag or timezone is provided
         if gamertag is None and timezone is None:
@@ -57,22 +66,37 @@ class AddInfo(commands.Cog):
         if target is None:
             target = interaction.user
 
-        # Attempt to add the information to the database
-        # This function will create a new Sailor if one does not exist
-        # Ad will not alter gamertag or timezone if None is provided
         try:
-            sailor : Sailor = SailorRepository().update_or_create_sailor_by_discord_id(target.id, gamertag, timezone)
-        except Exception as e:
-            await interaction.followup.send(embed=error_embed("Failed to add information. Please try again.", exception=e))
-            return
+            with SailorRepository() as repo:
+                # Use the repository's session
+                session = repo.session
+                sailor = self.get_sailor_attached(session, target.id)
 
-        if sailor:
-            sailor_embed = default_embed(title="Information Added", description=f"Displaying current information for {target.mention}")
-            sailor_embed.add_field(name="Gamertag", value=sailor.gamertag if sailor.gamertag else "Not Set")
-            sailor_embed.add_field(name="Timezone", value=sailor.timezone if sailor.timezone else "Not Set")
+                if not sailor:
+                    # Create a new sailor if one doesn't exist
+                    sailor = Sailor(discord_id=target.id)
+                    session.add(sailor)
+
+                if gamertag:
+                    sailor.gamertag = gamertag
+                if timezone:
+                    sailor.timezone = timezone
+
+                session.commit()
+
+                # Capture values while session is active
+                current_gamertag = sailor.gamertag
+                current_timezone = sailor.timezone
+
+            sailor_embed = default_embed(title="Information Added",
+                                         description=f"Displaying current information for {target.mention}")
+            sailor_embed.add_field(name="Gamertag", value=current_gamertag if current_gamertag else "Not Set")
+            sailor_embed.add_field(name="Timezone", value=current_timezone if current_timezone else "Not Set")
             await interaction.followup.send(embed=sailor_embed)
-        else:
-            await interaction.followup.send(embed=error_embed("Failed to add information. Please try again."))
+            
+        except Exception as e:
+            log.error(f"Error in addinfo command: {e}", exc_info=True)
+            await interaction.followup.send(embed=error_embed("Failed to add information. Please try again.", exception=e))
 
 async def setup(bot: commands.Bot):
-    await bot.add_cog(AddInfo(bot))  # Classname(bot)
+    await bot.add_cog(AddInfo(bot))

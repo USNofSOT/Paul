@@ -5,8 +5,10 @@ from src.notifications.service_factory import NotificationServiceFactory
 
 class TestNotificationServiceFactory(unittest.TestCase):
     def test_factory_reuses_shared_components(self) -> None:
+        # Arrange
         factory = NotificationServiceFactory()
 
+        # Act & Assert
         self.assertIs(
             factory.build_definition_provider(),
             factory.build_definition_provider(),

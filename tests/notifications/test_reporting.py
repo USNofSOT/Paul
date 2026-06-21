@@ -13,6 +13,7 @@ from src.notifications.definitions import DefaultTriggerDefinitionProvider
 
 class TestNotificationReporting(unittest.TestCase):
     def test_build_notification_overview_embed_includes_timings_and_statuses(self) -> None:
+        # Arrange
         definitions = DefaultTriggerDefinitionProvider().get_definitions()
         recent_event = NotificationEvent(
             id=1,
@@ -34,6 +35,7 @@ class TestNotificationReporting(unittest.TestCase):
             updated_at=datetime(2026, 4, 14, 12, 0, tzinfo=UTC),
         )
 
+        # Act
         embed = build_notification_overview_embed(
             definitions,
             {
@@ -46,6 +48,7 @@ class TestNotificationReporting(unittest.TestCase):
             [recent_event],
         )
 
+        # Assert
         self.assertEqual(embed.title, "Notification Ops")
         self.assertIn("Notifications evaluator", embed.fields[0].value)
         self.assertIn("NO_VOYAGE_REMINDER", embed.fields[1].value)
@@ -54,6 +57,7 @@ class TestNotificationReporting(unittest.TestCase):
         self.assertIn("scheduled=<t:", embed.fields[3].value)
 
     def test_build_notification_definition_and_recent_event_embeds(self) -> None:
+        # Arrange
         definitions = DefaultTriggerDefinitionProvider().get_definitions()
         recent_event = NotificationEvent(
             id=7,
@@ -75,12 +79,14 @@ class TestNotificationReporting(unittest.TestCase):
             updated_at=datetime(2026, 3, 29, 13, 0, tzinfo=UTC),
         )
 
+        # Act
         definitions_embed = build_notification_definitions_embed(
             definitions,
             NOTIFICATION_ROLLOUT,
         )
         recent_embed = build_notification_recent_events_embed([recent_event])
 
+        # Assert
         self.assertEqual(definitions_embed.title, "Notification Definitions")
         self.assertTrue(any("Threshold" in field.value for field in definitions_embed.fields))
         self.assertEqual(recent_embed.title, "Recent Notification Events")

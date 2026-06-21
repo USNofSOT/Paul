@@ -298,6 +298,10 @@ MISC_ABBREVIATIONS = [
     Abbreviation(
         abbreviation="COC",
         meaning="Chain Of Command"
+    ),
+    Abbreviation(
+        abbreviation="WO",
+        meaning="Warrant Officer"
     )
 ]
 

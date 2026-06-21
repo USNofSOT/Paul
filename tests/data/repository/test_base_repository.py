@@ -33,8 +33,8 @@ class EntityBRepository(BaseRepository):
 
 class TestBaseRepository(unittest.TestCase):
     def setUp(self):
+        # Arrange
         """Set up test dependencies."""
-        # Create an in-memory SQLite database
         self.engine = create_engine("sqlite:///:memory:")
         self.Session = sessionmaker(bind=self.engine)
         Base.metadata.create_all(self.engine)
@@ -51,8 +51,11 @@ class TestBaseRepository(unittest.TestCase):
         Base.metadata.drop_all(self.engine)
 
     def test_create(self):
+        # Arrange
         entity = EntityA(id=6)
+        # Act
         self.repositoryA.create(entity)
+        # Assert
         self.assertEqual(entity.id, 6)
 
     @parameterized.expand(
@@ -62,6 +65,7 @@ class TestBaseRepository(unittest.TestCase):
         ]
     )
     def test_create_wrong_entity_type(self, name, repository, entity):
+        # Act & Assert
         with self.assertRaises(TypeError):
             repository.create(entity)
 
@@ -72,6 +76,7 @@ class TestBaseRepository(unittest.TestCase):
         ]
     )
     def test_create_multiple_wrong_entity_type(self, name, repository, entity):
+        # Act & Assert
         with self.assertRaises(TypeError):
             repository.create(entity)
 
@@ -82,6 +87,7 @@ class TestBaseRepository(unittest.TestCase):
         ]
     )
     def test_update_wrong_entity_type(self, name, repository, entity):
+        # Act & Assert
         with self.assertRaises(TypeError):
             repository.update(entity)
 
@@ -92,6 +98,7 @@ class TestBaseRepository(unittest.TestCase):
         ]
     )
     def test_update_multiple_wrong_entity_type(self, name, repository, entity):
+        # Act & Assert
         with self.assertRaises(TypeError):
             repository.update(entity)
 
@@ -102,6 +109,7 @@ class TestBaseRepository(unittest.TestCase):
         ]
     )
     def test_remove_wrong_entity_type(self, name, repository, entity):
+        # Act & Assert
         with self.assertRaises(TypeError):
             repository.remove(entity)
 
@@ -132,9 +140,12 @@ class TestBaseRepository(unittest.TestCase):
         ]
     )
     def test_find(self, name, return_value, expected_count):
+        # Arrange
         self.session.add_all(return_value)
         self.session.commit()
+        # Act
         result = self.repositoryA.find()
+        # Assert
         self.assertEqual(len(result), expected_count)
 
     @parameterized.expand(
@@ -186,37 +197,52 @@ class TestBaseRepository(unittest.TestCase):
         ]
     )
     def test_find_with_filters(self, name, filters, expected_count, entities):
+        # Arrange
         self.session.add_all(entities)
         self.session.commit()
+        # Act
         if "name" in filters:
             result = self.repositoryB.find(filters=filters)
         else:
             result = self.repositoryA.find(filters=filters)
+        # Assert
         self.assertEqual(len(result), expected_count)
 
     def test_find_without_filters(self):
+        # Arrange
         self.repositoryA.create(EntityA(id=6))
         self.repositoryA.create(EntityA(id=7))
+        # Act
         result = self.repositoryA.find()
+        # Assert
         self.assertEqual(len(result), 2)
 
     def test_find_with_limit(self):
+        # Arrange
         self.session.add_all([EntityA(id=6), EntityA(id=7)])
         self.session.commit()
+        # Act
         result = self.repositoryA.find(limit=1)
+        # Assert
         self.assertEqual(len(result), 1)
 
     def test_find_with_skip(self):
+        # Arrange
         self.session.add_all([EntityA(id=6), EntityA(id=7)])
         self.session.commit()
+        # Act
         result = self.repositoryA.find(skip=1)
+        # Assert
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].id, 7)
 
     def test_find_with_limit_and_skip(self):
+        # Arrange
         self.session.add_all([EntityA(id=6), EntityA(id=7), EntityA(id=8)])
         self.session.commit()
+        # Act
         result = self.repositoryA.find(limit=1, skip=1)
+        # Assert
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].id, 7)
 

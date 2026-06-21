@@ -59,6 +59,7 @@ class FakeVoyageRepository:
 
 class PromotionServiceTests(unittest.TestCase):
     def setUp(self) -> None:
+        # Arrange
         self.service = build_default_promotion_check_service()
         self.now = datetime(2026, 4, 5, tzinfo=timezone.utc)
 
@@ -92,6 +93,7 @@ class PromotionServiceTests(unittest.TestCase):
         )
 
     def test_e4_to_e6_uses_updated_requirements_and_squad_xo_branch(self) -> None:
+        # Arrange
         context = self.make_context(
             4,
             {
@@ -104,8 +106,10 @@ class PromotionServiceTests(unittest.TestCase):
             hosted_count=10,
         )
 
+        # Act
         rendered_sections = self.service.evaluate(context)
 
+        # Assert
         self.assertEqual(len(rendered_sections), 1)
         required_field, additional_field = rendered_sections[0].fields
         self.assertIn("Petty Officer", required_field.name)
@@ -121,6 +125,7 @@ class PromotionServiceTests(unittest.TestCase):
         )
 
     def test_e6_to_e7_uses_one_month_requirement(self) -> None:
+        # Arrange
         context = self.make_context(
             5,
             {E6_ROLES[0], SHIP_SL_ROLE},
@@ -133,15 +138,18 @@ class PromotionServiceTests(unittest.TestCase):
             },
         )
 
+        # Act
         rendered_sections = self.service.evaluate(context)
         required_field, additional_field = rendered_sections[0].fields
 
+        # Assert
         self.assertIn("Waited one month as an E-6", required_field.value)
         self.assertIn("Hosted twenty voyages (20/20)", required_field.value)
         self.assertIn("Passed the SNCO Board", required_field.value)
         self.assertIn("Joined an SPD or became a Naval Specialist", additional_field.value)
 
     def test_naval_specialist_role_satisfies_specialist_branch(self) -> None:
+        # Arrange
         context = self.make_context(
             5,
             {E6_ROLES[0], NAVAL_SPECIALIST_ROLE},
@@ -154,15 +162,18 @@ class PromotionServiceTests(unittest.TestCase):
             },
         )
 
+        # Act
         rendered_sections = self.service.evaluate(context)
         additional_field = rendered_sections[0].fields[1]
 
+        # Assert
         self.assertIn(
             ":white_check_mark: Joined an SPD or became a Naval Specialist",
             additional_field.value,
         )
 
     def test_e7_to_e8_has_no_spd_or_cos_additional_requirements(self) -> None:
+        # Arrange
         context = self.make_context(
             6,
             {
@@ -173,14 +184,17 @@ class PromotionServiceTests(unittest.TestCase):
             netc_role_ids={COSA_GRADUATE_ROLE},
         )
 
+        # Act
         rendered_sections = self.service.evaluate(context)
         e8_section = rendered_sections[0]
 
+        # Assert
         self.assertEqual(len(e8_section.fields), 1)
         self.assertNotIn("SPD", e8_section.fields[0].value)
         self.assertNotIn("CoS", e8_section.fields[0].value)
 
     def test_e7_dual_path_renders_both_e8_and_o1(self) -> None:
+        # Arrange
         context = self.make_context(
             6,
             {
@@ -192,8 +206,10 @@ class PromotionServiceTests(unittest.TestCase):
             hosted_count=35,
         )
 
+        # Act
         rendered_sections = self.service.evaluate(context)
 
+        # Assert
         self.assertEqual(len(rendered_sections), 2)
         self.assertTrue(rendered_sections[0].show_or_separator_after)
         self.assertIn("Senior Chief Petty Officer", rendered_sections[0].fields[0].name)
@@ -202,6 +218,7 @@ class PromotionServiceTests(unittest.TestCase):
         self.assertEqual(len(rendered_sections[1].fields), 1)
 
     def test_snla_alone_does_not_satisfy_cosa_requirement(self) -> None:
+        # Arrange
         context = self.make_context(
             8,
             {HONORABLE_CONDUCT.role_id, FOUR_MONTHS_SERVICE_STRIPES.role_id},
@@ -209,12 +226,15 @@ class PromotionServiceTests(unittest.TestCase):
             hosted_count=35,
         )
 
+        # Act
         rendered_sections = self.service.evaluate(context)
         required_field = rendered_sections[0].fields[0]
 
+        # Assert
         self.assertIn(":x: Is a COSA Graduate", required_field.value)
 
     def test_o1_to_o3_unaffected_path_still_works(self) -> None:
+        # Arrange
         context = self.make_context(
             9,
             {O1_ROLES[0]},
@@ -227,13 +247,16 @@ class PromotionServiceTests(unittest.TestCase):
             },
         )
 
+        # Act
         rendered_sections = self.service.evaluate(context)
         required_field = rendered_sections[0].fields[0]
 
+        # Assert
         self.assertIn("Waited two weeks as an O1", required_field.value)
         self.assertIn("Is an OCS Graduate", required_field.value)
 
     def test_o4_to_o5_and_o5_to_o6_use_new_time_thresholds(self) -> None:
+        # Arrange
         o4_context = self.make_context(
             11,
             {O4_ROLES[0]},
@@ -255,10 +278,12 @@ class PromotionServiceTests(unittest.TestCase):
             },
         )
 
+        # Act
         o4_required = self.service.evaluate(o4_context)[0].fields[0].value
         o5_section = self.service.evaluate(o5_context)[0]
         o5_required = o5_section.fields[0].value
 
+        # Assert
         self.assertIn("Waited four weeks as an O4", o4_required)
         self.assertIn("Waited three months as an O5", o5_required)
         self.assertIn(f"<@&{MARITIME_SERVICE_MEDAL.role_id}>", o5_required)
@@ -266,10 +291,12 @@ class PromotionServiceTests(unittest.TestCase):
         self.assertEqual(len(o5_section.fields), 1)
 
     def test_admiralty_paths_render_manual_requirements_with_flavor_notes(self) -> None:
+        # Act
         commodore_section = self.service.evaluate(self.make_context(13, set()))[0]
         rear_admiral_section = self.service.evaluate(self.make_context(14, set()))[0]
         aotn_section = self.service.evaluate(self.make_context(15, set()))[0]
 
+        # Assert
         self.assertEqual(len(commodore_section.fields), 2)
         self.assertIn("Selected by AOTN", commodore_section.fields[0].value)
         self.assertIn("Notes - Commodore", commodore_section.fields[1].name)

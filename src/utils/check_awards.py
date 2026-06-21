@@ -4,6 +4,7 @@ from data import TrainingRecord
 from src.config.awards import MEDALS_AND_RIBBONS
 from src.config.subclasses import SUBCLASS_AWARDS
 from src.data import Sailor
+from src.data.models import RepresentationPoints
 from src.data.repository.hosted_repository import HostedRepository
 from src.data.repository.sailor_repository import SailorRepository
 from src.data.structs import Award, SailorCO
@@ -59,6 +60,17 @@ def check_hosted(guild: discord.Guild, interaction: discord.Interaction, sailor:
 def check_training(guild: discord.Guild, interaction: discord.Interaction, training_records: TrainingRecord, member: discord.Member) -> str:
     count = training_records.nrc_training_points + training_records.netc_training_points + training_records.st_training_points
     tiers = MEDALS_AND_RIBBONS.training
+    return _check_awards_by_type(guild, count, tiers, interaction, member)
+
+
+def check_representation(
+        guild: discord.Guild,
+        interaction: discord.Interaction,
+        representation_points: RepresentationPoints,
+        member: discord.Member,
+) -> str:
+    count = representation_points.total_representation_points
+    tiers = MEDALS_AND_RIBBONS.representation
     return _check_awards_by_type(guild, count, tiers, interaction, member)
 
 # check_recruiting

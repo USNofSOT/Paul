@@ -160,6 +160,15 @@ IMAGE_CACHES = {
         ttl_seconds=TWO_HOURS_IN_SECONDS,
         version=1,
     ),
+    "voyage_analytics_overview": ImageCacheConfig(
+        name="voyage_analytics_overview",
+        category=REPORTS_CACHE_CATEGORY,
+        directory=".cache/reports/voyage_analytics",
+        default_filename="voyage_analytics.png",
+        max_items=MEDIUM_IMAGE_CACHE_MAX_ITEMS,
+        ttl_seconds=ONE_HOUR_IN_SECONDS,
+        version=1,
+    ),
     "ship_health_summary_chart": ImageCacheConfig(
         name="ship_health_summary_chart",
         category=SHIPS_CACHE_CATEGORY,

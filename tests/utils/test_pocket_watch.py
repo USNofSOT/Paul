@@ -18,6 +18,7 @@ def make_voyage(timestamp: datetime) -> SimpleNamespace:
 
 class TestPocketWatch(unittest.TestCase):
     def test_build_weekly_tick_positions_limits_dense_labels(self):
+        # Act & Assert
         self.assertEqual(_build_weekly_tick_positions(0), [])
         self.assertEqual(_build_weekly_tick_positions(5), [0, 1, 2, 3, 4])
         tick_positions = _build_weekly_tick_positions(53)
@@ -26,12 +27,16 @@ class TestPocketWatch(unittest.TestCase):
         self.assertEqual(tick_positions[-1], 52)
 
     def test_build_weekly_tick_positions_respects_max_label_setting(self):
+        # Act
         tick_positions = _build_weekly_tick_positions(53, max_labels=12)
+        # Assert
         self.assertEqual(tick_positions, [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 52])
 
     def test_parse_timezone_label_uses_saved_offset(self):
+        # Act
         timezone_info, label = parse_timezone_label("UTC+02:00 (EET)")
 
+        # Assert
         self.assertEqual(label, "UTC+02:00 (EET)")
         self.assertEqual(
             datetime(2026, 1, 1, 12, 0, tzinfo=UTC).astimezone(timezone_info).hour,
@@ -39,8 +44,10 @@ class TestPocketWatch(unittest.TestCase):
         )
 
     def test_parse_timezone_label_falls_back_to_utc(self):
+        # Act
         timezone_info, label = parse_timezone_label("Not a timezone")
 
+        # Assert
         self.assertEqual(label, "UTC")
         self.assertEqual(
             datetime(2026, 1, 1, 12, 0, tzinfo=UTC).astimezone(timezone_info).hour,
@@ -48,6 +55,7 @@ class TestPocketWatch(unittest.TestCase):
         )
 
     def test_analyze_pocket_watch_activity_rejects_invalid_days(self):
+        # Act & Assert
         with self.assertRaises(PocketWatchError):
             analyze_pocket_watch_activity(
                 [make_voyage(datetime(2026, 1, 1, 12, 0, tzinfo=UTC))],
@@ -55,12 +63,14 @@ class TestPocketWatch(unittest.TestCase):
             )
 
     def test_analyze_pocket_watch_activity_requires_enough_data(self):
+        # Arrange
         voyages = [
             make_voyage(datetime(2026, 1, 5, 12, 0, tzinfo=UTC)),
             make_voyage(datetime(2026, 1, 12, 12, 0, tzinfo=UTC)),
             make_voyage(datetime(2026, 1, 19, 12, 0, tzinfo=UTC)),
         ]
 
+        # Act & Assert
         with self.assertRaises(PocketWatchInsufficientDataError):
             analyze_pocket_watch_activity(
                 voyages,
@@ -69,6 +79,7 @@ class TestPocketWatch(unittest.TestCase):
             )
 
     def test_analyze_pocket_watch_activity_groups_activity_by_weekday_and_hour(self):
+        # Arrange
         voyages = [
             make_voyage(datetime(2026, 1, 5, 22, 0, tzinfo=UTC)),
             make_voyage(datetime(2026, 1, 6, 22, 0, tzinfo=UTC)),
@@ -84,6 +95,7 @@ class TestPocketWatch(unittest.TestCase):
             make_voyage(datetime(2026, 1, 27, 22, 0, tzinfo=UTC)),
         ]
 
+        # Act
         analysis = analyze_pocket_watch_activity(
             voyages,
             hosted,
@@ -92,6 +104,7 @@ class TestPocketWatch(unittest.TestCase):
             now=datetime(2026, 3, 15, 12, 0, tzinfo=UTC),
         )
 
+        # Assert
         self.assertEqual(analysis.total_voyages, 8)
         self.assertEqual(analysis.total_hosted, 2)
         self.assertEqual(analysis.active_weeks, 4)
@@ -105,6 +118,7 @@ class TestPocketWatch(unittest.TestCase):
         self.assertEqual(sum(analysis.weekly_hosted_counts), 2)
 
     def test_analyze_pocket_watch_activity_handles_no_hosting_data(self):
+        # Arrange
         voyages = [
             make_voyage(datetime(2026, 1, 5, 22, 0, tzinfo=UTC)),
             make_voyage(datetime(2026, 1, 6, 22, 0, tzinfo=UTC)),
@@ -116,6 +130,7 @@ class TestPocketWatch(unittest.TestCase):
             make_voyage(datetime(2026, 1, 28, 22, 0, tzinfo=UTC)),
         ]
 
+        # Act
         analysis = analyze_pocket_watch_activity(
             voyages,
             [],
@@ -123,6 +138,7 @@ class TestPocketWatch(unittest.TestCase):
             now=datetime(2026, 3, 15, 12, 0, tzinfo=UTC),
         )
 
+        # Assert
         self.assertEqual(analysis.total_hosted, 0)
         self.assertEqual(analysis.active_hosted_weeks, 0)
         self.assertIsNone(analysis.first_hosted_at)
@@ -133,6 +149,7 @@ class TestPocketWatch(unittest.TestCase):
         self.assertEqual(analysis.average_hosted_per_active_week, 0.0)
 
     def test_cache_payload_uses_date_window_for_stable_cache_keys(self):
+        # Arrange
         voyages = [
             make_voyage(datetime(2026, 1, 5, 22, 0, tzinfo=UTC)),
             make_voyage(datetime(2026, 1, 6, 22, 0, tzinfo=UTC)),
@@ -144,6 +161,7 @@ class TestPocketWatch(unittest.TestCase):
             make_voyage(datetime(2026, 1, 28, 22, 0, tzinfo=UTC)),
         ]
 
+        # Act
         analysis = analyze_pocket_watch_activity(
             voyages,
             days=90,
@@ -156,6 +174,7 @@ class TestPocketWatch(unittest.TestCase):
             display_name="Test Sailor",
         )
 
+        # Assert
         self.assertEqual(payload["window_start_date"], "2025-12-15")
         self.assertEqual(payload["window_end_date"], "2026-03-15")
 

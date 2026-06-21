@@ -52,17 +52,20 @@ class VoyageRepository(BaseRepository[Voyages]):
         except Exception as e:
             log.error(f"Error finding voyage after role change entry: {e}")
             raise e
-    def batch_save_voyage_data(self, voyage_data: list[tuple[int, int, datetime, int]]):
+
+    def batch_save_voyage_data(self, voyage_data: list[tuple[int, int, datetime, int, int]]):
         """
         Batch inserts voyage records. Ignores duplicates based on log_id and participant_id.
 
         Args:
-            voyage_data (list): A list of tuples, where each tuple contains (log_id, target_id, datetime)
+            voyage_data (list): A list of tuples, where each tuple contains (log_id, target_id, datetime, ship_role_id, participant_rank_id)
         """
         try:
-            for log_id, target_id, log_time, ship_role_id in voyage_data:
+            for log_id, target_id, log_time, ship_role_id, participant_rank_id in voyage_data:
                 if not self.session.query(Voyages).filter_by(log_id=log_id, target_id=target_id).first():
-                    self.session.add(Voyages(log_id=log_id, target_id=target_id, log_time=log_time, ship_role_id=ship_role_id))
+                    self.session.add(
+                        Voyages(log_id=log_id, target_id=target_id, log_time=log_time, ship_role_id=ship_role_id,
+                                participant_rank_id=participant_rank_id))
                     self.session.execute(
                         update(Sailor)
                         .where(Sailor.discord_id == target_id)

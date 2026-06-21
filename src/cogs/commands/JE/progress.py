@@ -4,10 +4,17 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from src.config.awards import VOYAGE_MEDALS, HOSTED_MEDALS, TRAINING_MEDALS, PUBLIC_SERVICE_MEDALS
+from src.config.awards import (
+    HOSTED_MEDALS,
+    PUBLIC_SERVICE_MEDALS,
+    REPRESENT_MEDALS,
+    TRAINING_MEDALS,
+    VOYAGE_MEDALS,
+)
 from src.config.ranks_roles import NCO_AND_UP_PURE, NETC_ROLE, NRC_ROLE
 from src.config.subclasses import HELM_SUBCLASSES, CANNONEER_SUBCLASSES, CARPENTER_SUBCLASSES, FLEX_SUBCLASSES
 from src.data.repository.hosted_repository import HostedRepository
+from src.data.repository.representation_repository import RepresentationRepository
 from src.data.repository.sailor_repository import SailorRepository
 from src.data.repository.training_records_repository import TrainingRecordsRepository
 from src.data.structs import Award
@@ -90,6 +97,16 @@ class Progress(commands.Cog):
         handle_award_progress(target, FLEX_SUBCLASSES, embed, "Flex", sailor.flex_points+sailor.force_flex_points)
         handle_award_progress(target, CANNONEER_SUBCLASSES, embed, "Cannoneer", sailor.cannoneer_points+sailor.force_cannoneer_points)
         handle_award_progress(target, HELM_SUBCLASSES, embed, "Helm", sailor.helm_points+sailor.force_helm_points)
+
+        representation_repository = RepresentationRepository()
+        handle_award_progress(
+            target,
+            REPRESENT_MEDALS,
+            embed,
+            "Representation",
+            representation_repository.get_total_points(target.id),
+        )
+        representation_repository.close_session()
 
         if NRC_ROLE in target_role_ids or NETC_ROLE in target_role_ids:
             training_records_repository = TrainingRecordsRepository()

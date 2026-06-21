@@ -65,6 +65,8 @@ class TestNotificationEventRepository(unittest.TestCase):
         Sailor.__table__.drop(self.engine)
 
     def test_create_pending_event_deduplicates_by_exact_cycle(self) -> None:
+        # Arrange
+        # Act
         first, created_first = self.repository.create_pending_event(
             definition=self.definition,
             sailor=self.sailor,
@@ -81,13 +83,14 @@ class TestNotificationEventRepository(unittest.TestCase):
             destination_channel_id=999,
             payload_snapshot="{}",
         )
-
+        # Assert
         self.assertTrue(created_first)
         self.assertFalse(created_second)
         self.assertEqual(first.id, second.id)
         self.assertEqual(self.session.query(NotificationEvent).count(), 1)
 
     def test_list_due_event_ids_uses_exact_schedule_order(self) -> None:
+        # Arrange
         first_eligibility = self.eligibility
         second_eligibility = EligibilityResult(
             source_activity_at=datetime(2026, 3, 1, 12, 0, tzinfo=UTC),
@@ -115,12 +118,12 @@ class TestNotificationEventRepository(unittest.TestCase):
             destination_channel_id=999,
             payload_snapshot="{}",
         )
-
+        # Act
         due_event_ids = self.repository.list_due_event_ids(
             limit=10,
             due_before=datetime(2026, 3, 23, 0, 0, tzinfo=UTC),
         )
-
+        # Assert
         self.assertEqual(len(due_event_ids), 1)
         self.assertEqual(
             self.repository.get_event(due_event_ids[0]).scheduled_for_at.isoformat(),
@@ -128,6 +131,7 @@ class TestNotificationEventRepository(unittest.TestCase):
         )
 
     def test_claim_and_retry_state_transitions(self) -> None:
+        # Arrange
         event, _ = self.repository.create_pending_event(
             definition=self.definition,
             sailor=self.sailor,
@@ -136,27 +140,31 @@ class TestNotificationEventRepository(unittest.TestCase):
             destination_channel_id=999,
             payload_snapshot="{}",
         )
-
+        # Act
         claimed = self.repository.claim_event(event.id)
+        # Assert
         self.assertTrue(claimed)
         self.assertEqual(
             self.repository.get_event(event.id).status,
             NotificationStatus.PROCESSING.value,
         )
-
+        # Act
         attempt_count = self.repository.release_for_retry(event.id, "temporary failure")
+        # Assert
         self.assertEqual(attempt_count, 1)
         retried_event = self.repository.get_event(event.id)
         self.assertEqual(retried_event.status, NotificationStatus.PENDING.value)
         self.assertEqual(retried_event.attempt_count, 1)
-
+        # Act
         final_attempt = self.repository.mark_failed(event.id, "permanent failure")
+        # Assert
         self.assertEqual(final_attempt, 2)
         failed_event = self.repository.get_event(event.id)
         self.assertEqual(failed_event.status, NotificationStatus.FAILED.value)
         self.assertEqual(failed_event.failure_reason, "permanent failure")
 
     def test_update_payload_snapshot_refreshes_processing_event(self) -> None:
+        # Arrange
         event, _ = self.repository.create_pending_event(
             definition=self.definition,
             sailor=self.sailor,
@@ -165,15 +173,16 @@ class TestNotificationEventRepository(unittest.TestCase):
             destination_channel_id=999,
             payload_snapshot='{"body":"before"}',
         )
-
+        # Act
         self.assertTrue(self.repository.claim_event(event.id))
         self.repository.update_payload_snapshot(event.id, '{"body":"after"}')
-
+        # Assert
         refreshed_event = self.repository.get_event(event.id)
         self.assertEqual(refreshed_event.status, NotificationStatus.PROCESSING.value)
         self.assertEqual(refreshed_event.payload_snapshot, '{"body":"after"}')
 
     def test_recent_events_and_status_counts(self) -> None:
+        # Arrange
         first_event, _ = self.repository.create_pending_event(
             definition=self.definition,
             sailor=self.sailor,
@@ -203,10 +212,10 @@ class TestNotificationEventRepository(unittest.TestCase):
             payload_snapshot='{"body":"second"}',
         )
         self.repository.mark_skipped(second_event.id, "testing")
-
+        # Act
         recent_events = self.repository.list_recent_events(limit=2)
         status_counts = self.repository.count_by_status()
-
+        # Assert
         self.assertEqual(len(recent_events), 2)
         self.assertEqual(recent_events[0].id, second_event.id)
         self.assertEqual(status_counts[NotificationStatus.DELIVERED.value], 1)
