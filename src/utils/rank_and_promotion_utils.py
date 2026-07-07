@@ -99,7 +99,7 @@ def get_current_rank(
     return highest_rank
 
 
- def get_current_rank_role_id(target: discord.Member) -> int | None:
+def get_current_rank_role_id(target: discord.Member) -> int | None:
     """
     Given the current member, return the specific applicable role ID for their rank.
     """
