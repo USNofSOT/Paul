@@ -2,7 +2,6 @@ from logging import getLogger
 
 from discord.ext import commands, tasks
 
-from src.cogs.tasks.task_check_awards import append_award_message_chunk, fake_context
 from src.config import MAX_MESSAGE_LENGTH
 from src.config.main_server import GUILD_ID
 from src.config.ranks import DECKHAND, RETIRED, VETERAN
@@ -10,13 +9,14 @@ from src.config.representation import (
     HEAD_OF_MEDIA_ROLE_ID,
     HEAD_OF_SCHEDULING_ROLE_ID,
     MEDIA_REPRESENTATION_AWARDS_CHANNEL,
+    SCHEDULING_REPRESENTATION_AWARDS_CHANNEL,
     XO_OF_MEDIA_ROLE_ID,
     XO_OF_SCHEDULING_ROLE_ID,
-    SCHEDULING_REPRESENTATION_AWARDS_CHANNEL,
 )
 from src.config.task_timing import CHECK_REPRESENTATION_AWARDS_TASK_TIME
 from src.data.models import RepresentationDepartment, RepresentationPoints
 from src.data.repository.representation_repository import RepresentationRepository
+from src.utils.award_messages import append_award_message_chunk, fake_context
 from src.utils.check_awards import check_representation
 from src.utils.representation_utils import choose_representation_department
 
@@ -25,14 +25,14 @@ log = getLogger(__name__)
 
 def _member_is_excluded(member_role_ids: set[int]) -> bool:
     return (
-            DECKHAND.role_ids[0] in member_role_ids
-            or VETERAN.role_ids[0] in member_role_ids
-            or RETIRED.role_ids[0] in member_role_ids
+        DECKHAND.role_ids[0] in member_role_ids
+        or VETERAN.role_ids[0] in member_role_ids
+        or RETIRED.role_ids[0] in member_role_ids
     )
 
 
 def _build_pending_representation_header(
-        department: RepresentationDepartment,
+    department: RepresentationDepartment,
 ) -> str:
     if department == RepresentationDepartment.MEDIA:
         return (
@@ -46,9 +46,9 @@ def _build_pending_representation_header(
 
 
 def _build_pending_representation_messages(
-        department: RepresentationDepartment,
-        award_messages: list[str],
-        max_message_length: int = MAX_MESSAGE_LENGTH,
+    department: RepresentationDepartment,
+    award_messages: list[str],
+    max_message_length: int = MAX_MESSAGE_LENGTH,
 ) -> list[str]:
     header = _build_pending_representation_header(department)
     body_max_length = max_message_length - len(header)
@@ -85,14 +85,21 @@ class AutoCheckRepresentationAwards(commands.Cog):
         try:
             guild = self.bot.get_guild(GUILD_ID)
             if guild is None:
-                log.warning("Representation awards task skipped because main guild was not found.")
+                log.warning(
+                    "Representation awards task skipped because the main "
+                    "guild was not found.",
+                )
                 return
 
             media_channel = self.bot.get_channel(MEDIA_REPRESENTATION_AWARDS_CHANNEL)
-            scheduling_channel = self.bot.get_channel(SCHEDULING_REPRESENTATION_AWARDS_CHANNEL)
+            scheduling_channel = self.bot.get_channel(
+                SCHEDULING_REPRESENTATION_AWARDS_CHANNEL
+            )
 
             representation_records = (
-                representation_repository.get_session().query(RepresentationPoints).all()
+                representation_repository.get_session()
+                .query(RepresentationPoints)
+                .all()
             )
 
             media_messages: list[str] = []
@@ -125,21 +132,37 @@ class AutoCheckRepresentationAwards(commands.Cog):
                 else:
                     scheduling_messages.append(sailor_str)
 
-            if media_messages and media_channel is not None:
-                log.info("Sending pending representation awards to media channel.")
-                for message in _build_pending_representation_messages(
+            if media_messages:
+                if media_channel is None:
+                    log.error(
+                        "Pending media awards could not be sent because the "
+                        "configured channel is unavailable.",
+                        extra={"notify_engineer": True},
+                    )
+                else:
+                    log.info("Sending pending representation awards to media channel.")
+                    for message in _build_pending_representation_messages(
                         RepresentationDepartment.MEDIA,
                         media_messages,
-                ):
-                    await media_channel.send(message)
+                    ):
+                        await media_channel.send(message)
 
-            if scheduling_messages and scheduling_channel is not None:
-                log.info("Sending pending representation awards to scheduling channel.")
-                for message in _build_pending_representation_messages(
+            if scheduling_messages:
+                if scheduling_channel is None:
+                    log.error(
+                        "Pending scheduling awards could not be sent because "
+                        "the configured channel is unavailable.",
+                        extra={"notify_engineer": True},
+                    )
+                else:
+                    log.info(
+                        "Sending pending representation awards to scheduling channel."
+                    )
+                    for message in _build_pending_representation_messages(
                         RepresentationDepartment.SCHEDULING,
                         scheduling_messages,
-                ):
-                    await scheduling_channel.send(message)
+                    ):
+                        await scheduling_channel.send(message)
 
         except Exception as e:
             log.error(
@@ -154,6 +177,14 @@ class AutoCheckRepresentationAwards(commands.Cog):
     @my_task.before_loop
     async def before_my_task(self):
         await self.bot.wait_until_ready()
+
+    @my_task.error
+    async def my_task_error(self, error: Exception) -> None:
+        log.error(
+            "Representation awards task stopped unexpectedly.",
+            exc_info=error,
+            extra={"notify_engineer": True},
+        )
 
 
 async def setup(bot: commands.Bot):

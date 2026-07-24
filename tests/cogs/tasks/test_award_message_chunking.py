@@ -1,15 +1,17 @@
 import unittest
 
-from src.cogs.tasks.task_check_awards import append_award_message_chunk
 from src.cogs.tasks.task_check_representation_awards import (
     _build_pending_representation_header,
     _build_pending_representation_messages,
 )
 from src.data.models import RepresentationDepartment
+from src.utils.award_messages import append_award_message_chunk
 
 
 class TestAwardMessageChunking(unittest.TestCase):
-    def test_append_award_message_chunk_starts_new_message_when_limit_would_be_exceeded(self):
+    def test_append_award_message_chunk_starts_new_message_when_limit_would_be_exceeded(
+        self,
+    ):
         # Arrange
         messages: list[str] = []
 

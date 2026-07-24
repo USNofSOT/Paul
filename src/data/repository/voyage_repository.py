@@ -2,7 +2,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Type
 
-from sqlalchemy import delete, update, func
+from sqlalchemy import delete, func
 from sqlalchemy.sql.functions import count
 
 from src.data import Sailor
@@ -16,19 +16,28 @@ class VoyageRepository(BaseRepository[Voyages]):
     def __init__(self):
         super().__init__(Voyages)
 
-    def get_incommon_voyages(self, target_one: int, target_two: int) -> list[Type[Voyages]]:
+    def get_incommon_voyages(
+        self, target_one: int, target_two: int
+    ) -> list[Type[Voyages]]:
         try:
             # Get all incoming voyages for target_one and target_two but only return voyages once (unique log_id)
-            return self.session.query(Voyages).filter(
+            return (
+                self.session.query(Voyages)
+                .filter(
                     Voyages.log_id.in_(
                         self.session.query(Voyages.log_id)
                         .filter(Voyages.target_id == target_one)
                         .intersect(
-                            self.session.query(Voyages.log_id)
-                            .filter(Voyages.target_id == target_two)
+                            self.session.query(Voyages.log_id).filter(
+                                Voyages.target_id == target_two
+                            )
                         )
                     )
-                ).distinct(Voyages.log_id).group_by(Voyages.log_id).all()
+                )
+                .distinct(Voyages.log_id)
+                .group_by(Voyages.log_id)
+                .all()
+            )
         except Exception as e:
             log.error(f"Error getting incommon voyage log entries: {e}")
             raise e
@@ -42,18 +51,34 @@ class VoyageRepository(BaseRepository[Voyages]):
 
     def get_most_recent_voyage(self, target_id: int) -> Type[Voyages] | None:
         try:
-            return self.session.query(Voyages).filter(Voyages.target_id == target_id).order_by(Voyages.log_time.desc()).first()
+            return (
+                self.session.query(Voyages)
+                .filter(Voyages.target_id == target_id)
+                .order_by(Voyages.log_time.desc())
+                .first()
+            )
         except Exception as e:
             log.error(f"Error getting most recent voyage log entry: {e}")
             raise e
+
     def get_voyage_after_log_roleadd(self, member_id, log_time):
         try:
-            return self.session.query(func.count(Voyages.log_id)).filter(Voyages.target_id == member_id,Voyages.log_time >= log_time,).scalar() or 0
+            return (
+                self.session.query(func.count(Voyages.log_id))
+                .filter(
+                    Voyages.target_id == member_id,
+                    Voyages.log_time >= log_time,
+                )
+                .scalar()
+                or 0
+            )
         except Exception as e:
             log.error(f"Error finding voyage after role change entry: {e}")
             raise e
 
-    def batch_save_voyage_data(self, voyage_data: list[tuple[int, int, datetime, int, int]]):
+    def batch_save_voyage_data(
+        self, voyage_data: list[tuple[int, int, datetime, int, int]]
+    ):
         """
         Batch inserts voyage records. Ignores duplicates based on log_id and participant_id.
 
@@ -61,15 +86,26 @@ class VoyageRepository(BaseRepository[Voyages]):
             voyage_data (list): A list of tuples, where each tuple contains (log_id, target_id, datetime, ship_role_id, participant_rank_id)
         """
         try:
-            for log_id, target_id, log_time, ship_role_id, participant_rank_id in voyage_data:
-                if not self.session.query(Voyages).filter_by(log_id=log_id, target_id=target_id).first():
+            for (
+                log_id,
+                target_id,
+                log_time,
+                ship_role_id,
+                participant_rank_id,
+            ) in voyage_data:
+                if (
+                    not self.session.query(Voyages)
+                    .filter_by(log_id=log_id, target_id=target_id)
+                    .first()
+                ):
                     self.session.add(
-                        Voyages(log_id=log_id, target_id=target_id, log_time=log_time, ship_role_id=ship_role_id,
-                                participant_rank_id=participant_rank_id))
-                    self.session.execute(
-                        update(Sailor)
-                        .where(Sailor.discord_id == target_id)
-                        .values({"last_voyage_at": log_time})
+                        Voyages(
+                            log_id=log_id,
+                            target_id=target_id,
+                            log_time=log_time,
+                            ship_role_id=ship_role_id,
+                            participant_rank_id=participant_rank_id,
+                        )
                     )
             self.session.commit()
         except Exception as e:
@@ -77,7 +113,9 @@ class VoyageRepository(BaseRepository[Voyages]):
             self.session.rollback()
             raise e
 
-    def check_voyage_log_id_with_target_id_exists(self, log_id: int, target_id: int) -> bool:
+    def check_voyage_log_id_with_target_id_exists(
+        self, log_id: int, target_id: int
+    ) -> bool:
         """
         Check if the voyage log ID exists for a specific target ID
 
@@ -88,40 +126,90 @@ class VoyageRepository(BaseRepository[Voyages]):
             bool: True if the log ID exists, False otherwise.
         """
         try:
-            exists = self.session.query(Voyages).filter(Voyages.log_id == log_id,
-                                                   Voyages.target_id == target_id).scalar() is not None
+            exists = (
+                self.session.query(Voyages)
+                .filter(Voyages.log_id == log_id, Voyages.target_id == target_id)
+                .scalar()
+                is not None
+            )
             return exists
         except Exception as e:
             log.error(f"Error checking if voyage log ID exists: {e}")
             self.session.rollback()
             raise e
-        
+
     def get_sailors_by_log_id(self, log_id: int) -> list[Type[Sailor]]:
         try:
-            return self.session.query(Sailor).join(Voyages).filter(Voyages.log_id == log_id).all()
+            return (
+                self.session.query(Sailor)
+                .join(Voyages)
+                .filter(Voyages.log_id == log_id)
+                .all()
+            )
         except Exception as e:
             log.error(f"Error getting sailors by log ID: {e}")
             raise e
 
-    def get_voyages_by_target_ids_and_between_dates(self, target_ids: list[int], start_date: datetime, end_date: datetime) -> list[Type[Voyages]]:
+    def get_voyages_by_target_ids_and_between_dates(
+        self, target_ids: list[int], start_date: datetime, end_date: datetime
+    ) -> list[Type[Voyages]]:
         try:
-            return self.session.query(Voyages).filter(Voyages.target_id.in_(target_ids), Voyages.log_time >= start_date, Voyages.log_time <= end_date).all()
+            return (
+                self.session.query(Voyages)
+                .filter(
+                    Voyages.target_id.in_(target_ids),
+                    Voyages.log_time >= start_date,
+                    Voyages.log_time <= end_date,
+                )
+                .all()
+            )
         except Exception as e:
-            log.error(f"Error getting voyage log entries by target IDs and between dates: {e}")
+            log.error(
+                f"Error getting voyage log entries by target IDs and between dates: {e}"
+            )
             raise e
 
-    def get_voyages_by_role_ids_and_between_dates(self, role_id: list[int], start_date: datetime, end_date: datetime) -> list[Type[Voyages]]:
+    def get_voyages_by_role_ids_and_between_dates(
+        self, role_id: list[int], start_date: datetime, end_date: datetime
+    ) -> list[Type[Voyages]]:
         try:
-            return self.session.query(Voyages).filter(Voyages.ship_role_id.in_(role_id), Voyages.log_time >= start_date, Voyages.log_time <= end_date).all()
+            return (
+                self.session.query(Voyages)
+                .filter(
+                    Voyages.ship_role_id.in_(role_id),
+                    Voyages.log_time >= start_date,
+                    Voyages.log_time <= end_date,
+                )
+                .all()
+            )
         except Exception as e:
-            log.error(f"Error getting voyage log entries by role IDs and between dates: {e}")
+            log.error(
+                f"Error getting voyage log entries by role IDs and between dates: {e}"
+            )
             raise e
 
-    def get_voyages_by_role_ids_and_target_ids_and_between_dates(self, role_id: list[int], target_ids: list[int], start_date: datetime, end_date: datetime) -> list[Type[Voyages]]:
+    def get_voyages_by_role_ids_and_target_ids_and_between_dates(
+        self,
+        role_id: list[int],
+        target_ids: list[int],
+        start_date: datetime,
+        end_date: datetime,
+    ) -> list[Type[Voyages]]:
         try:
-            return self.session.query(Voyages).filter(Voyages.ship_role_id.in_(role_id), Voyages.target_id.in_(target_ids), Voyages.log_time >= start_date, Voyages.log_time <= end_date).all()
+            return (
+                self.session.query(Voyages)
+                .filter(
+                    Voyages.ship_role_id.in_(role_id),
+                    Voyages.target_id.in_(target_ids),
+                    Voyages.log_time >= start_date,
+                    Voyages.log_time <= end_date,
+                )
+                .all()
+            )
         except Exception as e:
-            log.error(f"Error getting voyage log entries by role IDs, target IDs, and between dates: {e}")
+            log.error(
+                f"Error getting voyage log entries by role IDs, target IDs, and between dates: {e}"
+            )
             raise e
 
     def get_voyages_by_target_id_month_count(self, target_ids: list) -> dict:
@@ -137,10 +225,15 @@ class VoyageRepository(BaseRepository[Voyages]):
             # log_time must be within the last 30 days
             thirty_days_ago = datetime.now() - timedelta(days=30)
 
-            ret = (self.session.query(Voyages.target_id, count(Voyages.target_id))
-                    .filter(Voyages.target_id.in_(target_ids), Voyages.log_time >= thirty_days_ago)
-                    .group_by(Voyages.target_id)
-                    .all())
+            ret = (
+                self.session.query(Voyages.target_id, count(Voyages.target_id))
+                .filter(
+                    Voyages.target_id.in_(target_ids),
+                    Voyages.log_time >= thirty_days_ago,
+                )
+                .group_by(Voyages.target_id)
+                .all()
+            )
 
             return {item[0]: item[1] for item in ret}
         except Exception as e:
@@ -161,9 +254,15 @@ class VoyageRepository(BaseRepository[Voyages]):
             thirty_days_ago = datetime.now() - timedelta(days=30)
 
             # select each log_id only once
-            ret = (self.session.query(Voyages.log_id).distinct()
-                    .filter(Voyages.target_id.in_(target_ids), Voyages.log_time >= thirty_days_ago)
-                    .all())
+            ret = (
+                self.session.query(Voyages.log_id)
+                .distinct()
+                .filter(
+                    Voyages.target_id.in_(target_ids),
+                    Voyages.log_time >= thirty_days_ago,
+                )
+                .all()
+            )
 
             return len(ret)
         except Exception as e:
@@ -180,10 +279,12 @@ class VoyageRepository(BaseRepository[Voyages]):
             Voyages: The last voyage log entry for the target IDs
         """
         try:
-            ret = (self.session.query(Voyages.target_id, Voyages.log_time)
-                    .filter(Voyages.target_id.in_(target_ids))
-                    .order_by(Voyages.log_time.asc())
-                    .all())
+            ret = (
+                self.session.query(Voyages.target_id, Voyages.log_time)
+                .filter(Voyages.target_id.in_(target_ids))
+                .order_by(Voyages.log_time.asc())
+                .all()
+            )
 
             return {item[0]: item[1] for item in ret}
         except Exception as e:
@@ -202,9 +303,7 @@ def remove_voyage_log_entries(log_id: int) -> bool:
     """
     with VoyageRepository() as repo:
         try:
-            repo.session.execute(
-                delete(Voyages).where(Voyages.log_id == log_id)
-            )
+            repo.session.execute(delete(Voyages).where(Voyages.log_id == log_id))
             repo.session.commit()
             return True
         except Exception as e:
