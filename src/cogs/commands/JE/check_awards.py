@@ -1,76 +1,113 @@
-from logging import getLogger
-from typing import Union
+import logging
 
 import discord
-from config import GUILD_ID, MEDALS_AND_RIBBONS, MAX_MESSAGE_LENGTH
-from data.repository.sailor_repository import SailorRepository
 from discord import app_commands
 from discord.ext import commands
 
-from src.security import require_any_role, Role
-from src.utils.check_awards import check_sailor
+from src.briefings.daily import render_pending_award_embeds
+from src.briefings.message import chunk_discord_embeds
+from src.config import GUILD_ID
+from src.data.repository.ship_briefing_repository import ShipBriefingRepository
+from src.security import Role, require_any_role
+from src.utils.check_awards import get_pending_ship_awards
+from src.utils.embeds import error_embed
 
-log = getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 class CheckAwards(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
-    @app_commands.command(name="check_awards", description="Check awards eligibility for a target role")
-    @app_commands.describe(target="Mention the role to get awards for")
+    @app_commands.command(
+        name="check_awards",
+        description="Check award eligibility for a member or role.",
+    )
+    @app_commands.guild_only()
     @require_any_role(Role.JE)
-    async def check_awards(self, interaction: discord.Interaction, target: Union[discord.Member, discord.Role]):
-        await interaction.response.defer(ephemeral=True)
-
-        # Check if role is defined
-        if isinstance(target, discord.Role):
-            members = target.members
-            log.info(f"Checking awards for {target.name} with {len(members)} members")
-        else:
-            members = [target]
-            log.info(f"Checking awards for {target.name}")
-
-        # Get the repositories
-        sailor_repo = SailorRepository()
-        guild = self.bot.get_guild(GUILD_ID)
-
+    @app_commands.describe(target="Member or role to check.")
+    async def check_awards(
+        self,
+        interaction: discord.Interaction,
+        target: discord.Member | discord.Role,
+    ) -> None:
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        members = target.members if isinstance(target, discord.Role) else [target]
+        member_ids = [member.id for member in members]
+        repository = ShipBriefingRepository()
         try:
-            role_has_sailors = False
-            msg_str = ""
-            for member in members:
-                if isinstance(target, discord.Role):
-                    log.info(f"Checking member {member.name}")
-                # Check if member in database
-                sailor = sailor_repo.get_sailor(member.id)
-                if sailor is None:
-                    continue
-                else:
-                    role_has_sailors = True
+            guild = interaction.guild or self.bot.get_guild(GUILD_ID)
+            if guild is None:
+                raise LookupError("Award-check guild is unavailable.")
 
-                # Check for award messages for sailor
-                sailor_strs = check_sailor(guild, interaction, sailor, member)
-                # Add strings to message, printing early if message would be too long
-                for sailor_str in sailor_strs:
-                    if len(msg_str+sailor_str) <= MAX_MESSAGE_LENGTH:
-                        msg_str += sailor_str
-                    else:
-                        await interaction.followup.send(msg_str, ephemeral=True)
-                        msg_str = sailor_str
-
-            if not role_has_sailors:
-                msg_str = "Role has no sailors in it"
-            elif not msg_str:
-                msg_str = "All sailors are up-to-date on awards."
-            await interaction.followup.send(msg_str, ephemeral=True)
-
-        except Exception as e:
-            log.error(f"Error checking awards: {e}",exc_info=True)
-            await interaction.followup.send("Error checking awards", ephemeral=True)
-
+            sailors = {
+                sailor.discord_id: sailor
+                for sailor in repository.get_sailors_by_ids(member_ids)
+            }
+            subject_name = (
+                target.name
+                if isinstance(target, discord.Role)
+                else target.display_name
+            )
+            if sailors:
+                public_service_counts = repository.get_public_service_counts(
+                    member_ids
+                )
+                pending_awards = tuple(
+                    award
+                    for member in members
+                    if (sailor := sailors.get(member.id)) is not None
+                    for award in get_pending_ship_awards(
+                        guild,
+                        sailor,
+                        member,
+                        public_service_count=public_service_counts.get(
+                            member.id,
+                            0,
+                        ),
+                    )
+                )
+                embeds = render_pending_award_embeds(
+                    pending_awards,
+                    subject_name=subject_name,
+                )
+            else:
+                embeds = (
+                    discord.Embed(
+                        title=f"Awards · {subject_name}",
+                        description=(
+                            "No tracked sailors were found for this selection, "
+                            "so award eligibility could not be evaluated."
+                        ),
+                        color=discord.Color.orange(),
+                    ),
+                )
+            allowed_mentions = discord.AllowedMentions(
+                users=True,
+                roles=False,
+                everyone=False,
+            )
+            for embed_page in chunk_discord_embeds(embeds):
+                await interaction.followup.send(
+                    embeds=list(embed_page),
+                    ephemeral=True,
+                    allowed_mentions=allowed_mentions,
+                )
+        except Exception:
+            log.exception("Award eligibility check failed.")
+            await interaction.followup.send(
+                embed=error_embed(
+                    title="Award check failed",
+                    description=(
+                        "The award check failed and the error has been logged."
+                    ),
+                ),
+                ephemeral=True,
+                allowed_mentions=discord.AllowedMentions.none(),
+            )
         finally:
-            sailor_repo.close_session()
+            repository.close_session()
 
 
-async def setup(bot: commands.Bot):
+async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(CheckAwards(bot))

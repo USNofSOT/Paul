@@ -14,6 +14,10 @@ from pathlib import Path
 from typing import Any
 
 import discord
+import matplotlib
+
+matplotlib.use("Agg")
+
 from matplotlib import pyplot as plt
 
 from src.config.cache import ImageCacheConfig
@@ -73,9 +77,9 @@ class CacheCleanupRecorder:
 
 class CacheStatsRecorder:
     def record_request(
-            self,
-            cache_name: str,
-            was_hit: bool,
+        self,
+        cache_name: str,
+        was_hit: bool,
     ) -> CacheStatsSnapshot | None:
         repository = None
         try:
@@ -154,11 +158,11 @@ def build_cache_key(payload: Any, *, version: int = 1) -> str:
 
 class BinaryImageCache:
     def __init__(
-            self,
-            config: ImageCacheConfig,
-            *,
-            stats_recorder: CacheStatsRecorder | None = None,
-            cleanup_recorder: CacheCleanupRecorder | None = None,
+        self,
+        config: ImageCacheConfig,
+        *,
+        stats_recorder: CacheStatsRecorder | None = None,
+        cleanup_recorder: CacheCleanupRecorder | None = None,
     ):
         self.config = config
         self.directory = Path(config.directory)
@@ -203,9 +207,9 @@ class BinaryImageCache:
         return data
 
     def get_or_create_bytes(
-            self,
-            payload: Any,
-            producer: Callable[[], bytes | None],
+        self,
+        payload: Any,
+        producer: Callable[[], bytes | None],
     ) -> bytes | None:
         key = self.key_for(payload)
         path = self.path_for_key(key)
@@ -239,9 +243,9 @@ class BinaryImageCache:
         return data
 
     async def get_or_create_bytes_async(
-            self,
-            payload: Any,
-            producer: Callable[[], bytes | None | Awaitable[bytes | None]],
+        self,
+        payload: Any,
+        producer: Callable[[], bytes | None | Awaitable[bytes | None]],
     ) -> bytes | None:
         key = self.key_for(payload)
         path = self.path_for_key(key)
@@ -277,10 +281,10 @@ class BinaryImageCache:
         return data
 
     def to_discord_file(
-            self,
-            data: bytes,
-            *,
-            filename: str | None = None,
+        self,
+        data: bytes,
+        *,
+        filename: str | None = None,
     ) -> discord.File:
         buffer = io.BytesIO(data)
         buffer.seek(0)
@@ -316,12 +320,12 @@ class BinaryImageCache:
         return cleanup_result
 
     def _log_cache_miss(
-            self,
-            *,
-            key: str,
-            path: Path,
-            data_size: int,
-            stats: CacheStatsSnapshot | None,
+        self,
+        *,
+        key: str,
+        path: Path,
+        data_size: int,
+        stats: CacheStatsSnapshot | None,
     ) -> None:
         if stats is None:
             log.info(
@@ -347,12 +351,12 @@ class BinaryImageCache:
         )
 
     def _log_cache_usage(
-            self,
-            *,
-            key: str,
-            path: Path,
-            was_hit: bool,
-            data: bytes,
+        self,
+        *,
+        key: str,
+        path: Path,
+        was_hit: bool,
+        data: bytes,
     ) -> None:
         stats = self._record_request(was_hit=was_hit)
         if stats is None:
@@ -393,17 +397,17 @@ def render_matplotlib_plot_to_png(plotter: Callable[[], None]) -> bytes:
 
 
 def get_cached_item_count(
-        config: ImageCacheConfig,
-        *,
-        stop_after: int | None = None,
+    config: ImageCacheConfig,
+    *,
+    stop_after: int | None = None,
 ) -> int:
     return _count_cached_items(config, stop_after=stop_after)
 
 
 def _count_cached_items(
-        config: ImageCacheConfig,
-        *,
-        stop_after: int | None = None,
+    config: ImageCacheConfig,
+    *,
+    stop_after: int | None = None,
 ) -> int:
     directory = Path(config.directory)
     if not directory.exists():
@@ -422,21 +426,21 @@ def _count_cached_items(
 
 
 def get_auto_cleanup_trigger_item_count(
-        config: ImageCacheConfig,
+    config: ImageCacheConfig,
 ) -> int | None:
     if config.max_items is None or config.max_items <= 0:
         return None
     if (
-            config.auto_cleanup_trigger_ratio is None
-            or config.auto_cleanup_trigger_ratio <= 1
+        config.auto_cleanup_trigger_ratio is None
+        or config.auto_cleanup_trigger_ratio <= 1
     ):
         return None
     return math.floor(config.max_items * config.auto_cleanup_trigger_ratio) + 1
 
 
 def should_trigger_auto_cleanup(
-        config: ImageCacheConfig,
-        item_count: int,
+    config: ImageCacheConfig,
+    item_count: int,
 ) -> bool:
     trigger_item_count = get_auto_cleanup_trigger_item_count(config)
     if trigger_item_count is None:
@@ -445,10 +449,10 @@ def should_trigger_auto_cleanup(
 
 
 def _is_cache_file_expired(
-        path: Path,
-        config: ImageCacheConfig,
-        *,
-        now: float | None = None,
+    path: Path,
+    config: ImageCacheConfig,
+    *,
+    now: float | None = None,
 ) -> bool:
     if config.ttl_seconds is None:
         return False
@@ -472,9 +476,9 @@ def clear_cached_items(config: ImageCacheConfig) -> int:
 
 
 def cleanup_cache(
-        config: ImageCacheConfig,
-        *,
-        now: float | None = None,
+    config: ImageCacheConfig,
+    *,
+    now: float | None = None,
 ) -> CacheCleanupResult:
     directory = Path(config.directory)
     if not directory.exists():
@@ -500,7 +504,7 @@ def cleanup_cache(
     removed_overflow = 0
     if config.max_items is not None and len(cache_files) > config.max_items:
         cache_files.sort(key=lambda path: path.stat().st_mtime, reverse=True)
-        for cache_file in cache_files[config.max_items:]:
+        for cache_file in cache_files[config.max_items :]:
             cache_file.unlink(missing_ok=True)
             removed_overflow += 1
         cache_files = cache_files[: config.max_items]
