@@ -2,10 +2,10 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any
 
-from data import VoyageType
-from sqlalchemy import Row, delete, update, desc
+from sqlalchemy import Row, delete, desc, update
 from sqlalchemy.sql.functions import coalesce, count
 
+from data import VoyageType
 from src.config.cache import ONE_HOUR_IN_SECONDS
 from src.data import Sailor
 from src.data.models import Hosted
@@ -102,7 +102,9 @@ class HostedRepository(BaseRepository[Hosted]):
                 .all()
             )
         except Exception as e:
-            log.error("Error getting hosted log entries by target IDs and between dates.")
+            log.error(
+                "Error getting hosted log entries by target IDs and between dates."
+            )
             raise e
 
     def get_hosted_by_role_ids_and_between_dates(
@@ -151,7 +153,7 @@ class HostedRepository(BaseRepository[Hosted]):
         self,
         log_id: int,
         target_id: int,
-            log_time: datetime = None,
+        log_time: datetime = None,
         ship_role_id: int = 0,
         ship_name: str = None,
         auxiliary_ship_name: str = None,
@@ -161,9 +163,9 @@ class HostedRepository(BaseRepository[Hosted]):
         ancient_coin_count: int = 0,
         fish_count: int = 0,
         voyage_type: VoyageType = None,
-            voyage_planning_channel_id: int = None,
-            voyage_planning_message_id: int = None,
-            host_rank_id: int = None,
+        voyage_planning_channel_id: int = None,
+        voyage_planning_message_id: int = None,
+        host_rank_id: int = None,
     ) -> bool:
         """
         Adds a hosted data entry to the Hosted table.
@@ -225,7 +227,6 @@ class HostedRepository(BaseRepository[Hosted]):
                     .values(
                         {
                             "hosted_count": coalesce(Sailor.hosted_count, 0) + 1,
-                            "last_hosting_at": log_time,
                         }
                     )
                 )
@@ -243,7 +244,7 @@ class HostedRepository(BaseRepository[Hosted]):
                 self.session.query(Hosted)
                 .filter(
                     Hosted.voyage_planning_message_id.isnot(None),
-                    Hosted.target_id == member_id
+                    Hosted.target_id == member_id,
                 )
                 .count()
             )
@@ -255,22 +256,21 @@ class HostedRepository(BaseRepository[Hosted]):
 
         try:
             results = (
-            self.session.query(Hosted.target_id, count(Hosted.target_id))
-            .filter(
-                Hosted.voyage_planning_message_id.isnot(None),
-                Hosted.target_id.in_(member_list)
+                self.session.query(Hosted.target_id, count(Hosted.target_id))
+                .filter(
+                    Hosted.voyage_planning_message_id.isnot(None),
+                    Hosted.target_id.in_(member_list),
                 )
-            .group_by(Hosted.target_id)
-            .order_by(desc(count(Hosted.target_id)))
-            .limit(limit)
-            .all()
+                .group_by(Hosted.target_id)
+                .order_by(desc(count(Hosted.target_id)))
+                .limit(limit)
+                .all()
             )
 
             return results
         except Exception as e:
             log.error(f"Error getting top members by public service count: {e}")
             return []  # Return an empty list in case of an error
-
 
     def get_host_by_log_id(self, log_id: int) -> Hosted | None:
         try:
