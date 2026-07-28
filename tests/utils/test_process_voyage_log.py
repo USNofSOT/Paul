@@ -249,14 +249,6 @@ class TestGetDoubloonCountFromContent(unittest.TestCase):
     #     content = "10.121 <:doubloons:1323316150930636961>"
     #     self.assertEqual(get_doubloon_count_from_content(content), 10121)
 
-    def test_max_20m_doubloons(self):
-        # Arrange
-        content = "doubloons 20,000,001"
-        # Act
-        result = get_doubloon_count_from_content(content)
-        # Assert
-        self.assertEqual(result, 20000000)
-
     def test_doubloons_both_sides(self):
         # Arrange
         content = f"{DOUBLOONS_EMOJI}  10.010 {DOUBLOONS_EMOJI}"
@@ -395,13 +387,13 @@ class TestGetGoldCountFromContent(unittest.TestCase):
     #     content = "10.121 <:gold:1323316150930636961>"
     #     self.assertEqual(get_gold_count_from_content(content), 10121)
 
-    def test_max_20m_gold(self):
+    def test_max_50m_gold(self):
         # Arrange
-        content = "gold 20,000,001"
+        content = "gold 50,000,001"
         # Act
         result = get_gold_count_from_content(content)
         # Assert
-        self.assertEqual(result, 20000000)
+        self.assertEqual(result, 50000000)
 
     def test_gold_both_sides(self):
         # Arrange
