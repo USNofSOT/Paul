@@ -1260,13 +1260,15 @@ def render_pending_award_embeds(
             ),
             color=discord.Color.red(),
         )
-        for award in page_awards:
+        for index, award in enumerate(page_awards):
+            spacer = "\n\u200b" if index < len(page_awards) - 1 else ""
             embed.add_field(
                 name=award.sailor_name,
                 value=(
                     f"[**{award.award_name}**]({award.details_url})\n"
                     f"**Ranks responsible:** `{award.ranks_responsible}`\n"
                     f"**Responsible CO:** {_award_responsible(award)}"
+                    f"{spacer}"
                 ),
                 inline=False,
             )
