@@ -15,7 +15,7 @@ dependencies = [
     "requests==2.34.2",
     "slowapi==0.1.10",
     "sqlalchemy==2.0.51",
-    "uvicorn==0.52.0",
+    "uvicorn==0.52.1",
 ]
 [dependency-groups]
 dev = [
@@ -25,7 +25,7 @@ dev = [
     "pre-commit==4.6.1",
 ]
 lint = [
-    "ruff==0.16.0",
+    "ruff==0.16.1",
 ]
 
 [build-system]
