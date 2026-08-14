@@ -62,7 +62,7 @@ def get_count_from_content_by_keyword(content: str, keywords: str) -> int:
                     highest = count
             except ValueError:
                 continue
-        return min(highest, 20000000)
+        return min(highest, 50000000)
     else:
         return 0
 

@@ -3,11 +3,18 @@ from discord import app_commands
 from discord.ext import commands
 
 from src.config.ranks_roles import USMC_ROLE
-from src.security import require_any_role, Role
+from src.security import Role, require_any_role
 from src.utils.embeds import marine_embed
 
-MARINE_COMMANDANT_DISCORD_ID = 280045686798417921
-ASSISTANT_MARINE_COMMANDANT_DISCORD_ID = 281119159012556800
+MARINE_COMMANDANT_DISCORD_ID: int | None = 281119159012556800
+ASSISTANT_MARINE_COMMANDANT_DISCORD_ID: int | None = None
+
+
+def _member_mention(discord_id: int | None) -> str:
+    if discord_id is None:
+        return "N/A"
+
+    return f"<@{discord_id}>"
 
 
 class MarineCommittee(commands.Cog):
@@ -34,13 +41,13 @@ class MarineCommittee(commands.Cog):
 
         embed.add_field(
             name="__**Marine Commandant**__ ",
-            value=(f"<@{MARINE_COMMANDANT_DISCORD_ID}>"),
+            value=_member_mention(MARINE_COMMANDANT_DISCORD_ID),
             inline=False,
         )
 
         embed.add_field(
             name="__**Assistant Marine Commandant**__ ",
-            value=(f"<@{ASSISTANT_MARINE_COMMANDANT_DISCORD_ID}>"),
+            value=_member_mention(ASSISTANT_MARINE_COMMANDANT_DISCORD_ID),
             inline=False,
         )
 

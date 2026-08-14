@@ -10,6 +10,7 @@ from src.config.ranks_roles import JE_AND_UP
 from src.security import require_any_role, Role
 from src.utils.embeds import error_embed
 from src.utils.member.user import get_member_embed
+from src.utils.rank_and_promotion_utils import get_current_rank
 
 log = getLogger(__name__)
 
@@ -66,6 +67,10 @@ class Member(commands.Cog):
                 await interaction.followup.send(embed=embed, ephemeral=True)
                 return
 
+            x = {member.id: {"index": get_current_rank(member).index if get_current_rank(member) else 0} for member in
+                 members}
+
+            members.sort(key=lambda mem: (-x[mem.id]["index"] if x[mem.id] else 0, x[mem.id] is None))
 
             # Check if the role contains the word "squad" or "USS"
             # if "squad" not in role.name.lower() and "uss" not in role.name.lower():
