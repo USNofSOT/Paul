@@ -93,7 +93,7 @@ class TopVoyagedTogether:
 
 
 def top_voyaged_together(
-        discord_id: int, within_id_list: list[int] = None
+        discord_id: int, within_id_list: list[int] = None, limit: int = 3
 ) -> list[TopVoyagedTogether]:
     top = []
 
@@ -116,7 +116,7 @@ def top_voyaged_together(
             query = (
                 query.group_by(other.target_id)
                 .order_by(func.count().desc())
-                .limit(3)
+                .limit(limit)
             )
 
             top = [

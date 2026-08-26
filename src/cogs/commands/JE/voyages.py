@@ -28,12 +28,28 @@ class Voyages(commands.Cog):
     @app_commands.command(name="voyages", description="Get information about the voyages you or a user has been on")
     @app_commands.describe(target="Select the user you want to get information about")
     @require_any_role(Role.JE)
-    async def voyages(self, interaction: discord.interactions, target: discord.Member = None):
+    @app_commands.choices(limit=[
+        app_commands.Choice(name="1", value=1),
+        app_commands.Choice(name="2", value=2),
+        app_commands.Choice(name="3", value=3),
+        app_commands.Choice(name="4", value=4),
+        app_commands.Choice(name="5", value=5),
+        app_commands.Choice(name="6", value=6),
+        app_commands.Choice(name="7", value=7),
+        app_commands.Choice(name="8", value=8),
+        app_commands.Choice(name="9", value=9),
+        app_commands.Choice(name="10", value=10),
+    ])
+    async def voyages(
+        self,
+        interaction: discord.interactions,
+        target: discord.Member = None,
+        limit: int = 3,
+    ):
         helm_emoji = "<:Wheel:1256589625993068665>"
         cannoneer_emoji = "<:Cannon:1256589581894025236>"
         flex_emoji = "<:Sword:1256589612202332313>"
         carpenter_emoji = "<:Planks:1256589596473692272>"
-
         if target is None:
             target = interaction.user
 
@@ -54,8 +70,12 @@ class Voyages(commands.Cog):
         id_list_of_members = [member.id for member in guild.members]
         id_list_of_target_roles = [role.id for role in target.roles]
 
-        # Top 3 of people that the user has voyaged the most with, this excludes people that are no longer in the server
-        top_3: [TopVoyagedTogether] = top_voyaged_together(target.id, within_id_list=id_list_of_members)
+        # Sailors that the user has voyaged with most, excluding people no longer in the server.
+        top_voyaged_with: list[TopVoyagedTogether] = top_voyaged_together(
+            target.id,
+            within_id_list=id_list_of_members,
+            limit=limit,
+        )
         most_recent_voyage: Voyages or None = voyage_repository.get_most_recent_voyage(target.id)
         if most_recent_voyage:
             other_people_in_most_recent_voyage = voyage_repository.get_voyages_by_log_id(most_recent_voyage.log_id)
@@ -113,13 +133,13 @@ class Voyages(commands.Cog):
                       f"{subclass_text}",
             )
 
-        if top_3:
-            top_3_text = ""
-            for index, top in enumerate(top_3):
-                top_3_text += f"{index + 1}. <@{top.sailor_id}> - **{top.voyages_together}** voyages\n"
+        if top_voyaged_with:
+            top_voyaged_with_text = ""
+            for index, top in enumerate(top_voyaged_with):
+                top_voyaged_with_text += f"{index + 1}. <@{top.sailor_id}> - **{top.voyages_together}** voyages\n"
             embed.add_field(
-                name=":trophy: Top 3 Sailors Voyaged With",
-                value=top_3_text,
+                name=f":trophy: Top {limit} Sailors Voyaged With",
+                value=top_voyaged_with_text,
                 inline=False
             )
 
