@@ -1,6 +1,6 @@
 # Paul
 
-Paul is a Discord bot for The United States Navy community in Sea of Thieves. It handles operational record-keeping and
+Paul is a Discord bot for The United States Navy (milsim) community in Sea of Thieves. It handles operational record-keeping and
 Discord automation around sailor activity, including voyage participation, hosting history, awards, disciplinary notes,
 and scheduled notifications.
 
