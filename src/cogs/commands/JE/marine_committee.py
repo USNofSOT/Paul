@@ -6,6 +6,7 @@ from src.config.ranks_roles import USMC_ROLE
 from src.security import Role, require_any_role
 from src.utils.embeds import marine_embed
 
+# Possibly make these related to roles instead of the user IDs of the committee commandants
 MARINE_COMMANDANT_DISCORD_ID: int | None = 280045686798417921
 ASSISTANT_MARINE_COMMANDANT_DISCORD_ID: int | None = 652287461845631023
 
