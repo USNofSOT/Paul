@@ -122,7 +122,7 @@ IMAGE_CACHES = {
         default_filename="ship_voyages_trend.png",
         max_items=MEDIUM_IMAGE_CACHE_MAX_ITEMS,
         ttl_seconds=TWO_HOURS_IN_SECONDS,
-        version=1,
+        version=2,
     ),
     "ship_hosted_trend": ImageCacheConfig(
         name="ship_hosted_trend",
@@ -131,7 +131,7 @@ IMAGE_CACHES = {
         default_filename="ship_hosted_trend.png",
         max_items=MEDIUM_IMAGE_CACHE_MAX_ITEMS,
         ttl_seconds=TWO_HOURS_IN_SECONDS,
-        version=1,
+        version=2,
     ),
     "ship_size_trend": ImageCacheConfig(
         name="ship_size_trend",
@@ -140,7 +140,7 @@ IMAGE_CACHES = {
         default_filename="ship_size_trend.png",
         max_items=MEDIUM_IMAGE_CACHE_MAX_ITEMS,
         ttl_seconds=TWO_HOURS_IN_SECONDS,
-        version=1,
+        version=2,
     ),
     "rank_size_trend": ImageCacheConfig(
         name="rank_size_trend",

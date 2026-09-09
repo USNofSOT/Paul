@@ -343,13 +343,15 @@ class Ships(commands.Cog):
             plt.title('Ship Voyages Trend')
             plt.xlabel('Month')
             plt.ylabel('Voyages')
-            for ship_series in series:
+            colors = plt.get_cmap("tab20").colors
+            for index, ship_series in enumerate(series):
                 plt.plot(
                     ship_series["x_dates"],
                     ship_series["y_values"],
                     marker='o',
                     label=ship_series["role_name"],
                     linewidth=2,
+                    color=colors[index % len(colors)],
                 )
             plt.legend()
 
@@ -418,13 +420,15 @@ class Ships(commands.Cog):
             plt.title('Ship Hosted Trend')
             plt.xlabel('Month')
             plt.ylabel('Hosted')
-            for ship_series in series:
+            colors = plt.get_cmap("tab20").colors
+            for index, ship_series in enumerate(series):
                 plt.plot(
                     ship_series["x_dates"],
                     ship_series["y_values"],
                     marker='o',
                     label=ship_series["role_name"],
                     linewidth=2,
+                    color=colors[index % len(colors)],
                 )
             plt.legend()
 
@@ -496,13 +500,15 @@ class Ships(commands.Cog):
             plt.title('Ship Size Trend')
             plt.xlabel('Day')
             plt.ylabel('Members')
-            for ship_series in series:
+            colors = plt.get_cmap("tab20").colors
+            for index, ship_series in enumerate(series):
                 plt.plot(
                     ship_series["x_dates"],
                     ship_series["y_values"],
                     marker='o',
                     label=ship_series["role_name"],
                     linewidth=2,
+                    color=colors[index % len(colors)],
                 )
             plt.legend()
 
