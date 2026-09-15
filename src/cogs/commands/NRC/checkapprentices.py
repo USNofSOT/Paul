@@ -28,7 +28,7 @@ class CheckApprentices(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name="checkapprentices", description="View current Seaman Apprentices")
-    @require_any_role(Role.NRC)
+    @require_any_role(Role.NRC, Role.JO, Role.NSC_ADMINISTRATOR)
     async def checkapprentices(self,interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
 

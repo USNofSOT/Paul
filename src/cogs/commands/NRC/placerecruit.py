@@ -29,7 +29,7 @@ class PlaceRecruit(commands.Cog):
 
     @app_commands.command(name="placerecruit", description="Determine ship placement for a recruit")
     @app_commands.describe(target="Select the user who recruited them")
-    @require_any_role(Role.NRC, Role.JO)
+    @require_any_role(Role.NRC, Role.JO, Role.NSC_ADMINISTRATOR)
     @audit_interaction
     async def placerecruit(self, interaction: discord.Interaction, target: discord.Member | None = None):
         guild = self.bot.get_guild(GUILD_ID)
