@@ -5,6 +5,8 @@ from enum import Enum
 # Rank Roles
 ###############################################################################
 WO_ROLE = 1459280036287877314 # Warrant Officer Role
+VET_ROLE = 1218962980536848494 # Veteran Role
+RETD_ROLE = 958152319424413726 # Retired Role
 JE_ROLE = 933917171132825620  # Junior Enlisted
 NCO_ROLE = 933917099867377684  # Non-Commissioned Officer
 SNCO_ROLE = 933916952064315452  # Senior Non-Commissioned Officer
@@ -107,7 +109,7 @@ LF_UNOFFICIAL_ROLE = 967495696011886673
 # PERMISSIONS these are list with integers values, every integer value corresponds with a role\
 # Note: For adding these you should declare them as followed
 # @app_commands.checks.has_any_role(*SNCO_AND_UP)
-JE_AND_UP = JE_ROLE, NCO_ROLE, SNCO_ROLE, JO_ROLE, SO_ROLE, BOA_ROLE, NSC_ROLE, WO_ROLE
+JE_AND_UP = JE_ROLE, NCO_ROLE, SNCO_ROLE, JO_ROLE, SO_ROLE, BOA_ROLE, NSC_ROLE, WO_ROLE, VET_ROLE, RETD_ROLE
 NCO_AND_UP = NCO_ROLE, SNCO_ROLE, JO_ROLE, SO_ROLE, BOA_ROLE, NSC_ROLE
 SNCO_AND_UP = SNCO_ROLE, JO_ROLE, SO_ROLE, BOA_ROLE, NSC_ROLE
 JO_AND_UP = JO_ROLE, SO_ROLE, BOA_ROLE, NSC_ROLE
