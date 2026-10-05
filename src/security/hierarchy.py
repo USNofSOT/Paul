@@ -11,8 +11,8 @@ ROLE_HIERARCHY = {
     Role.SNCO: [Role.NCO, Role.JE],
     Role.NCO: [Role.JE],
     Role.WO: [Role.JE],
-    Role.VET: [Role.JE],
-    Role.RETD: [Role.JE],
+    Role.VETERAN: [Role.JE],
+    Role.RETIRED: [Role.JE],
     # NSC Department Expansion
     Role.NSC_ADMINISTRATOR: [Role.NSC_OPERATOR, Role.NSC_OBSERVER],
     Role.NSC_OPERATOR: [Role.NSC_OBSERVER],
