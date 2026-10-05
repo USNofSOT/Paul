@@ -19,6 +19,7 @@ from src.config.requirements import (
     HOSTING_REQUIREMENT_IN_DAYS,
     VOYAGING_REQUIREMENT_IN_DAYS,
 )
+from src.config.ships import SHIPS
 from src.data import MemberReport, RoleChangeType, member_report
 from src.data.repository.auditlog_repository import AuditLogRepository
 from src.data.repository.coin_repository import CoinRepository
@@ -114,6 +115,19 @@ async def get_member_embed(
     highest_streak = max(database_report.voyage_streak, database_report.hosted_streak)
     if highest_streak >= 2:
         embed.title = f"{embed.title} (🔥 {highest_streak})"
+
+    member_role_ids = {role.id for role in member.roles}
+    ship_labels = [
+        f"{ship.emoji} {ship.name}" if ship.emoji else ship.name
+        for ship in SHIPS
+        if ship.role_id in member_role_ids
+    ]
+    if len(ship_labels) == 1:
+        embed.add_field(
+            name="Ship",
+            value=ship_labels[0],
+            inline=False,
+        )
 
     embed.add_field(
         name="Other Info",

@@ -1,6 +1,7 @@
+from config import BC_GULLINBURSTI
 from src.config.main_server import (
     BC_ADUN,
-    BC_BERSERKER,
+    BC_GULLINBURSTI,
     BC_BOA,
     BC_EOS,
     BC_GLETSJER,
@@ -20,7 +21,7 @@ SHIP_MAX_SIZE = 30
 
 ROLE_ID_ANCIENT_ISLES = 1023268709009207328
 ROLE_ID_LUSTY = 933919139700019222
-ROLE_ID_BERSERKER = 1164671319338664007
+ROLE_ID_GULLINBURSTI = 1164671319338664007
 ROLE_ID_SERENITY = 1002303636522680391
 
 ROLE_ID_DEVILS_ROAR = 1074458114637713509
@@ -52,10 +53,10 @@ USS_ILLUSTRIOUS = Ship(
     max_size=33
 )
 
-USS_BERSERKER = Ship(
+USS_GULLINBURSTI = Ship(
     name="USS Gullinbursti",
-    boat_command_channel_id=BC_BERSERKER,
-    role_id=ROLE_ID_BERSERKER,
+    boat_command_channel_id=BC_GULLINBURSTI,
+    role_id=ROLE_ID_GULLINBURSTI,
     emoji="<:Gullinbursti:1455717828324884615>",
     max_size=33
 )
@@ -70,7 +71,7 @@ USS_SERENITY = Ship(
 
 ANCIENT_ISLES_FLEET = Fleet(
     name="Ancient Isles Fleet",
-    ships=(USS_ILLUSTRIOUS, USS_BERSERKER, USS_SERENITY),
+    ships=(USS_ILLUSTRIOUS, USS_GULLINBURSTI, USS_SERENITY),
     role_id=ROLE_ID_ANCIENT_ISLES,
     flagship=None,
     emoji="<:AncientIsles:1270890719405408378>",
