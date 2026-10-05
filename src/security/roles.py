@@ -1,13 +1,15 @@
 from src.config.netc_server import HIGH_COMMAND_OF_NETC_ROLES
 from src.config.ranks_roles import (
     JE_ROLE, NCO_ROLE, SNCO_ROLE, JO_ROLE, SO_ROLE, BOA_ROLE,
-    NRC_ROLE, VT_ROLES, RT_ROLES, VOYAGE_PERMISSIONS, NSC_ROLE, WO_ROLE
+    NRC_ROLE, VT_ROLES, RT_ROLES, VOYAGE_PERMISSIONS, NSC_ROLE, WO_ROLE, VET_ROLE, RETD_ROLE
 )
 from src.config.spd_servers import SPD_NSC_ROLE
 
 
 class Role:
     JE = "JE"
+    VET = "VET"
+    RETD = "RETD"
     WO = "WO"
     NCO = "NCO"
     SNCO = "SNCO"
@@ -29,6 +31,8 @@ class Role:
 
 DISCORD_ROLE_MAP = {
     JE_ROLE: Role.JE,
+    VET_ROLE: Role.VET,
+    RETD_ROLE: Role.RETD,
     WO_ROLE: Role.WO,
     NCO_ROLE: Role.NCO,
     SNCO_ROLE: Role.SNCO,
