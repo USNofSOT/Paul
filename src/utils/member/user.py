@@ -130,7 +130,7 @@ async def get_member_embed(
     embed.add_field(
         name="Command Info",
         value=command_info,
-        inline=False,
+        inline=True,
     )
 
     embed.add_field(
