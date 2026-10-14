@@ -103,7 +103,7 @@ async def get_member_embed(
     guild = bot.get_guild(GUILD_ID)
     co_str = SailorCO(member, guild).member_str
     if any(role.id in AOTN_ROLES for role in member.roles):
-        co_str = "The Oracle"
+        co_str = "T̵̗̳̋̕h̷̯̾ḙ̷̘́ ̸̧̭̈̿Ȏ̸͍͐r̷̜̄̆à̴͕̣c̴le"
 
     ## Add Member Report
     try:
