@@ -4,6 +4,7 @@ from logging import getLogger
 import discord
 from PIL import Image
 from config.ranks import DECKHAND
+from config.ranks_roles import AOTN_ROLES
 from discord.ext.commands import Bot
 
 from src.config import (
@@ -101,7 +102,8 @@ async def get_member_embed(
     # Add Next in Command
     guild = bot.get_guild(GUILD_ID)
     co_str = SailorCO(member, guild).member_str
-    embed.add_field(name="Next in Command", value=co_str, inline=True)
+    if any(role.id in AOTN_ROLES for role in member.roles):
+        co_str = "The Oracle"
 
     ## Add Member Report
     try:
@@ -122,12 +124,14 @@ async def get_member_embed(
         for ship in SHIPS
         if ship.role_id in member_role_ids
     ]
+    command_info = f"Next in command: {co_str}"
     if len(ship_labels) == 1:
-        embed.add_field(
-            name="Ship",
-            value=ship_labels[0],
-            inline=False,
-        )
+        command_info += f"\nShip: {ship_labels[0]}"
+    embed.add_field(
+        name="Command Info",
+        value=command_info,
+        inline=False,
+    )
 
     embed.add_field(
         name="Other Info",
