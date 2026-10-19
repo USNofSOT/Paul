@@ -459,10 +459,10 @@ class Ships(commands.Cog):
         embed = discord.Embed(
             title="Ship Size",
             color=discord.Color.orange(),
-            description=f"Report for amount of members per ship for the last 14 days"
+            description="Report for amount of members per ship for the last 30 days"
         )
 
-        days = 14
+        days = 20
         series = []
         reference_day = _day_anchor_now()
 

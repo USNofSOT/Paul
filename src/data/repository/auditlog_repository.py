@@ -51,6 +51,28 @@ class AuditLogRepository(BaseRepository[BotInteractionLog]):
             log.error(f"Error getting latest role log for target and role: {e}")
             raise e
 
+    def has_role_change_since(
+        self,
+        target_id: int,
+        role_id: int,
+        since: datetime.datetime,
+    ) -> bool:
+        """Return whether a sailor has a role change on or after ``since``."""
+        try:
+            return (
+                self.session.query(RoleChangeLog)
+                .filter(
+                    RoleChangeLog.target_id == target_id,
+                    RoleChangeLog.role_id == role_id,
+                    RoleChangeLog.log_time >= since,
+                )
+                .first()
+                is not None
+            )
+        except Exception as e:
+            log.error(f"Error checking role change history since a date: {e}")
+            raise
+
     def get_timeout_logs(self, target_id: int = None, limit: int = 10) -> [TimeoutLog]:
         if target_id:
             return self.session.query(TimeoutLog).filter(TimeoutLog.target_id == target_id).order_by(TimeoutLog.log_time.desc()).limit(limit).all()
