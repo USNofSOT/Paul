@@ -1,0 +1,525 @@
+import logging
+
+from sqlalchemy import desc, func, update
+from sqlalchemy.sql.functions import coalesce
+
+from src.data import SubclassType
+from src.data.models import Sailor
+from src.data.repository.common.base_repository import BaseRepository
+
+log = logging.getLogger(__name__)
+
+
+class SailorRepository(BaseRepository[Sailor]):
+    def __init__(self):
+        super().__init__(Sailor)
+
+    def get_sailor(self, target_id: int) -> Sailor | None:
+        try:
+            return (
+                self.session.query(Sailor)
+                .filter(Sailor.discord_id == target_id)
+                .first()
+            )
+        except Exception as e:
+            log.error(f"Error retrieving Sailor: {e}")
+            return None
+
+    def check_discord_id_exists(self, target_id: int) -> bool:
+        """
+        Check if a Sailor with a specific discord ID exists
+
+        Args:
+            target_id (int): The Discord ID of the user.
+        Returns:
+            bool: True if a Sailor with the discord ID exists, False otherwise.
+        """
+        try:
+            exists = (
+                self.session.query(Sailor.discord_id)
+                .filter(Sailor.discord_id == target_id)
+                .scalar()
+                is not None
+            )
+            return exists
+        except Exception as e:
+            log.error(f"Error checking if discord ID exists: {e}")
+            return False
+
+    def increment_subclass_count_by_discord_id(
+        self, target_id: int, subclass: SubclassType, increment: int = 1
+    ) -> bool:
+        """
+        Increment the subclass count for a specific Sailor
+
+        Args:
+            target_id (int): The Discord ID of the user.
+            subclass (SubclassType): The subclass to increment the count for.
+            increment (int): The amount to increment the count by.
+        Returns:
+            bool: True if the operation was successful, False otherwise.
+        """
+        column = subclass.value.lower() + "_points"
+        self._increment_column_by_discord_id(target_id, column, increment)
+
+    def increment_force_subclass_by_discord_id(
+        self, target_id: int, subclass: SubclassType, increment: int = 1
+    ) -> bool:
+        column = "force_" + subclass.value.lower() + "_points"
+        self._increment_column_by_discord_id(target_id, column, increment)
+
+    def increment_force_voyage_by_discord_id(
+        self, target_id: int, increment: int = 1
+    ) -> bool:
+        self._increment_column_by_discord_id(target_id, "force_voyage_count", increment)
+
+    def increment_force_hosted_by_discord_id(
+        self, target_id: int, increment: int = 1
+    ) -> bool:
+        self._increment_column_by_discord_id(target_id, "force_hosted_count", increment)
+
+    def _increment_column_by_discord_id(
+        self, target_id: int, column: str, increment: int
+    ) -> bool:
+        try:
+            self.session.execute(
+                update(Sailor)
+                .where(Sailor.discord_id == target_id)
+                .values({column: coalesce(getattr(Sailor, column), 0) + increment})
+            )
+            self.session.commit()
+            return True
+        except Exception as e:
+            log.error(f"Error incrementing {column}: {e}")
+            self.session.rollback()
+            raise e
+
+    def update_or_create_sailor_by_discord_id(
+        self,
+        target_id: int,
+        gamertag: str | None = None,
+        timezone: str | None = None,
+        current_rank_id: int | None = None,
+    ) -> Sailor | None:
+        """
+        Set the gamertag, timezone, and current_rank_id for a Sailor by Discord ID
+        Will create a new Sailor if one does not exist
+
+        Args:
+            target_id (int): The Discord ID of the user.
+            gamertag (str | None): The gamertag to set for the user. Optional.
+            timezone (str | None): The timezone to set for the user. Optional.
+            current_rank_id (int | None): The rank ID to set for the user. Optional.
+        Returns:
+            Sailor: The Sailor object that was updated, or None if the operation failed.
+        """
+        try:
+            # Check if sailor exists to preserve existing data on merge if necessary
+            sailor = (
+                self.session.query(Sailor)
+                .filter(Sailor.discord_id == target_id)
+                .first()
+            )
+            if not sailor:
+                sailor = Sailor(discord_id=target_id)
+                self.session.add(sailor)
+
+            # Ensures that the gamertag, timezone, and current_rank_id are only altered if they are not None
+            if gamertag:
+                sailor.gamertag = gamertag
+            if timezone:
+                sailor.timezone = timezone
+            if current_rank_id is not None:
+                sailor.current_rank_id = current_rank_id
+
+            self.session.commit()
+            return sailor
+        except Exception as e:
+            log.error(f"Error updating/creating sailor: {e}")
+            self.session.rollback()
+            raise e
+
+    def increment_voyage_count_by_discord_id(self, target_id: int) -> bool:
+        """
+        Increment the voyage_count column for a specific Sailor
+
+        Args:
+            target_id (int): The Discord ID of the user.
+        Returns:
+            bool: True if the operation was successful, False otherwise.
+        """
+        try:
+            self.session.execute(
+                update(Sailor)
+                .where(Sailor.discord_id == target_id)
+                .values({"voyage_count": coalesce(Sailor.voyage_count, 0) + 1})
+            )
+            self.session.commit()
+            return True
+        except Exception as e:
+            log.error(f"Error incrementing voyage count: {e}")
+            self.session.rollback()
+            return False
+
+    def decrement_subclass_count_by_discord_id(
+        self, target_id, subclass, subclass_count
+    ):
+        """
+        Decrement the subclass count for a specific Sailor
+
+        Args:
+            target_id (int): The Discord ID of the user.
+            subclass (SubclassType): The subclass to decrement the count for.
+            subclass_count (int): The amount to decrement the count by.
+        Returns:
+            bool: True if the operation was successful, False otherwise.
+        """
+        column = subclass.value.lower() + "_points"
+        try:
+            self.session.execute(
+                update(Sailor)
+                .where(Sailor.discord_id == target_id)
+                .values(
+                    {
+                        column: func.greatest(
+                            coalesce(getattr(Sailor, column), 0) - subclass_count, 0
+                        )
+                    }
+                )
+            )
+            self.session.commit()
+            return True
+        except Exception as e:
+            log.error(f"Error decrementing subclass count: {e}")
+            self.session.rollback()
+            return False
+
+    def get_top_members_by_subclass(self, subclass_name, limit, member_list):
+        """
+        Gets the top members by subclass points.
+
+        Args:
+            subclass_name: The name of the subclass.
+            limit: The maximum number of members to return.
+
+        Returns:
+            A list of tuples, where each tuple contains the discord_id and their subclass points.
+        """
+        if limit == None:
+            limit = 3
+        try:
+            subclass = subclass_name + "_points"
+            results = (
+                self.session.query(Sailor.discord_id, getattr(Sailor, subclass))
+                .filter(Sailor.discord_id.in_(member_list))
+                .order_by(desc(getattr(Sailor, subclass)))
+                .limit(limit)
+                .all()
+            )
+            return results
+        except Exception as e:
+            log.error(f"Error getting top members by subclass '{subclass_name}': {e}")
+            return []  # Return an empty list in case of an error
+
+    def get_top_members_by_hosting_count(self, limit, member_list):
+        """
+        Gets the top members by hosting count.
+
+        Args:
+            limit: The maximum number of members to return.
+
+        Returns:
+            A list of tuples, where each tuple contains the discord_id and their hosting count.
+        """
+        if limit == None:
+            limit = 3
+        try:
+            results = (
+                self.session.query(Sailor.discord_id, Sailor.hosted_count)
+                .filter(Sailor.discord_id.in_(member_list))
+                .order_by(desc(Sailor.hosted_count))
+                .limit(limit)
+                .all()
+            )
+            return results
+        except Exception as e:
+            log.error(f"Error getting top members by hosting count: {e}")
+            return []  # Return an empty list in case of an error
+
+    def get_top_members_by_voyage_count(self, limit, member_list):
+        """
+        Gets the top members by voyage count.
+
+        Args:
+            limit: The maximum number of members to return.
+            member_list: List of current server members
+
+        Returns:
+            A list of tuples, where each tuple contains the discord_id and their voyage count.
+        """
+        if limit == None:
+            limit = 3
+        try:
+            results = (
+                self.session.query(Sailor.discord_id, Sailor.voyage_count)
+                .filter(Sailor.discord_id.in_(member_list))
+                .order_by(desc(Sailor.voyage_count))
+                .limit(limit)
+                .all()
+            )
+            return results
+        except Exception as e:
+            log.error(f"Error getting top members by voyage count: {e}")
+            return []  # Return an empty list in case of an error
+
+    def update_rank(self, target_id: int, rank_id: int, reason: str = None) -> bool:
+        """
+        Update the rank for a specific Sailor and log the change if it has changed.
+
+        Args:
+            target_id (int): The Discord ID of the user.
+            rank_id (int): The ID of the new rank.
+            reason (str, optional): The reason for the rank change. Defaults to None.
+        Returns:
+            bool: True if the operation was successful, False otherwise.
+        """
+        try:
+            sailor = self.get_sailor(target_id)
+            if not sailor:
+                return False
+
+            if sailor.current_rank_id != rank_id:
+                sailor.current_rank_id = rank_id
+                self.session.commit()
+
+                from src.data.repository.rank_history_repository import (
+                    RankHistoryRepository,
+                )
+
+                with RankHistoryRepository() as rank_history_repo:
+                    rank_history_repo.log_rank_change(target_id, rank_id, reason)
+
+            return True
+        except Exception as e:
+            log.error(f"Error updating sailor rank: {e}")
+            self.session.rollback()
+            return False
+
+    def update_discord_profile(
+        self,
+        target_id: int,
+        nickname: str | None,
+        global_name: str | None,
+        discord_name: str | None,
+        avatar_url: str | None,
+    ) -> bool:
+        try:
+            sailor = (
+                self.session.query(Sailor)
+                .filter(Sailor.discord_id == target_id)
+                .first()
+            )
+            if sailor is None:
+                return False
+            sailor.nickname = nickname
+            sailor.global_name = global_name
+            sailor.discord_name = discord_name
+            sailor.avatar_url = avatar_url
+            self.session.commit()
+            return True
+        except Exception as e:
+            log.error(f"Error updating discord profile for {target_id}: {e}")
+            self.session.rollback()
+            return False
+
+    def update_discord_profiles_batch(self, profiles: list[dict]) -> int:
+        """
+        Batch update discord profiles for multiple sailors.
+
+        Args:
+            profiles: list of dicts with keys: discord_id, nickname, global_name, discord_name, avatar_url
+        Returns:
+            int: Number of sailors updated
+        """
+        updated = 0
+        try:
+            for profile in profiles:
+                result = self.session.execute(
+                    update(Sailor)
+                    .where(Sailor.discord_id == profile["discord_id"])
+                    .values(
+                        nickname=profile.get("nickname"),
+                        global_name=profile.get("global_name"),
+                        discord_name=profile.get("discord_name"),
+                        avatar_url=profile.get("avatar_url"),
+                    )
+                )
+                updated += result.rowcount
+            self.session.commit()
+            return updated
+        except Exception as e:
+            log.error(f"Error batch updating discord profiles: {e}")
+            self.session.rollback()
+            return 0
+
+    def get_all_sailor_discord_ids(self) -> list[int]:
+        try:
+            results = self.session.query(Sailor.discord_id).all()
+            return [row[0] for row in results]
+        except Exception as e:
+            log.error(f"Error getting all sailor discord IDs: {e}")
+            return []
+
+
+def ensure_sailor_exists(target_id: int) -> Sailor | None:
+    """
+    Ensure that a Sailor exists in the database
+
+    Args:
+        target_id (int): The Discord ID of the user.
+    Returns:
+        Sailor: The Sailor object that was created or retrieved.
+    """
+    with SailorRepository() as repo:
+        try:
+            sailor = Sailor(discord_id=target_id)
+            repo.session.merge(
+                sailor
+            )  # merge will update or create the sailor object if it doesn't exist
+            repo.session.commit()
+            return (
+                repo.session.query(Sailor)
+                .filter(Sailor.discord_id == target_id)
+                .first()
+            )  # This will return the updated Sailor object
+        except Exception as e:
+            log.error(f"Error checking if Sailor exists: {e}")
+            return None
+
+
+def save_sailor(target_id: int) -> bool:
+    """
+    Add a Sailor to the database
+
+    Args:
+        target_id (int): The Discord ID of the user.
+    Returns:
+        bool: True if the operation was successful, False otherwise.
+    """
+    with SailorRepository() as repo:
+        try:
+            repo.session.add(Sailor(discord_id=target_id))
+            repo.session.commit()
+            return True
+        except Exception as e:
+            log.error(f"Error adding discord ID: {e}")
+            repo.session.rollback()
+            raise e
+
+
+def get_gamertag_by_discord_id(target_id: int) -> str | None:
+    """
+    Get the gamertag of a Sailor
+
+    Args:
+        target_id (int): The Discord ID of the user.
+    Returns:
+        str | None: The gamertag of the user, or None if the user is not found or the gamertag is not set.
+    """
+    with SailorRepository() as repo:
+        try:
+            sailor = (
+                repo.session.query(Sailor)
+                .filter(Sailor.discord_id == target_id)
+                .first()
+            )
+            return sailor.gamertag if sailor else None
+        except Exception as e:
+            log.error(f"Error retrieving gamertag: {e}")
+            return None
+
+
+def get_timezone_by_discord_id(target_id: int) -> str | None:
+    """
+    Get the timezone of a Sailor
+
+    Args:
+        target_id (int): The Discord ID of the user.
+    Returns:
+        str | None: The timezone of the user, or None if the user is not found or the timezone is not set.
+    """
+    with SailorRepository() as repo:
+        try:
+            sailor = (
+                repo.session.query(Sailor)
+                .filter(Sailor.discord_id == target_id)
+                .first()
+            )
+            return sailor.timezone if sailor else None
+        except Exception as e:
+            log.error(f"Error retrieving timezone: {e}")
+            return None
+
+
+def decrement_hosted_count_by_discord_id(target_id: int) -> bool:
+    """
+    Decrement the hosted_count column for a specific Sailor.
+
+    Cannot go below 0.
+
+    Args:
+        target_id (int): The Discord ID of the user.
+    Returns:
+        bool: True if the operation was successful, False otherwise.
+    """
+    with SailorRepository() as repo:
+        try:
+            repo.session.execute(
+                update(Sailor)
+                .where(Sailor.discord_id == target_id)
+                .values(
+                    {
+                        "hosted_count": func.greatest(
+                            func.coalesce(Sailor.hosted_count, 0) - 1, 0
+                        )
+                    }
+                )
+            )
+            repo.session.commit()
+            return True
+        except Exception as e:
+            log.error(f"Error decrementing hosted count: {e}")
+            repo.session.rollback()
+            raise e
+
+
+def decrement_voyage_count_by_discord_id(target_id: int) -> bool:
+    """
+    Decrement the voyage_count column for a specific Sailor
+
+    Cannot go below 0
+
+    Args:
+        target_id (int): The Discord ID of the user.
+    Returns:
+        bool: True if the operation was successful, False otherwise.
+    """
+    with SailorRepository() as repo:
+        try:
+            repo.session.execute(
+                update(Sailor)
+                .where(Sailor.discord_id == target_id)
+                .values(
+                    {
+                        "voyage_count": func.greatest(
+                            func.coalesce(Sailor.voyage_count, 0) - 1, 0
+                        )
+                    }
+                )
+            )
+            repo.session.commit()
+            return True
+        except Exception as e:
+            log.error(f"Error decrementing voyage count: {e}")
+            repo.session.rollback()
+            raise e

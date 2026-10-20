@@ -1,0 +1,217 @@
+from config import BC_GULLINBURSTI
+from src.config.main_server import (
+    BC_ADUN,
+    BC_GULLINBURSTI,
+    BC_BOA,
+    BC_EOS,
+    BC_GLETSJER,
+    BC_HYPERION,
+    BC_LUSTY,
+    BC_NIGHTINGALE,
+    BC_PHANTOM,
+    BC_SERENITY,
+    BC_GENESIS,
+    BC_TITAN,
+    BC_VENOM,
+)
+from src.data.structs import Fleet, NavyFleetCollector, Ship
+
+# Default maximum ship size
+SHIP_MAX_SIZE = 30
+
+ROLE_ID_ANCIENT_ISLES = 1023268709009207328
+ROLE_ID_LUSTY = 933919139700019222
+ROLE_ID_GULLINBURSTI = 1164671319338664007
+ROLE_ID_SERENITY = 1002303636522680391
+
+ROLE_ID_DEVILS_ROAR = 1074458114637713509
+ROLE_ID_EOS = 1058840733248933908
+ROLE_ID_GENESIS = 977935623774162954
+ROLE_ID_VENOM = 1237838106711822457
+
+ROLE_ID_SHORES_OF_PLENTY = 1161861443004678315
+ROLE_ID_TITAN = 1247405133130764329
+ROLE_ID_GLETSJER = 1084451910578339880
+ROLE_ID_PHANTOM = 1274251672876617792
+
+ROLE_ID_WILDS = 933919084616228874
+ROLE_ID_ADUN = 1242143582463332402
+ROLE_ID_HYPERION = 1157426517912076318
+ROLE_ID_NIGHTINGALE = 967531117882261536
+
+###############################################################################
+# Ships - Ship objects
+###############################################################################
+
+# Ancient Isles Fleet
+#######################################
+USS_ILLUSTRIOUS = Ship(
+    name="USS Illustrious",
+    boat_command_channel_id=BC_LUSTY,
+    role_id=ROLE_ID_LUSTY,
+    emoji="<:Lusty:1079841997021524018>",
+    max_size=33
+)
+
+USS_GULLINBURSTI = Ship(
+    name="USS Gullinbursti",
+    boat_command_channel_id=BC_GULLINBURSTI,
+    role_id=ROLE_ID_GULLINBURSTI,
+    emoji="<:Gullinbursti:1455717828324884615>",
+    max_size=33
+)
+
+USS_SERENITY = Ship(
+    name="USS Serenity",
+    boat_command_channel_id=BC_SERENITY,
+    role_id=ROLE_ID_SERENITY,
+    emoji="<:Serenity:1356016930032713879>",
+    max_size=30
+)
+
+ANCIENT_ISLES_FLEET = Fleet(
+    name="Ancient Isles Fleet",
+    ships=(USS_ILLUSTRIOUS, USS_GULLINBURSTI, USS_SERENITY),
+    role_id=ROLE_ID_ANCIENT_ISLES,
+    flagship=None,
+    emoji="<:AncientIsles:1270890719405408378>",
+)
+
+# Devil's Roar Fleet
+#######################################
+USS_EOS = Ship(
+    name="USS Eos",
+    boat_command_channel_id=BC_EOS,
+    role_id=ROLE_ID_EOS,
+    emoji="<:Eos:1477072696301981811>",
+    max_size=30
+)
+
+USS_GENESIS = Ship(
+    name="USS Genesis",
+    boat_command_channel_id=BC_GENESIS,
+    role_id=ROLE_ID_GENESIS,
+    emoji="<:Genesis:1487992816368877618>",
+    max_size=30
+)
+
+USS_VENOM = Ship(
+    name="USS Venom",
+    boat_command_channel_id=BC_VENOM,
+    role_id=ROLE_ID_VENOM,
+    emoji="<:Venom:1239895956489633852>",
+    max_size=33
+)
+
+DEVILS_ROAR_FLEET = Fleet(
+    name="The Devil's Roar Fleet",
+    ships=(USS_EOS, USS_GENESIS, USS_VENOM),
+    role_id=ROLE_ID_DEVILS_ROAR,
+    flagship=USS_EOS,
+    emoji="<:DevilsRoar:1270890826574204988>",
+)
+
+# Shores of Plenty Fleet
+#######################################
+USS_TITAN = Ship(
+    name="USS Titan",
+    boat_command_channel_id=BC_TITAN,
+    role_id=ROLE_ID_TITAN,
+    emoji="<:Titan:1352591957804978277>",
+    max_size=28
+)
+
+USS_GLETSJER = Ship(
+    name="USS Gletsjer",
+    boat_command_channel_id=BC_GLETSJER,
+    role_id=ROLE_ID_GLETSJER,
+    emoji="<:Gletsjer:1356717285171265818>",
+    max_size=30
+)
+
+USS_PHANTOM = Ship(
+    name="USS Phantom",
+    boat_command_channel_id=BC_PHANTOM,
+    role_id=ROLE_ID_PHANTOM,
+    emoji="<:Phantom:1375148736472158228>",
+    max_size=24
+)
+
+SHORES_OF_PLENTY_FLEET = Fleet(
+    name="Shores of Plenty Fleet",
+    ships=(USS_TITAN, USS_GLETSJER, USS_PHANTOM),
+    role_id=1161861443004678315,
+    flagship=None,
+    emoji="<:ShoresOfPlenty:1270890631979597864>",
+)
+
+
+# Wilds Fleet
+#######################################
+USS_ADUN = Ship(
+    name="USS Adun",
+    boat_command_channel_id=BC_ADUN,
+    role_id=ROLE_ID_ADUN,
+    emoji="<:Adun:1251266293601013871>",
+    max_size=33
+)
+
+USS_MYSTERY = Ship(
+    name="USS Mystery",
+    boat_command_channel_id=BC_HYPERION,
+    role_id=ROLE_ID_HYPERION,
+    emoji="<:USSMysteryLogo:1491898644901662940>",
+    max_size=24
+)
+
+USS_NIGHTINGALE = Ship(
+    name="USS Nightingale",
+    boat_command_channel_id=BC_NIGHTINGALE,
+    role_id=ROLE_ID_NIGHTINGALE,
+    emoji="<:nightingale:1382145592934924370>",
+    max_size=33
+)
+
+WILDS_FLEET = Fleet(
+    name="The Wilds Fleet",
+    ships=(USS_ADUN, USS_MYSTERY, USS_NIGHTINGALE),
+    role_id=933919084616228874,
+    flagship=None,
+    emoji="<:Wilds:1270890769292591134>",
+)
+
+# Legendary/Ceremonial/Heritage Ships
+#######################################
+USS_LEGENDARY = Ship(
+    name="USS Legendary",
+    boat_command_channel_id=BC_BOA,
+)
+
+USS_CEREMONIAL = Ship(
+    name="USS Ceremonial",
+    boat_command_channel_id=BC_BOA,
+)
+
+USS_HERITAGE = Ship(
+    name="USS Heritage",
+    boat_command_channel_id=BC_BOA,
+)
+
+VIRTUAL_MAIN_SHIPS = (
+    USS_LEGENDARY,
+    USS_CEREMONIAL,
+    USS_HERITAGE,
+)
+
+
+# Navy collector
+#######################################
+FLEETS_OF_THE_NAVY = NavyFleetCollector(
+    ancient_isles=ANCIENT_ISLES_FLEET,
+    devils_roar=DEVILS_ROAR_FLEET,
+    shores_of_plenty=SHORES_OF_PLENTY_FLEET,
+    wilds=WILDS_FLEET,
+)
+
+SHIPS = FLEETS_OF_THE_NAVY.ships
+VOYAGE_MAIN_SHIPS = SHIPS + list(VIRTUAL_MAIN_SHIPS)

@@ -1,0 +1,52 @@
+name: "🔍 Continuous Integration"
+
+on:
+  push:
+    branches: [ "master", "main", "dev", "development" ]
+  pull_request:
+    branches: [ "master", "main", "dev", "development" ]
+
+jobs:
+  test:
+    name: "🧪 Running Tests"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version:
+          - "3.13"
+    steps:
+      - name: "⌛ Checking out the code"
+        uses: actions/checkout@v7
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: "📦 Installing dependencies"
+        run: uv sync --locked --all-extras --all-groups
+      - name: "🐍 Checking compilability"
+        run: uv run python -m compileall src tests
+      - name: "🧪 Running tests"
+        # For example, using `pytest`
+        run: uv run pytest tests
+        env:
+          DB_HOST: localhost
+          DB_PORT: 3306
+          DB_NAME: test_db
+          DB_USER: root
+          DB_PASSWORD: password
+#  format:
+#    name: "🧹 Format Checking"
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: "⌛ Checking out the code"
+#        uses: actions/checkout@v7
+#      - name: "🐍 Setting up Python"
+#        uses: actions/setup-python@v4
+#        with:
+#          python-version: '3.14'
+#      - name: "📦 Installing dependencies"
+#        run: pip install black ruff
+#      - name: "🧹 Running Black"
+#        run: black --check src
+#      - name: "🧹 Running Ruff"
+#        run: ruff src
