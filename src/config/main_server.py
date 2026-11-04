@@ -38,11 +38,13 @@ BC_TITAN: Final[int] = 1247403752210694197
 
 # BOA is a side channel so that bot does not need to be in main boa channel
 BC_BOA: Final[int] = 1101193993909456956
+BOA_Alert: Final[int] = 1373670243767160912
 
 # Bot Status Channel
 BOT_STATUS: Final[int] = 1296034003480215552
 
-# NSC command / mock preview channel
+# NSC command / mock preview channels
+BOT_TALK_CHANNEL: Final[int] = 1291589712544268288
 BOT_TEST_COMMAND: Final[int] = 1291589569602650154
 
 # Bot log channels
