@@ -130,10 +130,10 @@ class TestGetMainShipName(TestCase):
         # Arrange
         content = (
             "<@5848673888963>__**'s official log of the 134th voyage of the USS "
-            "Phoenix , Auxiliary to the USS Mystery"
+            "Phoenix , Auxiliary to the USS Solstice"
         )
         # Act & Assert
-        self.assertEqual(get_main_ship_from_content(content), "USS Mystery")
+        self.assertEqual(get_main_ship_from_content(content), "USS Solstice")
 
     def test_main_ship_not_included(self):
         # Arrange
@@ -145,27 +145,27 @@ class TestGetMainShipName(TestCase):
         # Arrange
         content = (
             "<@5848673888963>__**'s official log of the 134th voyage of the USS "
-            "Phoenix , Auxiliary to the USS Mystery**__ We started our adventure "
+            "Phoenix , Auxiliary to the USS Solstice**__ We started our adventure "
             "at Plunder"
         )
         # Act & Assert
-        self.assertEqual(get_main_ship_from_content(content), "USS Mystery")
+        self.assertEqual(get_main_ship_from_content(content), "USS Solstice")
 
     def test_main_ship_name_with_emoji(self):
         # Arrange
         content = (
             "<@5848673888963>__**'s official log of the 134th voyage of the USS "
-            "Phoenix , Auxiliary to the USS Mystery**__ We started our adventure "
+            "Phoenix , Auxiliary to the USS Solstice**__ We started our adventure "
             "at Plunder <:USS_Platypus:123456789>"
         )
         # Act & Assert
-        self.assertEqual(get_main_ship_from_content(content), "USS Mystery")
+        self.assertEqual(get_main_ship_from_content(content), "USS Solstice")
 
     def test_main_ship_within_the_first_25_words(self):
         # Arrange
         content = (
             "We started our adventure at Plunder on the USS Phoenix, Auxiliary to "
-            "the USS Mystery"
+            "the USS Solstice"
         )
         # Act & Assert
         self.assertEqual(get_main_ship_from_content(content), "USS Mystery")
@@ -181,10 +181,10 @@ class TestGetMainShipName(TestCase):
         # Arrange
         content = (
             "We started our adventure at Plunder on the USS Phoenix, Auxiliary to "
-            "the USS Mystery"
+            "the USS Solstice"
         )
         # Act & Assert
-        self.assertEqual(get_main_ship_from_content(content), "USS Mystery")
+        self.assertEqual(get_main_ship_from_content(content), "USS Solstice")
         # Arrange
         content = (
             "We started our adventure at Plunder on the USS Phoenix, Auxiliary to "
@@ -266,9 +266,9 @@ class TestGetAuxiliaryShipName(TestCase):
     def test_auxiliary_is_main_ship(self):
         # Arrange
         content = (
-            "We started our adventure at Plunder on the USS Mystery, Auxiliary to "
-            "the USS Mystery"
+            "We started our adventure at Plunder on the USS Solstice, Auxiliary to "
+            "the USS Solstice"
         )
         # Act & Assert
         self.assertEqual(get_auxiliary_ship_from_content(content), None)
-        self.assertEqual(get_main_ship_from_content(content), "USS Mystery")
+        self.assertEqual(get_main_ship_from_content(content), "USS Solstice")
