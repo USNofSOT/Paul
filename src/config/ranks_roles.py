@@ -85,7 +85,6 @@ CHAIN_OF_COMMAND = OrderedDict(
 # SPD Roles
 ###############################################################################
 NETC_ROLE = 1034233491707150376  # NETC Department
-NSC_Head_Role = 1293725883227701248 # Head of NSC
 NSC_ROLE = 1293725126562680985  # NSC Department
 NRC_ROLE = 944631719456284735  # NRC Department
 SCHEDULING_ROLE = 972551831655956580  # Scheduling Department
