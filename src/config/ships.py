@@ -5,7 +5,7 @@ from src.config.main_server import (
     BC_BOA,
     BC_EOS,
     BC_GLETSJER,
-    BC_HYPERION,
+    BC_SOLSTICE,
     BC_LUSTY,
     BC_NIGHTINGALE,
     BC_PHANTOM,
@@ -36,7 +36,7 @@ ROLE_ID_PHANTOM = 1274251672876617792
 
 ROLE_ID_WILDS = 933919084616228874
 ROLE_ID_ADUN = 1242143582463332402
-ROLE_ID_HYPERION = 1157426517912076318
+ROLE_ID_SOLSTICE = 1157426517912076318
 ROLE_ID_NIGHTINGALE = 967531117882261536
 
 ###############################################################################
@@ -156,11 +156,11 @@ USS_ADUN = Ship(
     max_size=33
 )
 
-USS_MYSTERY = Ship(
-    name="USS Mystery",
-    boat_command_channel_id=BC_HYPERION,
-    role_id=ROLE_ID_HYPERION,
-    emoji="<:USSMysteryLogo:1491898644901662940>",
+USS_SOLSTICE = Ship(
+    name="USS Solstice",
+    boat_command_channel_id=BC_SOLSTICE,
+    role_id=ROLE_ID_SOLSTICE,
+    emoji="<:Solstice:1563726442976641074>",
     max_size=24
 )
 
@@ -174,7 +174,7 @@ USS_NIGHTINGALE = Ship(
 
 WILDS_FLEET = Fleet(
     name="The Wilds Fleet",
-    ships=(USS_ADUN, USS_MYSTERY, USS_NIGHTINGALE),
+    ships=(USS_ADUN, USS_SOLSTICE, USS_NIGHTINGALE),
     role_id=933919084616228874,
     flagship=None,
     emoji="<:Wilds:1270890769292591134>",
