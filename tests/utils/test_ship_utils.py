@@ -168,7 +168,7 @@ class TestGetMainShipName(TestCase):
             "the USS Solstice"
         )
         # Act & Assert
-        self.assertEqual(get_main_ship_from_content(content), "USS Mystery")
+        self.assertEqual(get_main_ship_from_content(content), "USS Solstice")
         # Arrange
         content = (
             "We started our adventure at Plunder on the we dit a lot of yapping at "
